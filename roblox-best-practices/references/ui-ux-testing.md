@@ -8,13 +8,15 @@
 - Layouts via `UIListLayout`/`UIGridLayout`/`UIFlexLayout` + `AutomaticSize`, not hand-positioned children — they reflow across resolutions for free.
 - If the project uses Fusion/React-lua, component idioms win — see [community-libraries.md](community-libraries.md#ui-fusion--react-lua--roact).
 
+Rotated GuiObjects and `Path2D` instances now clip cleanly without a performance penalty, so a rotated element no longer forces a redesign to avoid overflow.
+
 **UI performance:** UI updated every frame (health bars, timers) must not trigger layout recalculation of large trees — isolate hot elements in their own container. Tween properties, don't re-create elements. Set `Visible = false` on hidden panels (invisible ≠ free if still being laid out); destroy screens you won't reopen.
 
 ## Cross-Platform UX
 
 Assume every game runs on touch, gamepad, and mouse/keyboard unless the user says otherwise.
 
-- **Input:** Input Action System (or `ContextActionService` in legacy projects) per [patterns.md](patterns.md#input-client) — never branch on `UserInputService.TouchEnabled` to build three separate input systems.
+- **Input:** Input Action System (or `ContextActionService` in legacy projects) per [patterns.md](patterns.md#input-client) — never branch on `UserInputService.TouchEnabled` to build three separate input systems. The **Input Action Manager [Beta]** is a Studio-side visual editor for building and auditing cross-platform mappings; it complements the runtime API rather than replacing it. Under Server Authority the Input Action System is mandatory ([server-authority.md](server-authority.md)).
 - **Gamepad/console:** every interactive GuiObject reachable via `Selectable`/`NextSelectionUp/Down/Left/Right`; set `GuiService.SelectedObject` when opening a menu; test that focus never traps.
 - **Touch:** minimum ~44 px effective touch targets; keep actions away from screen edges reserved by the OS; `ContextActionService`-created touch buttons for gameplay actions.
 - Detect the *active* input type via `UserInputService:GetLastInputType()` + `LastInputTypeChanged` to swap prompt icons (keyboard "E" vs gamepad "X" vs touch button) — players switch mid-session.

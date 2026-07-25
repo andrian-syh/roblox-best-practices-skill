@@ -55,15 +55,14 @@ Character physics is client-owned; validate *outcomes*, not inputs:
 
 ## Server Authority (engine-level)
 
-Roblox offers an **engine-level server-authoritative mode** that moves physics simulation and movement validation onto the server, closing the client-owned-movement gap that the manual sanity checks above only *mitigate*. When a project opts in:
+Roblox offers an **engine-level server-authoritative mode** [GA, 9 July 2026] that moves physics simulation and movement validation onto the server, closing the client-owned-movement gap that the manual sanity checks above only *mitigate*.
 
-- **Input flows through the Input Action System.** Clients send `InputAction` state, which the server replays during client-side resimulation. Route every input that affects the core simulation through InputActions, and still sanity-check it before acting — server-authoritative transport is not the same as trusted intent.
-- **Do not drive core simulation from `UserInputService.InputBegan`** in this mode; reserve raw input for UI and purely cosmetic client effects.
-- **Attribute state has a replication budget:** first 64 attributes on the instance, name ≤ 50 characters, string value ≤ 50 characters ([patterns.md](patterns.md#behavior-binding-works-with-any-framework)).
-- **`Player:GetCameraState()`** synchronizes camera state between client and server where the camera is relevant to authority.
-- It is opt-in and still evolving — verify availability and behavior in the target place ([api-currency.md](api-currency.md)) before designing around it. Where it is not used, the manual validation layers above stay the baseline.
+**It is off by default.** Roblox does not enable it for you; a place has it only if `Workspace.AuthorityMode = "Server"` was set explicitly. Confirm the mode before assuming either way — the gate, the full behavior contract, and the with/without comparison live in [server-authority.md](server-authority.md).
 
-Server Authority *strengthens* Non-Negotiable #1; it does not replace validation. Even under engine authority, remote handlers and input consumers still validate type, range, ownership, and rate.
+Two rules hold regardless of mode:
+
+- Server Authority *strengthens* Non-Negotiable #1; it does not replace validation. Remote handlers and input consumers still validate type, range, ownership, and rate — server-authoritative transport is not the same as trusted intent.
+- Where it is **not** enabled, the manual movement and physics sanity checks above remain the baseline, and using them is correct rather than outdated.
 
 ## Purchases
 

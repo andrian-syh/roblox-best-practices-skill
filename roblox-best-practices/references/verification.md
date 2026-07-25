@@ -12,10 +12,18 @@ How to prove a change actually works — in the running engine, not just by read
 
 ## Studio-native / MCP environments
 
-- **Command-bar VM isolation (critical pitfall).** The Studio command bar — and MCP tools that execute Luau in the same plugin/command context — runs in a **separate Luau VM** from game scripts. `require()` there creates a *fresh instance* of the module with its own empty state: asserting on it tells you nothing about the running game, and calling its init/setup functions can double-register handlers on real shared resources (remotes, tags). Never assert game state through a command-bar `require`.
+- **Command-bar VM isolation (critical pitfall).** The Studio command bar — and an MCP Luau-execution tool running in the **Edit** context — uses a **separate Luau VM** from game scripts. `require()` there creates a *fresh instance* of the module with its own empty state: asserting on it tells you nothing about the running game, and calling its init/setup functions can double-register handlers on real shared resources (remotes, tags). Never assert game state through a command-bar `require`. Where the execution tool offers Client or Server contexts during a running session, those reach the live VMs; the Edit context does not. Tool-side rules: [studio-mcp.md](studio-mcp.md#the-edit-context-vm-trap).
 - **Inject test scripts into the game VM instead.** Write the test as a real `Script` (in `ServerScriptService`) or `LocalScript` (in a player's `PlayerGui`) whose `Source` is set from the command/plugin context — those run in the game's VM and share the game's module registry, so `require` returns the live module instances.
-- **Play mode discards its changes.** Instances created *during* a play session are discarded when the session stops — injected play-mode test scripts clean themselves up. Anything injected in edit mode must be deleted manually afterward.
+- **Play mode discards its changes.** Instances created *during* a play session are discarded when the session stops — injected play-mode test scripts clean themselves up. Anything injected in edit mode must be deleted manually afterward. The same property makes play mode the wrong place to do authoring work: real edits made while playtesting are lost when play stops ([studio-mcp.md](studio-mcp.md#irreversible-operations)).
 - Outbound network calls from a command-bar-required networking module can still be useful: the *traffic* reaches the real server handlers. What is invalid is asserting on the fresh module's local state.
+
+## Newer verification levers
+
+Confirm availability in the target environment before relying on these ([api-currency.md](api-currency.md)).
+
+- **Studio CLI** — drives Studio from the command line; `--task RunScript` executes a script and `--openScriptPath` opens Studio at a specific script. This makes scripted, repeatable verification runs possible without hand-driving the UI. The command-bar VM caveat above still applies to whatever the script does.
+- **`ScriptDebuggerService` [Beta]** — programmatic debugging from Luau: conditional breakpoints, logpoints, call-stack and variable inspection, and execution control. Useful for pinpointing a failure that logging alone cannot localize. Being Beta, it is a debugging aid, not something to build a permanent test harness on.
+- **Studio Script Sync** — scripts edited as files in an external editor with bidirectional sync. Verification still happens in a Studio session; the editor is only the authoring surface.
 
 ## Rojo / filesystem environments
 

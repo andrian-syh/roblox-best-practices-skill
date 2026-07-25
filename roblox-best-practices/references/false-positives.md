@@ -77,11 +77,36 @@ A remote handler that type-checks its arguments and **early-returns on bad input
 - `WaitForChild` **without** a timeout on always-replicated containers (`ReplicatedStorage`, `PlayerGui`, the local player's `PlayerScripts`) is fine — those always arrive. Do not flag them.
 - Only flag a missing timeout on **workspace descendants under StreamingEnabled**, where the instance may never stream in. See [patterns.md](patterns.md#streaming-streamingenabled).
 
+### Newer APIs — do not flag what simply postdates your memory
+
+Every engine release creates a fresh crop of "that API does not exist" false positives. Check [api-currency.md](api-currency.md) before doubting any of these:
+
+- **`InstanceHandle` attributes** — an attribute *can* hold an Instance reference [Beta]. `GetAttribute` returning a handle rather than the Instance is the design, not a bug.
+- **CCL instances and properties** (`ControllerManager`, `GroundController`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) — all real. Equally, a project still using `Humanoid` is correct; `Humanoid` is not deprecated.
+- **`Player:GetCameraState()`**, `GroupService:GetRolesInGroupAsync`, `game.ServerRestartScheduled`, DataStore version APIs, `Model.ModelStreamingMode` — all shipped.
+- **`vector` library, `buffer.readbits`/`writebits`, `math.map`/`lerp`/`isnan`/`isinf`/`isfinite`** — all shipped Luau.
+
+### MCP tooling — not the code under review
+
+How the agent drove its own tools is not part of the codebase. Do not report tool choices, MCP call sequences, or the contents of a throwaway execution snippet as findings against the project. Equally, never claim an MCP tool does not exist because it is absent from this skill's snapshot — the connected tool list is the authority ([studio-mcp.md](studio-mcp.md#ground-truth-rules)).
+
+### Authority mode — establish it before judging movement, input, or camera code
+
+Server Authority is **off by default**. Code is only wrong *relative to the mode the place is actually in*:
+
+- Do **not** flag a project for not using Server Authority. It carries a real server CPU cost and forces StreamingEnabled, deferred signals, and fixed simulation; declining it is a legitimate design decision.
+- Do **not** flag `BindToSimulation` in a confirmed Server Authority project — it is required there for custom gameplay logic.
+- Do **not** flag `UserInputService` or `ContextActionService` in a non-SA project — they are correct outside Server Authority.
+- Do **not** flag manual movement plausibility checks as obsolete in a non-SA project — they are the baseline there.
+
+Full comparison of both paths: [server-authority.md](server-authority.md).
+
 ### Typing — do not flag the project for tools it does not use
 
 - Do not flag old-type-solver projects for lacking new-solver features (`keyof`, user-defined `type function`, `issubtypeof`) — verify the solver first ([api-currency.md](api-currency.md)).
 - A `::` cast that **follows a proven runtime check** (`value :: string` after `typeof(value) == "string"`) is a valid narrow, not a suppressed error.
 - Do not add or demand `--!strict` — it is opt-in per [SKILL.md](../SKILL.md#language--style-rules); requiring it is a user decision, and forcing it can surface false type errors against loosely-typed engine APIs.
+- **A quiet `--!nonstrict` file is not a gap.** The new solver's nonstrict mode reports only *definite* runtime errors by design; silence means it found none, not that type checking is missing. Likewise `--!nocheck` is a valid project choice, not a safety violation.
 - Never flag `pairs`/`ipairs`, nor `Heartbeat` vs `PostSimulation` naming — both forms are valid.
 
 ### Deprecated vs. discouraged — do not conflate them

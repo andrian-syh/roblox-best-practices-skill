@@ -8,7 +8,17 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 - **Share types through a dedicated types module:** `export type Loadout = { ... }` in one ModuleScript, consumed as `Types.Loadout` on both server and client — one definition, zero drift.
 - **The cast operator `::` silences the checker — treat every cast as a claim you must have already proven.** Cast to *narrow* after a runtime check (`value :: string` after `typeof(value) == "string"`), never to force incompatible shapes through. An unchecked cast is a suppressed error, not a fix.
 - Generics (`local function first<T>(list: {T}): T?`) and type packs (`T...`) beat `any` in reusable utilities.
-- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them. All of these require the **new type solver** — verify it is enabled in the target place before use ([api-currency.md](api-currency.md)), and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
+- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them (`issubtypeof` landed in Luau 0.724, June 2026). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
+
+### The new type solver — what is on by default
+
+Reached **[GA] general release on 20 November 2025**. It is a rewrite, not a tweak: better inference, fewer false positives, read-only table properties, refinements that track variable changes, type functions, and relaxed casting rules.
+
+- **Default for `--!nocheck` and `--!nonstrict`** for all users. Projects on those modes are already using it.
+- **`--!strict` stays on the old solver by default** and must opt in explicitly. The old solver remains available through 2026 for migration.
+- Configure per place with the workspace properties **`UseNewLuauTypeSolver`** and **`LuauTypeCheckMode`** (nocheck / nonstrict / strict).
+- **`nonstrict` was redesigned to report only definite runtime errors**, not speculative warnings. A nonstrict file that stays quiet is behaving correctly — never flag that as missing type safety.
+- It is **not fully backwards compatible**: enabling it under strict mode on a large existing codebase can surface a wall of new errors. That is a migration project the user chooses, never something this skill starts on its own ([SKILL.md](../SKILL.md#language--style-rules)).
 
 ## Modern idioms
 
@@ -24,6 +34,14 @@ Confirmed available per [api-currency.md](api-currency.md) — use them, and don
 - **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, and `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`. Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
 - **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns.md](patterns.md#data-persistence)).
+
+### Compiler and analysis changes worth knowing (2026)
+
+- **Immediately invoked lambdas are now inlined** — the `(function() ... end)()` idiom no longer carries a call-overhead penalty, so use it freely where it improves scoping.
+- **Refinements survive loops** — a narrowed type stays narrowed across loop iterations, removing a common source of spurious "possibly nil" errors.
+- Improved inference for function arguments passed as table literals, and a `math.round` fix for negative zero.
+
+Not applicable to Studio work, despite appearing in Luau release notes: the embedder **C API** additions (`lua_memorydump`, `lua_callhook`, and similar), **double-precision vector** builds (a VM build-time option), and **require-by-string / `@self`** (standalone runtimes; Studio resolves modules through Instances). Do not recommend these for a Roblox project.
 
 ## Scheduling: the task library
 

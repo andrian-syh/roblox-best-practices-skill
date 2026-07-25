@@ -1,47 +1,68 @@
 # API Currency — Confirmed Baseline for "Verify First"
 
-The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm a newer API exists in the target environment before relying on it, and never flag an API as nonexistent from memory. This file is the **baseline that rule reads against** — a dated list of what is already confirmed, so the agent stops re-litigating mapped APIs while still verifying the genuinely bleeding-edge.
+The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm a newer API exists in the target environment before relying on it, and never flag an API as nonexistent from memory. This file is the **baseline that rule reads against** — a dated list of what is already confirmed, so the agent stops re-litigating shipped APIs while still verifying the genuinely bleeding-edge.
 
-**Snapshot basis:** Luau Recap 2025 (December 2025) and engine Release Notes through **v728**, cross-checked via context7 against `luau-lang` docs and `create.roblox.com`. Treat everything here as *available unless the target environment proves otherwise*; treat anything post-dating this snapshot as *verify before use*.
+**Snapshot basis: July 2026.** Sources: Luau releases through **0.731** (24 July 2026), the Luau 2025 runtime recap, and Roblox announcements through late July 2026.
 
-**Authority order when a claim is in doubt:** create.roblox.com Engine API Reference (primary) → the API dump / `ReflectionService` → a quick in-Studio test. Absence from this file is **not** evidence an API is missing — Roblox ships continuously; this list only removes friction, it never overrides the docs.
+**Maturity tags:** **[GA]** generally available, safe as a default · **[Beta]** opt-in and may change, document as an option but never make it the default · **[Verify]** confirm in the target place before relying on it · **[UNVERIFIED]** this skill could not confirm it; treat with suspicion.
 
-## Confirmed available — Luau language & libraries
+**Authority order when a claim is in doubt:** create.roblox.com Engine API Reference (primary) → the API dump / `ReflectionService` → a quick in-Studio test. Absence from this file is **not** evidence an API is missing — Roblox ships continuously; this list removes friction, it never overrides the docs.
 
-| Area | Confirmed | Notes |
+## Luau language and libraries
+
+| Area | Status | Notes |
 |---|---|---|
-| `vector` library | `vector.create`, `.x/.y/.z`, `vector.zero/one`, `magnitude`, `normalize`, `dot`, `cross`, `angle` | Native, SIMD-backed; complements engine `Vector3` |
-| `buffer` library | `create`/`fromstring`/`tostring`/`len`, typed read/write, `copy`, `fill`, and **`readbits`/`writebits`** | Binary data and network serialization |
-| `math` additions | `math.map`, `math.lerp`, `math.isnan`, `math.isinf`, `math.isfinite` | |
-| Native codegen | `--!native` (module) and the `@native` function attribute | Costs memory; use on genuinely compute-heavy code |
-| Modern syntax | String interpolation, generalized `for k,v in t`, `continue`, compound assignment, `//`, if-expressions, `table.freeze` | All stable |
-| Scheduling | `task.spawn`/`defer`/`delay`/`wait`/`cancel` | The `wait`/`spawn`/`delay` globals remain deprecated |
+| `vector` library (`create`, `magnitude`, `normalize`, `dot`, `cross`, `angle`, `zero`/`one`) | **[GA]** | Native, SIMD-backed; distinct from the engine `Vector3` datatype |
+| `buffer` library, including `readbits`/`writebits` | **[GA]** | Binary data and network serialization; 1 GB ceiling |
+| `math.map`, `math.lerp`, `math.isnan`/`isinf`/`isfinite` | **[GA]** | |
+| Native codegen `--!native` and the `@native` function attribute | **[GA]** | Costs memory; reserve for compute-heavy code |
+| Modern syntax (interpolation, generalized iteration, `continue`, compound assignment, `//`, if-expressions, `table.freeze`) | **[GA]** | |
+| `task` library (`spawn`/`defer`/`delay`/`wait`/`cancel`) | **[GA]** | The bare `wait`/`spawn`/`delay` globals remain deprecated |
+| Inlining of immediately invoked lambdas; refinements preserved across loops | **[GA]** | Luau 0.730–0.731, July 2026 |
+| New type solver | **[GA]** default for `nocheck`/`nonstrict`; **opt-in** for `strict` | Configure via `UseNewLuauTypeSolver` and `LuauTypeCheckMode`; old solver available through 2026 ([luau-language.md](luau-language.md#the-new-type-solver--what-is-on-by-default)) |
+| User-defined `type function`, `keyof`, `issubtypeof` | **[Verify]** — requires the new solver | `issubtypeof` implemented in Luau 0.724 (June 2026) |
 
-## Confirmed available — engine
+**Not applicable to Roblox Studio** despite appearing in Luau release notes: embedder C APIs (`lua_memorydump`, `lua_callhook`, ...), double-precision vector builds, and require-by-string / `@self`.
 
-| Area | Confirmed | Notes |
+## Engine
+
+| Area | Status | Notes |
 |---|---|---|
-| Server Authority | Engine-level server-authoritative movement/physics + Input Action System resimulation | See [security-monetization.md](security-monetization.md#server-authority-engine-level); attribute replication is limited (first 64 attributes, ≤50-char names, ≤50-char string values) |
-| Camera sync | `Player:GetCameraState()` | Client↔server camera state in server-authoritative games |
-| Groups | `GroupService:GetRolesInGroupAsync(userId, groupId)` | Multi-role; **deprecates** `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` |
-| Audio | Acoustic simulation with independent **Occlusion** and **Reverb** subcategories | |
-| Logging | Structured `LogService` `Info`/`Warn`/`Error` with context; instances render via `GetFullName()`; caught errors suppressed under `pcall` | Prefer over `print` spam |
-| Data | DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`), `ListKeysAsync`, `DataStoreGetOptions`; `game.ServerRestartScheduled` | See [patterns.md](patterns.md#data-persistence) |
-| Streaming | `Model.ModelStreamingMode`, `Player:RequestStreamAroundAsync`, tag added/removed signals | See [patterns.md](patterns.md#streaming-streamingenabled) |
-| Bans | `Players:BanAsync`/`UnbanAsync` with `ExcludeAltAccounts`, `ApplyDeviceBlock`, `ApplyToUniverse` | |
+| Server Authority (`Workspace.AuthorityMode`) | **[GA]** 9 July 2026 | **Off by default.** Full contract and the confirmation gate: [server-authority.md](server-authority.md) |
+| `Player:GetCameraState()` | **[GA]** | Returns CFrame, FieldOfView, ViewportSize; replaces the deprecated InputContext/InputAction camera replication path |
+| Character Controller Library (`ControllerManager`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) | **[GA]** April 2026 | `Humanoid` is **not** deprecated; CCL is a choice ([patterns.md](patterns.md#humanoid-vs-the-character-controller-library)) |
+| Input Action System | **[GA]** | Mandatory under Server Authority |
+| Animation Graphs | **[GA]** July 2026 | |
+| Studio Script Sync (external editors, bidirectional) | **[GA]** June 2026 | A third project environment alongside Studio-native and Rojo |
+| Studio CLI (`--task RunScript`, `--openScriptPath`) | **[Verify]** | Verification lever ([verification.md](verification.md#newer-verification-levers)) |
+| `GroupService:GetRolesInGroupAsync(userId, groupId)` | **[GA]** | Deprecates `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` |
+| Structured `LogService` `Info`/`Warn`/`Error` | **[GA]** | Instances render via `GetFullName()`; caught errors suppressed under `pcall` |
+| DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`, `ListKeysAsync`) | **[GA]** | |
+| Unified DataStore limits and raised storage | **[Verify]** — effective **29 July 2026** | Numbers in [limits-budgets.md](limits-budgets.md#data-stores) |
+| Streaming (`Model.ModelStreamingMode`, `Player:RequestStreamAroundAsync`) | **[GA]** | |
+| `Players:BanAsync`/`UnbanAsync` (`ExcludeAltAccounts`, `ApplyDeviceBlock`, `ApplyToUniverse`) | **[GA]** | |
+| `game.ServerRestartScheduled` | **[GA]** | Now also fires on delayed restarts |
+| Analytics: Client CPU Time Breakdown | **[GA]** | Scripts / Networking / Physics / Animation / Misc |
+| `InstanceHandle` attributes (Instance references) | **[Beta]** 23 July 2026 | Option, not a default ([patterns.md](patterns.md#behavior-binding-works-with-any-framework)) |
+| `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
+| Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |
+| Acoustic simulation with Occlusion/Reverb subcategories | **[UNVERIFIED]** | Engine release notes indicate it shipped; the 2026 roadmap lists acoustic simulation as later-2026 work. Confirm before relying on it |
+| Current engine release-notes version number | **[UNVERIFIED]** | The release-notes index could not be read (JS-rendered, absent from the docs index). Do not cite a version number from this skill |
 
-## Gated — verify the specific gate before use
+## Studio MCP tooling
 
-- **New type solver features** (`keyof`, user-defined `type function`, `issubtypeof`, other type-function built-ins): available **only when the new type solver is enabled** in the target place. Do not flag their absence in old-solver projects, and do not rely on them without confirming the solver.
-- **Require-by-string / `Luau.Require`**: a standalone-runtime feature (Lune and other embeddings), **not** how Roblox Studio resolves modules — Studio uses instance-based `require`. Do not port require-by-string idioms into a Studio project.
-- **Anything newer than v728 / the Dec 2025 recap**: verify against the live docs; this snapshot does not cover it.
+Tool names, limits, and variants are recorded in [studio-mcp.md](studio-mcp.md) as a **July 2026 snapshot only**. Unlike engine APIs, the MCP surface has no single authority: the official built-in server, the older standalone Rust server, and community forks all expose different tools. **The connected tool list and each tool's own schema always override that file.** Never assert that an MCP tool does or does not exist based on this skill.
 
-## Newly deprecated since this skill last set its baseline
+## Deprecated (report as findings)
 
-- `Player:GetRankInGroupAsync()` and `Player:GetRoleInGroupAsync()` → `GroupService:GetRolesInGroupAsync()`.
+- `wait`/`spawn`/`delay`, `tick`, lowercase `:connect`/`:wait`
+- `Body*` movers, `Humanoid:LoadAnimation`, `Part.Velocity`/`RotVelocity`
+- `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame`, `Camera.CoordinateFrame`
+- `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`
+- InputContext/InputAction camera replication → `Player:GetCameraState()`
 
-Add to the deprecated-API list in [SKILL.md](../SKILL.md#language--style-rules); see the deprecated-vs-discouraged split in [false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
+Discouraged-but-functional APIs are **not** in this list; the split is in [false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
 
 ## Maintaining this file
 
-When a new engine/Luau release confirms an API this skill previously told the agent to verify, move it into a Confirmed table and bump the snapshot basis line. Keep it a *baseline*, not a changelog: one row per capability, newest snapshot wins.
+When a release confirms an API this skill previously told the agent to verify, move it to the correct maturity tag and update the snapshot line. Keep it a *baseline*, not a changelog: one row per capability, newest snapshot wins. Never invent a date or version number — if it could not be confirmed, mark it **[UNVERIFIED]**.

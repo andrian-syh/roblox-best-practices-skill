@@ -31,7 +31,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - Client predicts (muzzle flash, tracer, hit-marker immediately), server confirms (damage, kill). Reconcile visibly wrong predictions quietly.
 - `UnreliableRemoteEvent` for tracers/VFX/footsteps; reliable remotes for damage events.
 - Anti-cheat sanity checks ([security-monetization.md](security-monetization.md)): speed/teleport deltas, fire-rate caps, ammo accounting — all server-side.
-- Where the project uses engine **Server Authority**, movement validation moves onto the server and inputs flow through the Input Action System ([security-monetization.md](security-monetization.md#server-authority-engine-level)) — prefer it over hand-rolled movement checks when it is available.
+- **Confirm the authority mode before designing the netcode.** Server Authority is [GA] but **off unless the place enables it**; under it, movement validation is engine-side and inputs flow through the Input Action System, while without it the manual checks above are the correct baseline. Both paths: [server-authority.md](server-authority.md). This genre is the strongest candidate for adopting it.
 - Character physics is client-owned by design; never trust reported positions for hit *validation*, only for display.
 - Fixed-rate combat logic (`RunService` Heartbeat with accumulated dt; `BindToSimulation` only for synchronized physics/prediction code under `Workspace.UseFixedSimulation` — see [performance.md](performance.md)) so higher-FPS clients gain no advantage.
 
@@ -43,6 +43,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - Animation-driven hitboxes are validated server-side by **timing windows** (the attack's active frames plus a lag allowance) and spatial checks (range, facing) — never by client-reported hits alone, and never by trusting the client's animation state.
 - M1 chains and ability casts: per-action rate limits with cooldowns checked server-side; buffer at most one queued input — deeper input queues become macro exploits.
 - Ragdolls: physics runs on the network owner for smoothness, but ragdoll *state* (start, duration, recovery) is server-authoritative so a client can't cancel its own stun.
+- Engine **Server Authority** suits this genre, but check the **8 animation tracks per Animator** ceiling first — layered combat animation hits it fast ([server-authority.md](server-authority.md#known-limitations-as-of-ga)).
 
 ## Obby / Platformer
 

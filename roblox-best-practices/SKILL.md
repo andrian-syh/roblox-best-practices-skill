@@ -11,22 +11,49 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 ## Reference Routing
 
-Load only what the situation needs:
+**Load only what the situation needs.** Each reference is self-contained; read one, not the set. Everything below stays unloaded until a row matches the task at hand.
+
+**Authoring**
 
 | Situation | Read |
 |---|---|
 | Writing a new Script/LocalScript/ModuleScript | [references/templates.md](references/templates.md) |
 | Existing codebase with its own conventions (Adaptive mode) | [references/adaptive-mode.md](references/adaptive-mode.md) |
 | Project uses community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) | [references/community-libraries.md](references/community-libraries.md) |
+| Typing depth, standard-library additions (vector/buffer/math), new type solver, task.spawn vs task.defer, deferred events, error handling, time APIs, native codegen | [references/luau-language.md](references/luau-language.md) |
+
+**Implementing a known system** (read the one file whose domain matches; recipes give assembly order and case-specific failure modes)
+
+| Building | Read |
+|---|---|
+| Player data, currency, inventory, trading | [references/cases/data-economy.md](references/cases/data-economy.md) |
+| Developer Products, passes/subscriptions, gacha/loot boxes | [references/cases/monetization.md](references/cases/monetization.md) |
+| Leaderboards, daily rewards, streaks, offline progress | [references/cases/progression.md](references/cases/progression.md) |
+| Damage/hit validation, abilities and cooldowns, projectiles, NPC/mob AI | [references/cases/combat.md](references/cases/combat.md) |
+| Round/match lifecycle, matchmaking and reserved servers, cross-server events | [references/cases/session-flow.md](references/cases/session-flow.md) |
+| Interactables and prompts, placement/building, pets and followers | [references/cases/world-interaction.md](references/cases/world-interaction.md) |
+| HUD/state sync, rate limiting and anti-cheat, analytics instrumentation | [references/cases/client-infra.md](references/cases/client-infra.md) |
+
+**Deepening a concern**
+
+| Situation | Read |
+|---|---|
 | Hot loops, memory, network traffic, rendering, profiling | [references/performance.md](references/performance.md) |
-| Data stores (+ version history), remotes, cleanup, pooling, input, character lifecycle, streaming, cross-server, anti-patterns | [references/patterns.md](references/patterns.md) |
-| Purchases, anti-exploit, Server Authority, remote validation depth, text filtering, policy compliance | [references/security-monetization.md](references/security-monetization.md) |
+| Data stores (+ version history), remotes, cleanup, pooling, input, character lifecycle (Humanoid vs CCL), streaming, cross-server, anti-patterns | [references/patterns.md](references/patterns.md) |
+| Purchases, anti-exploit, remote validation depth, text filtering, policy compliance | [references/security-monetization.md](references/security-monetization.md) |
+| Anything touching movement, physics, input, camera, animation timing, `BindToSimulation`, or network ownership | [references/server-authority.md](references/server-authority.md) |
 | UI/UX, cross-platform, testing, debugging, telemetry | [references/ui-ux-testing.md](references/ui-ux-testing.md) |
-| Typing depth, standard-library additions (vector/buffer/math), task.spawn vs task.defer, deferred events, error handling, time APIs, native codegen | [references/luau-language.md](references/luau-language.md) |
+| Genre is known (simulator, FPS, obby, RPG, racing, horror, social, tower defense, battlegrounds) | [references/genres.md](references/genres.md) |
+
+**Checking yourself**
+
+| Situation | Read |
+|---|---|
 | Verifying that a change works (playtest workflow, test injection, command-bar VM pitfall) or verifying a review finding | [references/verification.md](references/verification.md) |
+| Working through a Roblox Studio MCP connection — which tool to use, what is irreversible, and how not to burn tokens | [references/studio-mcp.md](references/studio-mcp.md) |
 | Reviewing code — deciding whether a finding is real and how severe, and what NOT to flag | [references/false-positives.md](references/false-positives.md) |
 | Whether a newer engine/Luau API is confirmed available before relying on it or flagging it as missing | [references/api-currency.md](references/api-currency.md) |
-| Genre is known (simulator, FPS, obby, RPG, racing, horror, social, tower defense, battlegrounds) | [references/genres.md](references/genres.md) |
+| Designing against a platform ceiling (DataStore size/requests, MemoryStore, messaging, attributes, animation tracks) | [references/limits-budgets.md](references/limits-budgets.md) |
 
 ## User Authority
 
@@ -87,6 +114,26 @@ Adaptive-mode procedure (analysis checklist, confirmation format, precedence rul
 
 Also determine, once, whether the project uses community libraries that replace built-in APIs — ask the user (*"Does this project use community libraries such as ProfileStore/ProfileService for data, Packet/ByteNet for networking, Trove/Maid for cleanup, Knit/Flamework, Fusion/React-lua, ...?"*) or, in autonomous runs, detect them by scanning `require()`s. If any are in use, read [references/community-libraries.md](references/community-libraries.md) and defer the overlapping built-in patterns to the library — library idioms win for the concern they own; the Non-Negotiable Runtime Rules still hold through them.
 
+### Server Authority check (part of mode selection)
+
+Engine-level **Server Authority** is [GA], but **Roblox does not enable it by default** — a place is server-authoritative only if someone set `Workspace.AuthorityMode = "Server"`. Most places are not. Assuming the wrong mode produces confidently wrong code and false review findings, because the correct answer for input, camera, simulation stepping, and movement anti-cheat *inverts* between the two modes.
+
+**Trigger topics.** The first time a task touches any of these, resolve the mode before writing or flagging anything: character movement or physics · input handling · camera control · animation timing · `BindToSimulation` · network ownership · hit registration or lag compensation · movement anti-cheat.
+
+**Procedure:**
+1. **Detect first.** Read `Workspace.AuthorityMode` where the environment allows it, or scan the project for `AuthorityMode`, `BindToSimulation`, and Input Action usage.
+2. **If undetermined, ask once:** *"Does this place have Server Authority enabled (`Workspace.AuthorityMode = "Server"`)? It changes how input, camera, and the gameplay loop must be written."*
+3. **Cache the answer for the session**, exactly like the community-library check. Do not re-ask per file.
+4. **Default assumption is OFF.** Never write Server Authority-only advice as if it were universal.
+
+| Supervision level | Behavior |
+|---|---|
+| Supervised (`!ask`) | Always ask |
+| Balanced (`!bal`) | Ask once, at the first SA-adjacent task |
+| Autonomous (`!go`) | Detect; if inconclusive, assume **not** server-authoritative and record the assumption in the summary |
+
+Both code paths, the forced settings, known limitations, and the adoption trade-off: [references/server-authority.md](references/server-authority.md). Never migrate a project to Server Authority on this skill's initiative — recommend, explain the cost, let the user decide.
+
 ### Review/refactor mode
 
 When asked to *review or tidy existing code* (rather than write new code), give every finding exactly one severity — **Blocker** (security, data loss, or a guaranteed leak), **Correctness** (a real bug with a concrete failure scenario), or **Advisory** (style, layout, or micro-optimization). Before reporting anything, run it through [references/false-positives.md](references/false-positives.md): the "what NOT to flag" catalog, the severity taxonomy, and the four-step confidence gate.
@@ -99,8 +146,9 @@ When asked to *review or tidy existing code* (rather than write new code), give 
 
 ## Environment & Scale
 
-- **Detect the project environment first:** Studio-native (work through Studio/MCP tools; paths are Instance paths) vs Rojo/filesystem (work through files; requires may use path aliases and `src/` layout maps to services). Match how you read, write, and reference scripts accordingly.
-- **Verify newer APIs before use** (`BindToSimulation`, `UIShadow`, Input Action System, structured `LogService`, ...) — check they exist in the target environment rather than assuming; fall back to the stable equivalent if absent. **The official docs (create.roblox.com — Engine API Reference) are the primary authority**; the API dump/ReflectionService or a quick in-Studio test settle what the docs haven't caught up to. Roblox ships new APIs continuously — absence from your training knowledge is not evidence an API doesn't exist.
+- **Detect the project environment first.** Three exist: **Studio-native** (work through Studio/MCP tools; paths are Instance paths), **Rojo/filesystem** (work through files; requires may use path aliases and `src/` maps to services), and **Studio Script Sync** (scripts edited as files in an external editor with bidirectional sync to Studio — file-based authoring, but the DataModel remains the source of truth and there is no Rojo project file). Match how you read, write, and reference scripts accordingly. When the connection is an MCP one, the tool-safety and token rules in [references/studio-mcp.md](references/studio-mcp.md) apply before any write.
+- **Verify newer APIs before use** — check they exist in the target environment rather than assuming; fall back to the stable equivalent if absent. **The official docs (create.roblox.com — Engine API Reference) are the primary authority**; the API dump/ReflectionService or a quick in-Studio test settle what the docs haven't caught up to. Roblox ships new APIs continuously — absence from your training knowledge is not evidence an API doesn't exist. A dated baseline of what is already confirmed, so you don't re-verify settled APIs: [references/api-currency.md](references/api-currency.md).
+- **Maturity tags.** This skill marks features **[GA]** (safe as a default), **[Beta]** (opt-in, may change), **[Verify]** (confirm in the target place), or **[UNVERIFIED]** (this skill could not confirm it). **Never make a [Beta] feature the default in production code** — present it as an option, state its status, and keep the stable path as the recommendation unless the user chooses otherwise.
 - **Scale the ceremony to the script.** Tiny scripts (< ~40 lines) may use just the three top-level headers with no subsections; only add level-2+ headers when a section has enough content to need them. Never emit empty placeholder headers. **Pure data/type modules** (config tables, item catalogs, shared type definitions — no runtime logic) are exempt from the three-section layout entirely; group their contents however reads best.
 
 ## Script Section Layout (MANDATORY)
@@ -189,7 +237,7 @@ Full annotated templates (Script, LocalScript, ModuleScript): see [references/te
 - **Type safety is opt-in.** Do not add `--!strict` (or raise a file's strictness) on your own initiative — it requires an explicit request from the user. When a file or the surrounding project already declares a strictness level, match it for consistency, but never introduce or upgrade strictness unbidden; forcing strict can surface false type errors against loosely-typed engine APIs. Where strict is in use, type-annotate public function signatures, Configuration constants, and State tables.
 - **Naming:** `PascalCase` for services and required module tables; `camelCase` for local variables, functions, and Instance references (`purchaseRemote`, `coinLabel`); `UPPER_SNAKE_CASE` for Configuration constants. Module public methods `PascalCase` (`Inventory.AddItem`), private functions `camelCase`.
 - Always `game:GetService()` — never `game.Workspace`-style direct indexing (exception: `workspace` global is fine).
-- **Never use deprecated APIs:** `wait()`/`spawn()`/`delay()` → `task.wait()`/`task.spawn()`/`task.delay()`; `:connect()`/`:wait()` lowercase → `:Connect()`/`:Wait()`; `Body*` movers (`BodyVelocity`/`BodyGyro`/`BodyPosition`/...) → constraints (`LinearVelocity`, `AlignOrientation`, `AlignPosition`); `Humanoid:LoadAnimation` → `Animator:LoadAnimation`; `Part.Velocity`/`RotVelocity` → `AssemblyLinearVelocity`/`AssemblyAngularVelocity`; `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame` → `PivotTo`/`GetPivot`; `Camera.CoordinateFrame` → `Camera.CFrame`; `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`; `tick()` → the right time API per [references/luau-language.md](references/luau-language.md#time-apis--one-job-each).
+- **Never use deprecated APIs:** `wait()`/`spawn()`/`delay()` → `task.wait()`/`task.spawn()`/`task.delay()`; `:connect()`/`:wait()` lowercase → `:Connect()`/`:Wait()`; `Body*` movers (`BodyVelocity`/`BodyGyro`/`BodyPosition`/...) → constraints (`LinearVelocity`, `AlignOrientation`, `AlignPosition`); `Humanoid:LoadAnimation` → `Animator:LoadAnimation`; `Part.Velocity`/`RotVelocity` → `AssemblyLinearVelocity`/`AssemblyAngularVelocity`; `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame` → `PivotTo`/`GetPivot`; `Camera.CoordinateFrame` → `Camera.CFrame`; `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`; InputContext/InputAction camera replication → `Player:GetCameraState()`; `tick()` → the right time API per [references/luau-language.md](references/luau-language.md#time-apis--one-job-each).
 - **Deprecated is not the same as discouraged.** Setting `Instance.new`'s second `parent` argument (create → set properties → parent last is a *performance* preference), or `FireAllClients` where a targeted list would do, are Advisory choices, not deprecated APIs — don't report them as violations. Full split: [references/false-positives.md](references/false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
 - Guard external/yielding calls (`DataStore`, `MarketplaceService`, `HttpService`, `TeleportService`) with `pcall` and a retry policy. Never let an unprotected yield crash a player flow.
 - One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
@@ -210,6 +258,18 @@ Full annotated templates (Script, LocalScript, ModuleScript): see [references/te
 
 Details, patterns, and numbers: [references/performance.md](references/performance.md) (CPU, memory, network, instances) and [references/patterns.md](references/patterns.md) (data stores, remotes, cleanup, pooling). Before flagging a violation of any of these in review, check the scoped exceptions in [references/false-positives.md](references/false-positives.md) — each rule has shapes that only look like violations.
 
+## System Design Preflight
+
+Before implementing any non-trivial system (not needed for a one-off script or a small edit), settle these five in order. Each has a home; none requires guesswork:
+
+1. **Which case is this?** Match it to a recipe in the Implementing-a-known-system routing block and read that one file. If nothing matches, proceed with the general rules.
+2. **What are the ceilings?** Check [references/limits-budgets.md](references/limits-budgets.md) for the limits this design will approach (payload size, request budget, attribute window, entity counts). Designing into a ceiling is far cheaper than discovering it in production.
+3. **What is the server/client split?** Name what the server owns authoritatively and what the client merely renders or requests, before writing either side.
+4. **Does a library own this concern?** If the project uses ProfileStore, Packet, Trove, Knit, Fusion, or similar, its idioms replace the built-in pattern ([references/community-libraries.md](references/community-libraries.md)).
+5. **How will this be proven to work?** Pick the observable outcome and the session type (multi-client for anything touching replication) up front ([references/verification.md](references/verification.md)).
+
+If the system touches movement, input, camera, animation timing, or simulation stepping, resolve the Server Authority check first — it changes the answers to steps 3 and 5.
+
 ## Review Checklist
 
 Before finishing any Luau code, verify:
@@ -217,6 +277,9 @@ Before finishing any Luau code, verify:
 - [ ] Supervision level respected (inline token > session declaration > Balanced); in Autonomous, all assumptions listed in the summary
 - [ ] Mode determined (default vs adaptive); in adaptive mode, the convention was confirmed by the user before coding (or reported, in Autonomous)
 - [ ] Community libraries identified (asked or detected); overlapping patterns deferred to them
+- [ ] For SA-adjacent work (movement, physics, input, camera, animation timing, `BindToSimulation`, network ownership): authority mode detected or confirmed, never assumed; default is OFF
+- [ ] For a non-trivial system: the five-step System Design Preflight was run, and the matching case recipe read
+- [ ] No [Beta] feature made the default in production code; its status stated wherever it was proposed
 - [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
 - [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
 - [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
