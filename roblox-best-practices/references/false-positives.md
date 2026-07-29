@@ -85,6 +85,9 @@ Every engine release creates a fresh crop of "that API does not exist" false pos
 - **CCL instances and properties** (`ControllerManager`, `GroundController`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) — all real. Equally, a project still using `Humanoid` is correct; `Humanoid` is not deprecated.
 - **`Player:GetCameraState()`**, `GroupService:GetRolesInGroupAsync`, `game.ServerRestartScheduled`, DataStore version APIs, `Model.ModelStreamingMode` — all shipped.
 - **`vector` library, `buffer.readbits`/`writebits`, `math.map`/`lerp`/`isnan`/`isinf`/`isfinite`** — all shipped Luau.
+- **`const` bindings** — a real keyword, live in Studio since April 2026. `const MAX = 100` is not a syntax error and not a typo for `local`. Equally, **do not demand `const`**: a file using `local` throughout is correct, and converting a codebase to `const` is a stylistic sweep only the user can request.
+- **`read` / `write` table members** (`{ read x: number }`), **yielding inside a custom iterator**, and **`declare extern type`** — all shipped upstream. Verify the solver before flagging the first, and never "correct" `declare extern type` back to `declare class`, which was removed.
+- **The `@deprecated` attribute** — real, with optional `use` and `reason`. A project marking its own function deprecated is doing the right thing, not leaving dead code.
 
 ### MCP tooling — not the code under review
 
@@ -125,6 +128,19 @@ Only the **deprecated** column is a Correctness (or Blocker) finding. The **disc
 
 Section-header deviations, subsection ordering, naming casing, module require ordering, and missing doc comments on trivial private helpers are **Advisory**. Propose them; do not report them as violations and do not silently rewrite. Consistency within the file outranks consistency with this skill. In Adaptive mode, the confirmed project convention wins outright.
 
+### Doc comments — one real finding, the rest Advisory
+
+The UDD rules ([SKILL.md](../SKILL.md#2-----functions----)) are **authoring** rules. In review they collapse to a single distinction:
+
+| Situation | Severity |
+|---|---|
+| A description that is **factually wrong** about the contract, or documents behavior the function no longer has | **Correctness** — it will mislead the next reader into a real bug |
+| A description naming the mechanism, or carrying a number/tunable/collaborator that has since drifted | **Advisory** — propose the contract-level rewrite |
+| An over-length in-body comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
+| A doc comment written in the project's own established house style | **Not a finding at all** |
+
+Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. And never delete an existing comment to satisfy the length cap — shorten it, or leave it and propose.
+
 ## Regression set — these must pass a review clean
 
 If a review would flag any of these, the review is over-firing. Each is correct as written.
@@ -155,7 +171,7 @@ buffAppliedBindable.Event:Connect(onBuffApplied) -- BindableEvent: no client-sty
 ```
 
 ```lua
--- Cold path (one-time setup): parent-arg is discouraged, not a violation here.
+-- Cold path setup: parent-arg is discouraged, not a violation here.
 local marker = Instance.new("Part", workspace.Markers)
 ```
 

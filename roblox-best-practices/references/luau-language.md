@@ -8,6 +8,8 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 - **Share types through a dedicated types module:** `export type Loadout = { ... }` in one ModuleScript, consumed as `Types.Loadout` on both server and client — one definition, zero drift.
 - **The cast operator `::` silences the checker — treat every cast as a claim you must have already proven.** Cast to *narrow* after a runtime check (`value :: string` after `typeof(value) == "string"`), never to force incompatible shapes through. An unchecked cast is a suppressed error, not a fix.
 - Generics (`local function first<T>(list: {T}): T?`) and type packs (`T...`) beat `any` in reusable utilities.
+- **Read-only table members** — prefix a property or indexer with `read` to forbid writes through that type: `{ read x: number }` and `{ read [string]: Part }`. Use it on types handed to consumers that should only observe (config snapshots, replicated state views); it documents the contract and the checker enforces it, which is cheaper than a runtime guard. `write` exists as the mirror modifier. Landed in Luau 0.721 (May 2026); requires the new solver for full enforcement, so treat it as **[Verify]** in old-solver projects.
+- **Extern types replace the old `class` tag.** Type declaration files now use `declare extern type`; the `declare class` and `extern class` spellings were removed in Luau 0.727 (June 2026). This only affects hand-written declaration files — ordinary gameplay code never declares extern types. Do not "fix" a project to the old spelling.
 - **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them (`issubtypeof` landed in Luau 0.724, June 2026). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
 
 ### The new type solver — what is on by default
@@ -26,6 +28,35 @@ Reached **[GA] general release on 20 November 2025**. It is a rewrite, not a twe
 - **String interpolation:** `` `Hello {player.Name}` `` over concatenation chains.
 - `continue`, compound assignment (`+=`, `-=`, `*=`, `..=`), floor division (`//`), and `if x then a else b` expressions are standard Luau — use them where they read better.
 - **`table.freeze` constant tables.** Module-level config/constant tables should be frozen at declaration: writes then error at the mutation site instead of silently corrupting shared state. Freezing is *shallow* (nested tables need their own freeze) and checkable with `table.isfrozen`. Don't freeze tables that legitimately mutate.
+- **Yielding inside iterators** is supported since Luau 0.722 (May 2026): a custom iterator function may now yield, so generator-style iteration over paged or async sources no longer has to be rewritten as a manual loop. The yield still costs a frame like any other — do not put one inside a hot loop, and the re-validate-after-yield rule (Non-Negotiable #7) applies to every iteration that yields, not just to the loop as a whole.
+
+### `const` bindings
+
+**[GA] in Roblox Studio since April 2026** (RFC merged February 2026; keyword live in-game and in Studio with no beta flag). `const` is a **contextual keyword**, valid exactly where `local` is valid, so adding it can never break existing code that uses `const` as an identifier.
+
+```lua
+const MAX_HEALTH = 100
+const RETRY_DELAY: number = 0.5
+const Players, ReplicatedStorage = game:GetService("Players"), game:GetService("ReplicatedStorage")
+const function clamp01(n: number): number return math.clamp(n, 0, 1) end
+```
+
+Semantics that matter:
+
+- **It freezes the binding, not the value.** A `const` table is still fully mutable through its fields. `const` is therefore **not** a replacement for `table.freeze` on shared configuration — they solve different problems and pair well: `const CONFIG = table.freeze({ ... })` locks both the name and the contents.
+- **Initialization is required.** A bare `const x` is an error; there is no deferred assignment.
+- **All reassignment is blocked**, including compound forms (`+=`, `..=`).
+- Normal lexical scoping and shadowing apply.
+
+Where to use it: Services, required modules, and Configuration constants — bindings that are never legitimately reassigned, which is most of the VARIABLES section. It makes accidental rebinding in a long file or a closure a compile-time error instead of a debugging session.
+
+Where not to: State Management variables (they exist to change), and **existing files** — retrofitting `const` across a codebase is a stylistic sweep the user must ask for, not something to do while passing through ([SKILL.md](../SKILL.md#user-authority)).
+
+### `export` value semantics
+
+Luau 0.723 (May 2026) implemented export-by-value semantics for modules, extending `export` beyond `export type`. Exported values are **`const` by default**, which is the RFC's stated motivation for introducing `const` at all: it prevents a module reassigning a binding internally while external consumers still observe the original value.
+
+**Status in Roblox Studio is [Verify].** Confirmed in upstream Luau; this skill could not confirm it is live in Studio. Until you verify it in the target place, keep using the standard `local Module = {} ... return Module` shape, which is unaffected and remains correct.
 
 ## Standard library — recent additions
 
@@ -79,7 +110,32 @@ Code that follows the skill's normal rules (connect at setup time, react to even
 
 `tick()` is deprecated (timezone-dependent wall clock) — replace it per the table.
 
-## Native codegen
+## Attributes
+
+Attributes are `@name` annotations placed before a function that adjust compiler, analyzer, or runtime behavior. **They are not user-definable** — only the documented set exists, so never invent one. The parameterized form is `@[name(...)]`, and several attributes may share a single `@[]` block.
+
+Two are documented today:
+
+| Attribute | Parameters | Effect |
+|---|---|---|
+| `@native` | none | Compiles this one function natively. Does **not** apply recursively to nested functions. |
+| `@deprecated` | `use`, `reason` (both optional) | Linter warning at every call site, plus deprecated styling in autocomplete/LSP. |
+
+### `@native` and native codegen
 
 - `--!native` for whole compute-heavy ModuleScripts, per [performance.md](performance.md#cpu) — don't scatter it; it costs memory.
-- The `@native` **function attribute** compiles just one function natively — finer-grained than the whole-script directive; prefer it when a single hot function qualifies. Verify availability in the target environment first.
+- The `@native` **function attribute** compiles just one function natively — finer-grained than the whole-script directive; prefer it when a single hot function qualifies. Because it is not recursive, a hot closure defined *inside* an `@native` function is not itself native; hoist it or annotate it separately.
+
+### `@deprecated`
+
+Use it when retiring a public function in a shared module instead of deleting it mid-migration: callers get a linter warning pointing at the replacement, and nothing breaks at runtime.
+
+```lua
+--[[
+	Grants a player their starting loadout.
+]]
+@[deprecated(use = "Loadout.Grant", reason = "superseded by the loadout module")]
+function Inventory.GiveStarterItems(player: Player)
+```
+
+Two review consequences. Marking a project's own function `@deprecated` is a **suggestion**, never something to add unasked. And a call to an `@deprecated` function is a **Correctness** finding only when the replacement is named and reachable; otherwise it is Advisory ([false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them)).

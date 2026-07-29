@@ -12,7 +12,11 @@ Works with Claude Code, Cursor, Codex, Gemini, Windsurf, Cline, Zed, and any oth
 
 **A review that does not cry wolf.** A severity taxonomy (Blocker, Correctness, Advisory) and a catalog of what *not* to flag: which allocations are actually hot, what does not leak, what is not a trust boundary, and where a discouraged API is simply not a deprecated one. Findings must clear a four step confidence gate before they are reported.
 
-**Current to the July 2026 engine.** Server Authority, the Character Controller Library, the new Luau type solver, `InstanceHandle` attributes, unified data store limits, and the 2026 Luau standard library. Every capability is tagged for maturity, and anything the skill could not confirm is marked as unverified rather than asserted.
+**Current to the July 2026 engine.** Server Authority, the Character Controller Library, the new Luau type solver, `const` bindings, `InstanceHandle` attributes, unified data store limits, and the 2026 Luau standard library. Every capability is tagged for maturity, and anything the skill could not confirm is marked as unverified rather than asserted.
+
+**It knows upstream Luau is not Roblox Studio.** A feature landing in a `luau-lang/luau` release is not a feature you can use in Studio, and the gap can be months. Every language row carries its actual Studio state, and an accepted RFC is recorded as a design rather than an API, so the agent never writes code against something that does not exist yet.
+
+**Rules that survive a summarized session.** Long agent sessions get compacted, and the usual casualty is exactly the guidance that was loaded first. The skill opens with an invariant card the agent is instructed to carry verbatim into any summary, and to re-read the skill whenever that card is no longer in view.
 
 **Platform ceilings in one place.** Data store size and request budgets, memory store quotas, message size caps, attribute windows, animation track limits. The agent checks them while designing, instead of discovering them in production.
 

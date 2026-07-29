@@ -23,7 +23,12 @@ Every remote handler, in order (cheapest check first):
 -- | State Management | --
 local buckets: {[Player]: {[string]: {count: number, windowStart: number}}} = {}
 
--- Returns true if the player is within maxPerWindow calls for the action; false to reject
+--[[
+	Decides whether a player may perform an action under its rate policy.
+
+	@param window Seconds; defaults to 1
+	@return false when the request should be rejected
+]]
 local function allowRate(player: Player, action: string, maxPerWindow: number, window: number?): boolean
 	local now = os.clock()
 	local windowSize = window or 1

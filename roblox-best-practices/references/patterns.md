@@ -44,7 +44,9 @@ end
 `CollectionService` tags decouple behavior from hierarchy — the same script works no matter where instances live:
 
 ```lua
--- Binds lava behavior to every instance tagged "Lava", including streamed-in ones
+--[[
+	Attaches hazard behavior to a part.
+]]
 local function bindLava(part: BasePart)
 	part.Touched:Connect(onLavaTouched)
 end

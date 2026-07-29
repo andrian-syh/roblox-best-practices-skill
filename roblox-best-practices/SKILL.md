@@ -9,6 +9,38 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
+## Session Invariants (must survive compaction)
+
+Long sessions get summarized, and a summary that drops these rules silently downgrades every file written afterwards. The card below is the irreducible core. Two standing obligations:
+
+1. **Carry it forward verbatim.** Any summary, handoff, plan, or task note you produce reproduces this card as-is. It is active instruction, not background context — never compress it into "follow the Roblox skill".
+2. **Re-read before acting when it is gone.** Before writing or reviewing any Luau, if the card's full text is not visible in your current context, re-read this file first. Never reconstruct these rules from memory; a half-remembered layout or doc-comment rule is worse than none, because it looks deliberate.
+
+```text
+ROBLOX LUAU SKILL - INVARIANT CARD
+1  Three sections, this order:
+   -- // VARIABLES // --   Services > Modules > Objects > Configuration > State Management
+   -- // FUNCTIONS // --   definitions only (ModuleScript: Private before Public)
+   -- // INITIALIZATION // --   everything that runs
+2  UDD (doc comments) - every function gets a --[[ ]] block, desc > @param > @return:
+   - Desc <= 100 chars, one sentence, contract-level.
+   - Desc states PURPOSE only. It never names what the body does to get there:
+     no APIs, algorithms, collaborators, data structures, or code paths.
+   - Desc carries NO volatile content: no numbers, thresholds, tunable names,
+     feature names, or anything that needs editing when the body is retuned.
+   - In-body comments <= 75 characters and <= 25 words. They say WHY, not WHAT.
+   - English only. No em dashes. No emoji. Same rules for both comment kinds.
+3  Server is authoritative. Validate every remote arg: type, range, ownership, rate.
+4  Clean up everything created. Every connection has an owner and a teardown path.
+5  No avoidable per-frame garbage. Never poll what has a signal.
+6  UpdateAsync + backoff. Save on PlayerRemoving. Flush on BindToClose.
+7  Re-validate after every yield: player gone? instance dead? session changed?
+8  Never add --!strict unbidden. Never make a [Beta] feature the production default.
+9  User authority outranks this skill. Recommend; never refactor unasked.
+```
+
+Everything below expands these; nothing below overrides them.
+
 ## Reference Routing
 
 **Load only what the situation needs.** Each reference is self-contained; read one, not the set. Everything below stays unloaded until a row matches the task at hand.
@@ -168,8 +200,8 @@ Every script is divided into exactly three top-level sections, in this order:
 Five nesting levels. Use deeper levels only when a section genuinely needs subdivision:
 
 ```lua
--- // Level 1 // --    top-level sections (VARIABLES / FUNCTIONS / INITIALIZATION only)
--- | Level 2 | --      standard subsections (Services, Modules, Private, Public, ...)
+-- // Level 1 // --    top-level sections only (the three below)
+-- | Level 2 | --      standard subsections (Services, Modules, ...)
 -- [ Level 3 ] --      grouping within a subsection
 -- { Level 4 } --      rare, fine-grained grouping
 -- / Level 5 / --      rarest, last resort
@@ -192,23 +224,50 @@ Subsections in this fixed order (omit any that are empty):
 - **ModuleScripts** split functions into `-- | Private | --` (used only inside this script, `local function`) and `-- | Public | --` (exposed on the returned table). Private comes first.
 - **Scripts/LocalScripts** usually skip the Private/Public split — just list functions under the section header (use level-2 headers to group by topic if the script is large).
 - **Every function gets a doc comment**, ALWAYS wrapped in a `--[[ ... ]]` block placed directly above the function — even when the description is a single line. Structure, in this fixed order: **description → params → returns**. Keep the whole block tight: doc comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
-  - **Description** — one concise, technical sentence in clear English, **≤ ~100 characters** (absolute ceiling ~50 words for the rare two-clause case; aim far shorter). Capture the function's *general purpose/contract* — the common, high-level points a reader needs — **NOT** its current implementation: never mention the specific features, APIs, algorithms, or code paths inside the body, so the description survives changes to the body.
+  - **Description** — one concise, technical sentence in clear English, **≤ ~100 characters** (absolute ceiling ~50 words for the rare two-clause case; aim far shorter).
   - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing, and **no em dashes and no emoji** inside doc comments. English only, so developers of any origin can read it.
   - **`@param` / `@return`** — just as terse (a few words each). Include only when they add information beyond what the signature already shows (non-obvious meaning, units, constraints, nil-behavior); omit them entirely when obvious.
 
+#### The two description rules (apply to every comment you write)
+
+These govern the doc-block description **and** every explanatory comment inside a body. They are the two rules most often lost when a session is summarized — they are on the Invariant Card for that reason.
+
+**1. Agnostic to the implementation.** A description states *what the function is for*, never *what it does to get there*. Name the purpose and the contract; do not name the mechanism. Concretely, a description must not mention:
+
+| Never in a description | Because |
+|---|---|
+| Engine/library APIs the body calls | The body gets refactored; the comment quietly becomes a lie |
+| Algorithms, loops, branches, or ordering of steps | That is the code's job, and the reader already has the code |
+| Collaborating modules or services by name | Renaming or swapping a collaborator should not touch this comment |
+| Data structures or field names used internally | Internals are free to change without a contract change |
+
+**2. Free of volatile content.** Nothing that a routine tuning pass would invalidate: no numbers, thresholds, or limits · no names of Configuration constants · no feature, system, or product names that may be renamed · no version, date, or environment specifics. Test it this way: **if someone rebalances a constant or replaces the body, would this comment need editing?** If yes, the comment is carrying volatile detail and must be rewritten at contract level.
+
+**3. In-body comments are capped.** A comment placed among the statements of a function stays **≤ 75 characters and ≤ 25 words**. It explains *why*, never *what* — the code already says what. If the reasoning cannot fit, the function is too complicated or the reasoning belongs in the doc block. Never narrate code line by line, and never let an in-body comment grow into a paragraph.
+
 ```lua
 --[[
-	Applies damage to a character and handles the resulting death state.
+	Applies damage to a character and resolves the resulting state.
 
 	@param amount Damage in health points; must be positive
 	@return true when the damage was lethal
 ]]
 local function applyDamage(humanoid: Humanoid, amount: number): boolean
+	-- Armor is server-owned; the client copy can lag.
 	...
 end
 ```
 
-Anti-example (too implementation-specific — breaks as soon as the body changes): `Subtracts amount from Humanoid.Health, then triggers the ragdoll module if health reaches zero`.
+Rejected descriptions for that same function, and why:
+
+| Rejected | Fault |
+|---|---|
+| `Subtracts amount from Humanoid.Health, then triggers the ragdoll module if health reaches zero` | Describes the mechanism; dies with the next refactor |
+| `Applies damage, capped at 100, after the 0.25 armor multiplier` | Carries tunable numbers; wrong the moment balance changes |
+| `Applies damage by calling DamageService:Resolve` | Names a collaborator; wrong when it is renamed or replaced |
+| `Handles the damage flow for the new combat system` | Names a system that will not stay "new"; says nothing about the contract |
+
+The accepted form survives all four of those changes, because it commits only to the contract: damage goes in, lethality comes out.
 
 - Order functions so dependencies come first (callee above caller) — Luau requires it for locals anyway.
 
@@ -243,7 +302,8 @@ Full annotated templates (Script, LocalScript, ModuleScript): see [references/te
 - One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
 - Prefer `CollectionService` tags + `Attributes` to bind behavior to Instances — this is the most framework-agnostic wiring mechanism and survives any folder structure.
 - **Stay framework-agnostic by construction.** Core logic relies only on standard Roblox services and engine features; a community library's way of doing something is an overlay ([references/community-libraries.md](references/community-libraries.md)), never the baseline. Never assume a folder layout or framework beyond standard services — bind by tags/attributes, discover by service, and let the community-library check (not a hard-coded path) decide which idioms apply.
-- Comments explain *why*, not *what*. Doc comments are terse, technical English (≤ ~100-char descriptions, no em dashes or emoji), always a `--[[ ... ]]` block in desc → params → returns order, with an implementation-agnostic description (see the FUNCTIONS section rules).
+- Comments explain *why*, not *what*. Doc comments are terse, technical English (≤ ~100-char descriptions, no em dashes or emoji), always a `--[[ ... ]]` block in desc → params → returns order. Descriptions are implementation-agnostic and free of volatile detail; in-body comments stay ≤ 75 characters and ≤ 25 words (see the FUNCTIONS section rules).
+- **`const` for bindings that must not be rebound** [GA in Studio, April 2026]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](references/luau-language.md#const-bindings).
 - Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](references/luau-language.md).
 
 ## Non-Negotiable Runtime Rules
@@ -283,7 +343,9 @@ Before finishing any Luau code, verify:
 - [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
 - [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
 - [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
-- [ ] Every function has a `--[[ ... ]]` block doc comment in desc → params → returns order; the description is terse (≤ ~100 chars), technical English with no em dashes or emoji, and general/contract-level (no mention of the body's specifics) so it survives implementation changes
+- [ ] Every function has a `--[[ ... ]]` block doc comment in desc → params → returns order; the description is terse (≤ ~100 chars), technical English with no em dashes or emoji
+- [ ] Every description passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names) — retuning a constant or rewriting the body would not require editing it
+- [ ] Every in-body comment is ≤ 75 characters and ≤ 25 words, and explains why rather than restating what the code already says
 - [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
 - [ ] All connections have an owner and a teardown path; no leaked Instances
 - [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven

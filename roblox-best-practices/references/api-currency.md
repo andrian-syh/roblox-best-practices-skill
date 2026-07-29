@@ -2,27 +2,47 @@
 
 The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm a newer API exists in the target environment before relying on it, and never flag an API as nonexistent from memory. This file is the **baseline that rule reads against** — a dated list of what is already confirmed, so the agent stops re-litigating shipped APIs while still verifying the genuinely bleeding-edge.
 
-**Snapshot basis: July 2026.** Sources: Luau releases through **0.731** (24 July 2026), the Luau 2025 runtime recap, and Roblox announcements through late July 2026.
+**Snapshot basis: 29 July 2026.** Sources: Luau releases through **0.731** (24 July 2026), the Luau 2025 runtime recap (19 December 2025), the Luau RFC repository, and Roblox engine release notes through **731** (24 July 2026).
 
 **Maturity tags:** **[GA]** generally available, safe as a default · **[Beta]** opt-in and may change, document as an option but never make it the default · **[Verify]** confirm in the target place before relying on it · **[UNVERIFIED]** this skill could not confirm it; treat with suspicion.
 
 **Authority order when a claim is in doubt:** create.roblox.com Engine API Reference (primary) → the API dump / `ReflectionService` → a quick in-Studio test. Absence from this file is **not** evidence an API is missing — Roblox ships continuously; this list removes friction, it never overrides the docs.
 
+### Upstream Luau is not Roblox Studio
+
+**A feature shipping in a `luau-lang/luau` release does not mean it is usable in Studio.** Three distinct states, and conflating them is the most expensive mistake this file can cause:
+
+| State | Meaning | How to treat it |
+|---|---|---|
+| **RFC merged** | The design was accepted. Nothing has shipped. | Not an API. Never write code against it. |
+| **Upstream released** | It exists in a numbered Luau release. | Studio gets it later, or never. **[Verify]** unless a Studio source confirms it. |
+| **Live in Studio** | Confirmed working in-game or in Studio. | **[GA]**, safe to use. |
+
+The lag is real and variable: `const` took roughly two months from merged RFC (February 2026) to live in Studio (April 2026). Some upstream features never arrive at all, because they target standalone runtimes. The **Studio** column below records this state explicitly — read it before recommending anything.
+
 ## Luau language and libraries
 
-| Area | Status | Notes |
+| Area | Studio | Notes |
 |---|---|---|
 | `vector` library (`create`, `magnitude`, `normalize`, `dot`, `cross`, `angle`, `zero`/`one`) | **[GA]** | Native, SIMD-backed; distinct from the engine `Vector3` datatype |
 | `buffer` library, including `readbits`/`writebits` | **[GA]** | Binary data and network serialization; 1 GB ceiling |
 | `math.map`, `math.lerp`, `math.isnan`/`isinf`/`isfinite` | **[GA]** | |
-| Native codegen `--!native` and the `@native` function attribute | **[GA]** | Costs memory; reserve for compute-heavy code |
+| Native codegen `--!native` and the `@native` function attribute | **[GA]** | Costs memory; reserve for compute-heavy code. `@native` is **not** recursive into nested functions |
+| `@deprecated` function attribute (optional `use`, `reason`) | **[GA]** | Linter warning at call sites plus autocomplete styling. Attributes are **not** user-definable ([luau-language.md](luau-language.md#attributes)) |
+| **`const` bindings** | **[GA]** April 2026 | Contextual keyword, valid wherever `local` is. Freezes the **binding**, not the value; not a substitute for `table.freeze` ([luau-language.md](luau-language.md#const-bindings)) |
 | Modern syntax (interpolation, generalized iteration, `continue`, compound assignment, `//`, if-expressions, `table.freeze`) | **[GA]** | |
 | `task` library (`spawn`/`defer`/`delay`/`wait`/`cancel`) | **[GA]** | The bare `wait`/`spawn`/`delay` globals remain deprecated |
 | Inlining of immediately invoked lambdas; refinements preserved across loops | **[GA]** | Luau 0.730–0.731, July 2026 |
-| New type solver | **[GA]** default for `nocheck`/`nonstrict`; **opt-in** for `strict` | Configure via `UseNewLuauTypeSolver` and `LuauTypeCheckMode`; old solver available through 2026 ([luau-language.md](luau-language.md#the-new-type-solver--what-is-on-by-default)) |
+| New type solver | **[GA]** default for `nocheck`/`nonstrict`; **opt-in** for `strict` | General release 20 November 2025. Configure via `UseNewLuauTypeSolver` and `LuauTypeCheckMode`; old solver available through 2026 ([luau-language.md](luau-language.md#the-new-type-solver--what-is-on-by-default)) |
+| **Read-only members `{ read x: T }`, `{ read [K]: V }`** (and the `write` mirror) | **[Verify]** | Upstream Luau 0.721, May 2026. Full enforcement needs the new solver |
+| **Yielding inside custom iterators** | **[Verify]** | Upstream Luau 0.722, May 2026 |
+| **`declare extern type`** (replaces `declare class` / `extern class`) | **[Verify]** | Old spellings removed upstream in 0.727, June 2026. Affects hand-written declaration files only |
+| **`export` value semantics** (exported values are `const` by default) | **[Verify]** | Upstream Luau 0.723, May 2026; Studio availability **not confirmed** by this skill. Keep the `local M = {} ... return M` shape until verified |
 | User-defined `type function`, `keyof`, `issubtypeof` | **[Verify]** — requires the new solver | `issubtypeof` implemented in Luau 0.724 (June 2026) |
+| 64-bit integer type; `math` constants (`phi`, `sqrt2`) | **RFC merged only** | Accepted designs (RFCs #153/#176/#182 and #169, February–March 2026). **No implementation confirmed.** Do not write code against these |
+| `class` syntax | **RFC merged only** | RFC #191 accepted April 2026; upstream shows early implementation work in 0.721 and nothing more. Keep using metatable OOP |
 
-**Not applicable to Roblox Studio** despite appearing in Luau release notes: embedder C APIs (`lua_memorydump`, `lua_callhook`, ...), double-precision vector builds, and require-by-string / `@self`.
+**Not applicable to Roblox Studio** despite appearing in Luau release notes: embedder C APIs (`lua_memorydump`, `lua_callhook`, `lua_atbreakpoint`, ...), double-precision vector builds (a VM build-time option), and require-by-string / `@self` (standalone runtimes; Studio resolves modules through Instances). These will never arrive — do not present them as "coming soon".
 
 ## Engine
 
@@ -47,7 +67,7 @@ The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
 | Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |
 | Acoustic simulation with Occlusion/Reverb subcategories | **[UNVERIFIED]** | Engine release notes indicate it shipped; the 2026 roadmap lists acoustic simulation as later-2026 work. Confirm before relying on it |
-| Current engine release-notes version number | **[UNVERIFIED]** | The release-notes index could not be read (JS-rendered, absent from the docs index). Do not cite a version number from this skill |
+| Current engine release-notes version | **731**, 24 July 2026 | The latest published release notes at this snapshot. The docs pages render client-side, so read the DevForum Release Notes category instead when checking for newer ones. A number here is a floor, never a ceiling |
 
 ## Studio MCP tooling
 
@@ -66,3 +86,9 @@ Discouraged-but-functional APIs are **not** in this list; the split is in [false
 ## Maintaining this file
 
 When a release confirms an API this skill previously told the agent to verify, move it to the correct maturity tag and update the snapshot line. Keep it a *baseline*, not a changelog: one row per capability, newest snapshot wins. Never invent a date or version number — if it could not be confirmed, mark it **[UNVERIFIED]**.
+
+**Record the state, not just the tag.** Every Luau row answers one question: *can someone use this in Studio today?* A row promoted on the strength of an upstream Luau release alone is a bug in this file. The promotion path is one-directional and each step needs its own evidence:
+
+`RFC merged` → `upstream released` (a numbered `luau-lang/luau` release) → `[Verify]` → `[GA]` (a Roblox source: release notes, a DevForum announcement, or a confirmed in-Studio test)
+
+Two checks per maintenance cycle: the newest Luau release number, and the newest Roblox engine release-notes number. They move independently, and the gap between them is exactly where wrong advice comes from.

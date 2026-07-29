@@ -15,7 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 -- | Modules | --
--- Ordered: ServerScriptService -> ServerStorage -> ReplicatedStorage -> Workspace -> script-relative
+-- Ordered SSS -> ServerStorage -> ReplicatedStorage -> Workspace -> relative
 local PlayerData = require(ServerStorage.Modules.PlayerData)
 
 -- | Objects | --
@@ -231,5 +231,8 @@ updateCoinDisplay()
 - The LocalScript reads state via Attributes rather than a RemoteEvent — prefer attribute/tag replication for simple state; reserve remotes for actions.
 - Every declared Service/Module/Object/constant in these templates is used — copy that discipline: declare only what the script actually needs.
 - Bare `WaitForChild` is fine for containers that always replicate (ReplicatedStorage, PlayerGui). For `workspace` descendants under StreamingEnabled, use a timeout or a CollectionService tag signal instead ([patterns.md](patterns.md#streaming-streamingenabled)).
-- The doc comments here model the UDD rules: one terse technical line, contract-level, English, no em dashes or emoji (SKILL.md → FUNCTIONS). Copy that brevity; never pad a file with multi-line doc blocks.
+- The doc comments here model the UDD rules (SKILL.md → FUNCTIONS). Copy that brevity; never pad a file with multi-line doc blocks. Three properties to copy deliberately:
+  - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to — that is why they would all still be true after a rewrite.
+  - **No volatile content.** No thresholds, no Configuration constant names, no system names. `updateCoinDisplay` is documented as synchronizing a display, not as "reads the Coins attribute and writes CoinLabel.Text".
+  - **In-body comments stay ≤ 75 characters and ≤ 25 words**, and appear only where the *why* is not obvious. Most functions in these templates have none, which is the correct default.
 - The `--!strict` header shown is illustrative. Per SKILL.md it is opt-in — match the project's strictness and never add it unbidden.
