@@ -188,5 +188,5 @@ Pool anything spawned more than ~once per second. Always reset *all* mutated pro
 | `Instance.new("Part", parent)` (parent arg) | Create, set properties, parent last |
 | Storing player data only in leaderstats | Session cache table; leaderstats is display-only |
 | `getfenv`/`setfenv`/`loadstring` | Never — kills Luau optimization and is a security hole |
-| `pcall` whose failure branch is silently ignored | Log the error with context or recover; comment genuinely ignorable failures ([luau-language.md](luau-language.md#error-handling)) |
+| `pcall` whose failure branch is silently ignored | Log the error with context or recover; a genuinely ignorable failure earns a one-line in-body comment, which is one of the few that do ([luau-language.md](luau-language.md#error-handling)) |
 | Per-character state (connections, buffs) never cleared on respawn | Key by character, clear in `CharacterRemoving`/`Destroying` (see Character Lifecycle) |

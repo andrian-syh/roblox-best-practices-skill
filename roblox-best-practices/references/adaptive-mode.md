@@ -10,11 +10,24 @@ Procedure for applying this skill while conforming to a studio's existing coding
 | Section ordering and which subsections exist | Connection/instance cleanup; no leaks |
 | Naming conventions (casing of functions, constants, privates) | No deprecated APIs (`wait`, `spawn`, `Instance.new` parent arg, ...) |
 | Module require ordering | No per-frame garbage; no polling; event-driven design |
-| Doc comment style/format/language | `pcall` + retry on external/yielding calls |
-| Framework idioms (Knit services, ECS systems, single-script, custom loaders) | Data-safety rules (UpdateAsync, BindToClose, save on leave) |
-| File/module organization and bootstrap pattern | Type safety where the project already uses `--!strict` |
+| Framework idioms (Knit services, ECS systems, single-script, custom loaders) | `pcall` + retry on external/yielding calls |
+| File/module organization and bootstrap pattern | Data-safety rules (UpdateAsync, BindToClose, save on leave) |
+| | Type safety where the project already uses `--!strict` |
+| | **Comment rules (UDD) — see below** |
 
 If an existing project convention *directly conflicts* with a non-negotiable rule (e.g., their template uses `wait()`), flag it in the confirmation step — don't silently copy the bad practice, and don't silently break their convention either. Let the user decide, recommending the safe option.
+
+## Comments never adapt
+
+**Doc-comment style is not adaptable.** It moved out of the left column deliberately: comments are the one artifact that goes stale silently, so this skill fixes their form rather than inheriting a project's habits.
+
+For every function you author, exactly two outcomes are permitted: **a UDD block exactly as [SKILL.md](../SKILL.md#udd-is-mandatory-and-outranks-mode-selection) specifies, or no doc comment at all.** Never a third style, never a hybrid. **In-body comments are not written at all**, save the narrow external-constraint exception.
+
+- Detecting a house comment style during Step 1 is a **finding to report**, not a convention to adopt.
+- Only an **explicit user instruction** ("keep our moonwave format") switches to the project's style. Adaptive mode being active is not such an instruction.
+- Existing comments in existing files are left alone. You do not rewrite them to match this skill, and you do not delete them.
+
+Record the project's comment style in the Step 2 summary so the user can see it and decide, but write your own code to the skill's rule unless they say otherwise.
 
 ## Step 1 — Analyze the codebase
 
@@ -30,7 +43,7 @@ Record for each dimension:
 4. **Framework** — Knit/Flamework/custom loader/none? How do scripts discover each other (require chains, service locator, tags, `_G` [flag it])? Where do remotes live and who creates them?
    - **Community libraries** — scan `require()`s for known libraries (ProfileStore/ProfileService, Packet/ByteNet/Zap, Trove/Maid/Janitor, Signal, Promise, Fusion/React-lua, ...). Each detected library shifts the applicable patterns per [community-libraries.md](community-libraries.md). Unknown recurring modules → read 2–3 usages to classify them.
 5. **Typing** — `--!strict` usage, annotation density, shared type modules.
-6. **Comment/doc style** — language, placement, format (`--`, `--[[]]`, moonwave `---`), density.
+6. **Comment/doc style** — language, placement, format (`--`, `--[[]]`, moonwave `---`), density. Record it **for reporting only**; you write to the skill's comment rule regardless, unless the user explicitly instructs otherwise.
 7. **Existing quality level** — deprecated API usage, cleanup discipline, validation habits. This feeds the conflict list.
 
 ## Step 2 — Present findings and confirm
@@ -47,6 +60,7 @@ Before writing any code, show the user a compact summary and get explicit approv
   -> defer data/network/cleanup patterns to them per community-libraries.md — confirm?
 - Typing: --!strict in ~80% of files
 - Docs: moonwave-style --- comments, English
+  -> comments do not adapt; new code uses the skill's UDD block unless you ask otherwise
 
 ## Proposed convention for new code
 [skill defaults merged with the above — list each point]
@@ -65,8 +79,8 @@ Wait for confirmation. Apply any corrections the user gives. If the user answers
 ## Step 3 — Apply
 
 - Write all subsequent code in the confirmed convention.
-- Where the project had no convention for something (e.g., no doc comment habit), fill the gap with this skill's default.
-- When editing an existing file, match that file even if it predates the confirmed convention — consistency within a file beats global consistency. Note mismatches; offer (don't perform) refactors.
+- Where the project had no convention for something, fill the gap with this skill's default.
+- When editing an existing file, match that file even if it predates the confirmed convention — consistency within a file beats global consistency. Note mismatches; offer (don't perform) refactors. **Comments are the exception to this file-matching rule:** any doc comment you author follows the skill's UDD block or is omitted, and you add no in-body commentary, whatever the surrounding file does.
 - The confirmed convention holds for the rest of the session/project unless the user changes it. Re-run analysis only if you enter a clearly different sub-project.
 
 ## Persisting the result

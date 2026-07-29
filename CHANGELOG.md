@@ -2,6 +2,56 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.12.2] - 2026-07-29
+
+**Code economy, device scalability, edge-case robustness, and non-negotiable comment rules.** Teaches the agent to write less code without writing less software, to fit a frame budget on weak hardware, and to walk a Roblox-specific edge-case list before calling a function done. Comment rules become mandatory and stop adapting to the project.
+
+### Added
+- `references/minimal-code.md` — the reuse-and-restraint discipline. A seven-rung ladder (does it need to exist, does the project have it, stdlib, engine API, installed library, one line, then the minimum), a catalog of eighteen things agents routinely hand-roll in Roblox alongside what already provides them, a search-the-project procedure, density rules (guard clauses over nesting, no forwarding wrappers, no abstraction without a caller), and the two cases where reimplementation is justified.
+- **Three precedence rules** at the head of that file, guarding the failure modes minimalism invites: brevity never reduces **what gets delivered** (a function short because it does less than asked has failed), never costs **readability** (one statement per line, descriptive names, blank lines and section headers intact, no clever one-liners — "less code" means less work, not less whitespace), and never removes a **requirement** (validation, cleanup, layout, UDD, `pcall` coverage are not YAGNI candidates). All three are mirrored onto the Session Invariant Card so they survive compaction.
+- **Ponytail** documented as an optional agent-side overlay: detected by its commands or rule files, deferred to for minimalism when present including the user's intensity setting, and fully replaceable by this skill when absent. Recorded as an AI-agent plugin, explicitly not a Roblox plugin or a Luau library, and never a prerequisite.
+- `references/device-performance.md` — fitting the frame and the weakest device. Frame budget arithmetic (16.6 ms at 60 FPS, 33.3 ms at 30, of which scripts get a few), a time-slicing pattern that budgets in time rather than item count, device tiers with the rule against inferring power from `TouchEnabled`, a fixed six-rung degradation ladder that never touches gameplay-critical visuals, adaptive quality with asymmetric hysteresis, per-player bandwidth budgeting, and the low-end memory ceiling ordered by what breaches it first.
+- `references/edge-cases.md` — a Roblox-specific catalog of the states production actually produces, grouped by trigger (player lifetime, character lifetime, instance lifetime, numbers, collections, timing and ordering, network and client input, data and schema), each naming the failure and its guard, closing with a six-question finishing pass. Non-Negotiable #7 is referenced rather than restated.
+
+### Changed
+- System Design Preflight step 4 broadened from "Does a library own this concern?" to **"Does this already exist?"**, checking the project's own modules, the standard library, and the engine API before reaching a library.
+- Language & Style gained a reuse-and-density rule carrying the completeness guarantee.
+- `performance.md` and `device-performance.md` state their split explicitly: one makes the code cheap, the other makes it fit. The `ui-ux-testing.md` performance-tiers bullet became a pointer.
+- `community-libraries.md` scoped to Luau libraries the project runs, with agent-side tooling routed elsewhere so Ponytail is never expected in a `wally.toml`.
+- Four Review Checklist items added, covering reuse, delivered-in-full, frame budgeting, and the finishing pass.
+- **UDD now outranks Adaptive mode.** Doc-comment style moved out of the adaptable column in `adaptive-mode.md` and into the non-negotiable one. Adaptive mode adapts section headers, naming, ordering, and file organization; it never adapts comments. A new "Comments never adapt" section states the rule at the point where an agent would otherwise inherit a house style.
+- **Exactly two permitted outcomes per authored function:** a UDD block written exactly as specified, or no doc comment at all. A third style, a half-compliant block, or a partial carry-over of the project's habit are all forbidden. The reasoning is stated where the rule lives: a missing comment costs one function's worth of context, while a wrong one misleads a reader into a bug.
+- **The project's comment style applies only on an explicit user instruction** naming it. Detecting a house style during codebase analysis is a finding to report, not a convention to adopt, and Adaptive mode being active is not an instruction. Step 1 and the Step 2 summary template in `adaptive-mode.md` now say so.
+- **Descriptions are one sentence, hard-capped at 100 characters.** The previous "~50 words for the rare two-clause case" escape hatch is gone; it contradicted the 100-character limit it sat beside.
+- Comments are now the documented exception to the file-matching rule in Adaptive Step 3: an authored doc comment follows the skill or is omitted regardless of the surrounding file's style.
+
+### Removed
+- **In-body comments are no longer written at all.** The previous allowance (≤ 75 characters and ≤ 25 words, explaining why) is replaced by a prohibition with a narrow exception: a constraint the reader cannot recover from the code, such as an engine quirk, an externally imposed ordering requirement, a deliberate deviation that will read as a mistake, or a deliberately swallowed failure. Even then it is one line and ≤ 75 characters. Two standing prohibitions accompany it: never add commentary to code being edited, and never delete a comment that already exists.
+- The "≤ 25 words" cap is gone from every file, having no remaining rule to qualify.
+
+### Fixed
+- **Contradiction:** `adaptive-mode.md` listed doc-comment style as adaptable while SKILL.md treated the UDD rules as mandatory. The two now agree.
+- **Contradiction:** the SKILL.md heading "The two description rules" introduced three numbered items. The in-body rule is now its own section and the heading is accurate.
+- **Contradiction:** a description was capped at "≤ ~100 characters" and simultaneously allowed "~50 words", which is roughly triple that limit.
+- **Contradiction:** `cases/combat.md` instructed the agent to "document the number" for a lag tolerance, which the volatile-content rule forbids in a description. It now directs the value into a named Configuration constant instead.
+- The skill's own examples were brought in line with the rule they teach: the in-body comment in the SKILL.md `applyDamage` example and the placeholder comment in the server-script template were removed, and the template's newly referenced module is now declared in its Modules subsection.
+- `luau-language.md` and `patterns.md` framed the ignorable-`pcall` comment as general guidance; both now name it as one of the few cases that earn an in-body comment and carry the length cap.
+- Review guidance in `false-positives.md` makes the authoring-versus-review asymmetry explicit: the UDD mandate binds what the agent writes and is never a standard for judging existing code. Existing in-body comments and house comment styles are explicitly not findings.
+- New false-positive carve-outs so the additions cannot become review noise: a project is not flagged for lacking device tiers, a hand-written helper is Advisory rather than a violation, a missing edge-case guard still needs a concrete failure scenario, and code is never flagged merely for being longer than the reviewer would have written it.
+
+### Verified against current documentation
+
+Every performance and edge-case claim was checked against Roblox's own sources before shipping, which confirmed six figures and corrected one of this skill's own statements:
+
+- **16.67 ms per frame at 60 FPS** is Roblox's published figure, not an estimate.
+- **Under 1,000 draw calls and under 1,000,000 triangles** is the published baseline-device budget.
+- **`Workspace.EnableSLIMAvatars`** and **`Model.LevelOfDetail = SLIM`** added, including the constraint that `EnableSLIMAvatars` cannot be set from a script and that R6, NPCs, and custom proportions are excluded.
+- **Recommended streaming values for low-end devices** recorded (`ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamingMinRadius`, `StreamingTargetRadius`, `StreamOutBehavior`).
+- **Partial transparency forces overdraw**; use `0` or `1` only. Built-in materials conserve memory over custom textures.
+- **Studio's device emulator inflates memory readings** by running server and client in one process, so memory conclusions come from real hardware.
+- **Correction:** the character-lifetime entry claimed descendants may be missing at `CharacterAdded`. The `Humanoid` and body parts *do* exist then; what is missing is appearance (accessories and clothing take seconds), and the character is not yet parented to Workspace. Split into three accurate entries with `CharacterAppearanceLoaded` as the appearance guard.
+- The **degradation ladder is labelled a practical default rather than doctrine**, since Roblox publishes no official cut order.
+
 ## [1.10.6] - 2026-07-29
 
 **Compaction-durable invariants, stricter comment discipline, and the late-July Luau refresh.** Makes the skill's core rules survive a summarized session, tightens what a description is allowed to say, and brings the language baseline up to Luau 0.731 / engine 731.

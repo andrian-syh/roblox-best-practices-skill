@@ -21,7 +21,7 @@ Assume every game runs on touch, gamepad, and mouse/keyboard unless the user say
 - **Touch:** minimum ~44 px effective touch targets; keep actions away from screen edges reserved by the OS; `ContextActionService`-created touch buttons for gameplay actions.
 - Detect the *active* input type via `UserInputService:GetLastInputType()` + `LastInputTypeChanged` to swap prompt icons (keyboard "E" vs gamepad "X" vs touch button) — players switch mid-session.
 - **Accessibility basics:** don't encode meaning in color alone; support `GuiService.ReducedMotionEnabled` (skip/shorten camera shakes and large tweens when set); keep flashing effects mild.
-- **Performance tiers:** treat low-end mobile as the baseline — test there, scale effects *up* for strong devices (particle density, shadows, texture tiers), not down from PC.
+- **Performance tiers:** treat low-end mobile as the baseline — test there, scale effects *up* for strong devices, not down from PC. Never infer device power from `TouchEnabled`. Frame budgets, the degradation ladder, and adaptive quality: [device-performance.md](device-performance.md).
 
 ## Testing & Debugging Workflow
 

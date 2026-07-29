@@ -89,6 +89,15 @@ Every engine release creates a fresh crop of "that API does not exist" false pos
 - **`read` / `write` table members** (`{ read x: number }`), **yielding inside a custom iterator**, and **`declare extern type`** — all shipped upstream. Verify the solver before flagging the first, and never "correct" `declare extern type` back to `declare class`, which was removed.
 - **The `@deprecated` attribute** — real, with optional `use` and `reason`. A project marking its own function deprecated is doing the right thing, not leaving dead code.
 
+### Code economy and device scalability — authoring goals, not review standards
+
+The reuse ladder ([minimal-code.md](minimal-code.md)), the frame and device budgets ([device-performance.md](device-performance.md)), and the edge-case catalog ([edge-cases.md](edge-cases.md)) bind **what you write**. They are not a rubric for judging an existing codebase:
+
+- Do **not** flag a project for lacking device tiers, adaptive quality, or a degradation ladder. Most experiences ship without them, and adding one is a feature the user requests, not a defect you found.
+- Do **not** flag a hand-written helper as a violation because an engine API exists. Propose the replacement as **Advisory**; the team may have had a reason, and a deliberate, justified reimplementation is not a defect.
+- Do **not** report a missing edge-case guard on suspicion. It is a finding only with a concrete failure scenario, exactly like every other finding — the catalog is a prompt for your own writing, not a list of things to demand.
+- Do **not** flag code for being longer than you would have written it. Length alone is Advisory at most, and rewriting for brevity is an unrequested refactor.
+
 ### MCP tooling — not the code under review
 
 How the agent drove its own tools is not part of the codebase. Do not report tool choices, MCP call sequences, or the contents of a throwaway execution snippet as findings against the project. Equally, never claim an MCP tool does not exist because it is absent from this skill's snapshot — the connected tool list is the authority ([studio-mcp.md](studio-mcp.md#ground-truth-rules)).
@@ -130,16 +139,19 @@ Section-header deviations, subsection ordering, naming casing, module require or
 
 ### Doc comments — one real finding, the rest Advisory
 
-The UDD rules ([SKILL.md](../SKILL.md#2-----functions----)) are **authoring** rules. In review they collapse to a single distinction:
+The UDD rules ([SKILL.md](../SKILL.md#udd-is-mandatory-and-outranks-mode-selection)) are **mandatory for code you author** and **not a standard you hold other people's code to**. That asymmetry is deliberate: binding your own output keeps what you add consistent, while judging an existing codebase by it would produce a flood of noise findings.
+
+In review the rules collapse to a single distinction:
 
 | Situation | Severity |
 |---|---|
 | A description that is **factually wrong** about the contract, or documents behavior the function no longer has | **Correctness** — it will mislead the next reader into a real bug |
 | A description naming the mechanism, or carrying a number/tunable/collaborator that has since drifted | **Advisory** — propose the contract-level rewrite |
-| An over-length in-body comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
+| An over-length or unnecessary in-body comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
 | A doc comment written in the project's own established house style | **Not a finding at all** |
+| Existing in-body comments in code you did not write | **Not a finding at all** |
 
-Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. And never delete an existing comment to satisfy the length cap — shorten it, or leave it and propose.
+Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. Never delete an existing comment to satisfy a length cap — shorten it, or leave it and propose. And do not report a project for having a house comment style: the no-adaptation rule governs what *you* write, not what already exists.
 
 ## Regression set — these must pass a review clean
 

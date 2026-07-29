@@ -22,21 +22,34 @@ ROBLOX LUAU SKILL - INVARIANT CARD
    -- // VARIABLES // --   Services > Modules > Objects > Configuration > State Management
    -- // FUNCTIONS // --   definitions only (ModuleScript: Private before Public)
    -- // INITIALIZATION // --   everything that runs
-2  UDD (doc comments) - every function gets a --[[ ]] block, desc > @param > @return:
-   - Desc <= 100 chars, one sentence, contract-level.
+2  UDD (doc comments) - MANDATORY, and outranks Adaptive mode. Exactly two
+   permitted outcomes per function: write the block exactly as specified,
+   or write no doc comment at all. Never a third style.
+   Only an explicit user instruction switches to the project's comment style.
+   Block form: --[[ ]] above the function, desc > @param > @return.
+   - Desc <= 100 chars, ONE sentence, contract-level. No second sentence.
    - Desc states PURPOSE only. It never names what the body does to get there:
      no APIs, algorithms, collaborators, data structures, or code paths.
    - Desc carries NO volatile content: no numbers, thresholds, tunable names,
      feature names, or anything that needs editing when the body is retuned.
-   - In-body comments <= 75 characters and <= 25 words. They say WHY, not WHAT.
-   - English only. No em dashes. No emoji. Same rules for both comment kinds.
+   - @param/@return only when they add what the signature cannot show.
+   - English only. No em dashes. No emoji.
+   - IN-BODY COMMENTS: do not write them. The doc block carries the contract;
+     the code carries the mechanism. Never add one to code you write or edit.
+     Never delete one that already exists. Rare exception only for a
+     non-obvious external constraint: one line, <= 75 chars, WHY not WHAT.
 3  Server is authoritative. Validate every remote arg: type, range, ownership, rate.
 4  Clean up everything created. Every connection has an owner and a teardown path.
 5  No avoidable per-frame garbage. Never poll what has a signal.
 6  UpdateAsync + backoff. Save on PlayerRemoving. Flush on BindToClose.
 7  Re-validate after every yield: player gone? instance dead? session changed?
 8  Never add --!strict unbidden. Never make a [Beta] feature the production default.
-9  User authority outranks this skill. Recommend; never refactor unasked.
+9  Reuse before writing: project, then stdlib, then engine API. No wrapper or
+   abstraction without a caller. But brevity has two hard limits:
+   - It NEVER reduces what was asked for. Short because it does less = failed.
+   - It NEVER costs readability. One statement per line, descriptive names,
+     blank lines kept. Less code means less WORK, not less whitespace.
+10 User authority outranks this skill. Recommend; never refactor unasked.
 ```
 
 Everything below expands these; nothing below overrides them.
@@ -52,6 +65,8 @@ Everything below expands these; nothing below overrides them.
 | Writing a new Script/LocalScript/ModuleScript | [references/templates.md](references/templates.md) |
 | Existing codebase with its own conventions (Adaptive mode) | [references/adaptive-mode.md](references/adaptive-mode.md) |
 | Project uses community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) | [references/community-libraries.md](references/community-libraries.md) |
+| About to write a helper, a utility, or anything that might already exist; keeping code dense | [references/minimal-code.md](references/minimal-code.md) |
+| Finishing a function: what nil, empty, stale, duplicate, or departed state will it meet | [references/edge-cases.md](references/edge-cases.md) |
 | Typing depth, standard-library additions (vector/buffer/math), new type solver, task.spawn vs task.defer, deferred events, error handling, time APIs, native codegen | [references/luau-language.md](references/luau-language.md) |
 
 **Implementing a known system** (read the one file whose domain matches; recipes give assembly order and case-specific failure modes)
@@ -71,6 +86,7 @@ Everything below expands these; nothing below overrides them.
 | Situation | Read |
 |---|---|
 | Hot loops, memory, network traffic, rendering, profiling | [references/performance.md](references/performance.md) |
+| Frame budget in milliseconds, low-end/"potato" devices, quality degradation, time-slicing bulk work, per-player bandwidth | [references/device-performance.md](references/device-performance.md) |
 | Data stores (+ version history), remotes, cleanup, pooling, input, character lifecycle (Humanoid vs CCL), streaming, cross-server, anti-patterns | [references/patterns.md](references/patterns.md) |
 | Purchases, anti-exploit, remote validation depth, text filtering, policy compliance | [references/security-monetization.md](references/security-monetization.md) |
 | Anything touching movement, physics, input, camera, animation timing, `BindToSimulation`, or network ownership | [references/server-authority.md](references/server-authority.md) |
@@ -171,7 +187,7 @@ Both code paths, the forced settings, known limitations, and the adoption trade-
 When asked to *review or tidy existing code* (rather than write new code), give every finding exactly one severity — **Blocker** (security, data loss, or a guaranteed leak), **Correctness** (a real bug with a concrete failure scenario), or **Advisory** (style, layout, or micro-optimization). Before reporting anything, run it through [references/false-positives.md](references/false-positives.md): the "what NOT to flag" catalog, the severity taxonomy, and the four-step confidence gate.
 
 - **Blocker / Correctness** — violations of Non-Negotiable Runtime Rules and misused deprecated APIs → report as findings (and fix if asked). Apply the rules *as scoped*: the exceptions written into them (periodic loops, cold-path allocations, small state snapshots) are not violations, and discouraged-but-functional APIs are not deprecated ones.
-- **Advisory** — section-layout/naming deviations, module-require ordering, and missing doc comments on trivial private functions → *propose* as suggestions; never report as violations, never silently rewrite; the user decides. The doc-comment mandate is an authoring rule, not a review cudgel.
+- **Advisory** — section-layout/naming deviations, module-require ordering, and missing doc comments on trivial private functions → *propose* as suggestions; never report as violations, never silently rewrite; the user decides. The UDD mandate binds what **you author**; it is not a cudgel for judging code someone else wrote, and existing comments are never deleted or rewritten to satisfy it.
 - Never reformat code unrelated to the request; consistency within the file beats consistency with this skill.
 - Before flagging an API as wrong/nonexistent, verify against the target environment (the [references/api-currency.md](references/api-currency.md) baseline; see Environment & Scale) — never flag from memory alone.
 - **Trace before flagging.** Follow the full flow across both sides of paired logic (writer/reader, serializer/deserializer, fire/handler) before reporting a bug — an asymmetry between paired sites is only a defect if tracing both sides shows a divergent outcome; it may deliberately compensate for the other side. Unusual-looking designs (state created before data exists, self-healing caches) may be intentional — check usage sites first. A finding needs a concrete failure scenario (inputs → wrong outcome); "could maybe fail" is not a finding. Full procedure: [references/verification.md](references/verification.md#review-verification-discipline-trace-before-flag).
@@ -223,14 +239,34 @@ Subsections in this fixed order (omit any that are empty):
 
 - **ModuleScripts** split functions into `-- | Private | --` (used only inside this script, `local function`) and `-- | Public | --` (exposed on the returned table). Private comes first.
 - **Scripts/LocalScripts** usually skip the Private/Public split — just list functions under the section header (use level-2 headers to group by topic if the script is large).
-- **Every function gets a doc comment**, ALWAYS wrapped in a `--[[ ... ]]` block placed directly above the function — even when the description is a single line. Structure, in this fixed order: **description → params → returns**. Keep the whole block tight: doc comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
-  - **Description** — one concise, technical sentence in clear English, **≤ ~100 characters** (absolute ceiling ~50 words for the rare two-clause case; aim far shorter).
+
+#### UDD is mandatory and outranks mode selection
+
+The doc-comment rules (UDD) are **not** stylistic, and they do **not** adapt. They sit above Mode Selection: Adaptive mode adapts section headers, naming, ordering, and file organization — **it never adapts comments**.
+
+**There are exactly two permitted outcomes for any function you write:**
+
+| Outcome | When |
+|---|---|
+| **A UDD block written exactly as specified below** | The default, always available |
+| **No doc comment at all** | When a compliant description cannot be written, or the user asked for no comments |
+
+**There is no third option.** A block in the project's house style, a half-compliant block, a description that keeps "just a little" of the old habit — all forbidden. A missing comment costs a reader one function's worth of context; a wrong or stale comment misleads them into a bug. Silence beats a comment you cannot make compliant.
+
+**The only thing that switches to the project's comment style is an explicit user instruction** naming it ("use our moonwave format", "keep the existing comment style"). Detecting a house style during codebase analysis is **not** such an instruction, and neither is Adaptive mode being active. When the user does ask, follow their instruction in full — User Authority outranks this rule as it outranks every other.
+
+This applies to code you author. In **review**, the calculus differs: see [references/false-positives.md](references/false-positives.md#doc-comments--one-real-finding-the-rest-advisory).
+
+#### Writing the block
+
+- **Every function gets a doc comment**, ALWAYS wrapped in a `--[[ ... ]]` block placed directly above the function. Structure, in this fixed order: **description → params → returns**. Keep the whole block tight: doc comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
+  - **Description** — **one** technical sentence in clear English, **≤ 100 characters**. Not two sentences, not a sentence plus a clause bolted on. If the contract does not fit in one sentence, the function is doing too much.
   - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing, and **no em dashes and no emoji** inside doc comments. English only, so developers of any origin can read it.
   - **`@param` / `@return`** — just as terse (a few words each). Include only when they add information beyond what the signature already shows (non-obvious meaning, units, constraints, nil-behavior); omit them entirely when obvious.
 
-#### The two description rules (apply to every comment you write)
+#### The two description rules
 
-These govern the doc-block description **and** every explanatory comment inside a body. They are the two rules most often lost when a session is summarized — they are on the Invariant Card for that reason.
+Both must hold for every description you write. They are the rules most often lost when a session is summarized — they are on the Invariant Card for that reason.
 
 **1. Agnostic to the implementation.** A description states *what the function is for*, never *what it does to get there*. Name the purpose and the contract; do not name the mechanism. Concretely, a description must not mention:
 
@@ -243,7 +279,15 @@ These govern the doc-block description **and** every explanatory comment inside 
 
 **2. Free of volatile content.** Nothing that a routine tuning pass would invalidate: no numbers, thresholds, or limits · no names of Configuration constants · no feature, system, or product names that may be renamed · no version, date, or environment specifics. Test it this way: **if someone rebalances a constant or replaces the body, would this comment need editing?** If yes, the comment is carrying volatile detail and must be rewritten at contract level.
 
-**3. In-body comments are capped.** A comment placed among the statements of a function stays **≤ 75 characters and ≤ 25 words**. It explains *why*, never *what* — the code already says what. If the reasoning cannot fit, the function is too complicated or the reasoning belongs in the doc block. Never narrate code line by line, and never let an in-body comment grow into a paragraph.
+#### In-body comments: do not write them
+
+**The default is none.** The doc block carries the contract and the code carries the mechanism; a comment among the statements is a third copy of the truth that nothing keeps honest. A function that needs internal narration is a function that needs splitting or renaming, and that is the fix.
+
+- **Never add one to code you write.** Not a section marker, not a step label, not a restatement of the next line.
+- **Never add one to existing code you are editing.** Adding commentary is an unrequested change ([User Authority](#user-authority)).
+- **Never delete one that already exists.** Removing a comment is equally unrequested; leave it, and propose the removal if it is actively wrong.
+
+**The narrow exception** is a constraint a reader cannot recover from the code itself, where its absence would invite a future bug. In practice that means: an engine quirk or platform behavior, an ordering requirement imposed from outside the function, a deliberate deviation that will look like a mistake, or a genuinely ignorable failure being swallowed ([patterns.md](references/patterns.md#anti-patterns-reject-on-sight) requires that one). Even then it is **one line, ≤ 75 characters, stating why and never what**. If you cannot justify it in those terms, it does not go in.
 
 ```lua
 --[[
@@ -253,10 +297,11 @@ These govern the doc-block description **and** every explanatory comment inside 
 	@return true when the damage was lethal
 ]]
 local function applyDamage(humanoid: Humanoid, amount: number): boolean
-	-- Armor is server-owned; the client copy can lag.
 	...
 end
 ```
+
+The body carries no commentary, which is the correct default.
 
 Rejected descriptions for that same function, and why:
 
@@ -299,10 +344,11 @@ Full annotated templates (Script, LocalScript, ModuleScript): see [references/te
 - **Never use deprecated APIs:** `wait()`/`spawn()`/`delay()` → `task.wait()`/`task.spawn()`/`task.delay()`; `:connect()`/`:wait()` lowercase → `:Connect()`/`:Wait()`; `Body*` movers (`BodyVelocity`/`BodyGyro`/`BodyPosition`/...) → constraints (`LinearVelocity`, `AlignOrientation`, `AlignPosition`); `Humanoid:LoadAnimation` → `Animator:LoadAnimation`; `Part.Velocity`/`RotVelocity` → `AssemblyLinearVelocity`/`AssemblyAngularVelocity`; `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame` → `PivotTo`/`GetPivot`; `Camera.CoordinateFrame` → `Camera.CFrame`; `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`; InputContext/InputAction camera replication → `Player:GetCameraState()`; `tick()` → the right time API per [references/luau-language.md](references/luau-language.md#time-apis--one-job-each).
 - **Deprecated is not the same as discouraged.** Setting `Instance.new`'s second `parent` argument (create → set properties → parent last is a *performance* preference), or `FireAllClients` where a targeted list would do, are Advisory choices, not deprecated APIs — don't report them as violations. Full split: [references/false-positives.md](references/false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
 - Guard external/yielding calls (`DataStore`, `MarketplaceService`, `HttpService`, `TeleportService`) with `pcall` and a retry policy. Never let an unprotected yield crash a player flow.
+- **Reuse before writing, and keep it dense.** Search the project, the Luau standard library, and the engine API before writing a helper — a second implementation of the same thing is a bug factory. Prefer guard clauses to nesting, and add no wrapper, abstraction, or defensive branch that has no caller. Two limits bound this: it **never reduces what gets delivered** (a function short because it does less than asked has failed), and it **never costs readability** — one statement per line, descriptive names, blank lines between logical groups, no clever one-liners. "Less code" means less *work*, not less whitespace. Catalog of what already exists, the density rules, and the optional Ponytail overlay: [references/minimal-code.md](references/minimal-code.md).
 - One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
 - Prefer `CollectionService` tags + `Attributes` to bind behavior to Instances — this is the most framework-agnostic wiring mechanism and survives any folder structure.
 - **Stay framework-agnostic by construction.** Core logic relies only on standard Roblox services and engine features; a community library's way of doing something is an overlay ([references/community-libraries.md](references/community-libraries.md)), never the baseline. Never assume a folder layout or framework beyond standard services — bind by tags/attributes, discover by service, and let the community-library check (not a hard-coded path) decide which idioms apply.
-- Comments explain *why*, not *what*. Doc comments are terse, technical English (≤ ~100-char descriptions, no em dashes or emoji), always a `--[[ ... ]]` block in desc → params → returns order. Descriptions are implementation-agnostic and free of volatile detail; in-body comments stay ≤ 75 characters and ≤ 25 words (see the FUNCTIONS section rules).
+- **Comment rules are mandatory and do not adapt.** Either write the UDD block exactly as specified, or write no doc comment at all — never a third style, and never the project's style unless the user explicitly asks. Descriptions are one sentence, ≤ 100 characters, implementation-agnostic and free of volatile detail, in a `--[[ ... ]]` block ordered desc → params → returns, English, no em dashes or emoji. **In-body comments are not written at all** except for a non-obvious external constraint (one line, ≤ 75 characters, why not what). Full rules: the FUNCTIONS section above.
 - **`const` for bindings that must not be rebound** [GA in Studio, April 2026]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](references/luau-language.md#const-bindings).
 - Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](references/luau-language.md).
 
@@ -325,7 +371,7 @@ Before implementing any non-trivial system (not needed for a one-off script or a
 1. **Which case is this?** Match it to a recipe in the Implementing-a-known-system routing block and read that one file. If nothing matches, proceed with the general rules.
 2. **What are the ceilings?** Check [references/limits-budgets.md](references/limits-budgets.md) for the limits this design will approach (payload size, request budget, attribute window, entity counts). Designing into a ceiling is far cheaper than discovering it in production.
 3. **What is the server/client split?** Name what the server owns authoritatively and what the client merely renders or requests, before writing either side.
-4. **Does a library own this concern?** If the project uses ProfileStore, Packet, Trove, Knit, Fusion, or similar, its idioms replace the built-in pattern ([references/community-libraries.md](references/community-libraries.md)).
+4. **Does this already exist?** Check in order: the project's own modules, the Luau standard library, the engine API, then an installed library — whose idioms replace the built-in pattern if the project uses ProfileStore, Packet, Trove, Knit, Fusion, or similar ([references/minimal-code.md](references/minimal-code.md), [references/community-libraries.md](references/community-libraries.md)).
 5. **How will this be proven to work?** Pick the observable outcome and the session type (multi-client for anything touching replication) up front ([references/verification.md](references/verification.md)).
 
 If the system touches movement, input, camera, animation timing, or simulation stepping, resolve the Server Authority check first — it changes the answers to steps 3 and 5.
@@ -343,12 +389,17 @@ Before finishing any Luau code, verify:
 - [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
 - [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
 - [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
-- [ ] Every function has a `--[[ ... ]]` block doc comment in desc → params → returns order; the description is terse (≤ ~100 chars), technical English with no em dashes or emoji
+- [ ] Every function authored either carries a compliant `--[[ ... ]]` block (desc → params → returns, one sentence ≤ 100 chars, English, no em dashes or emoji) **or carries no doc comment at all** — no third style, and the project's comment style used only where the user explicitly asked for it
 - [ ] Every description passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names) — retuning a constant or rewriting the body would not require editing it
-- [ ] Every in-body comment is ≤ 75 characters and ≤ 25 words, and explains why rather than restating what the code already says
+- [ ] **No in-body comments were written**, in new or edited code, beyond a justified non-obvious external constraint (one line, ≤ 75 chars, why not what); no pre-existing comment was deleted
 - [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
 - [ ] All connections have an owner and a teardown path; no leaked Instances
 - [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven
+- [ ] Nothing was hand-written that the project, the Luau standard library, or an engine API already provides; no wrapper or abstraction added without a caller
+- [ ] **Everything the user asked for was delivered in full** — brevity trimmed ceremony, never capability, and no requested behavior was silently dropped as "not needed"
+- [ ] Brevity cost no readability: one statement per line, descriptive names kept, blank lines and section headers intact, no compressed one-liners a reader must decode
+- [ ] Frame-critical or bulk work is budgeted in time and spread across frames rather than stalling one; the design still runs on a low-end device
+- [ ] The finishing pass was run: nil assumptions, zero/negative/NaN, empty collections, staleness after each yield, double-fire in one frame, and the player leaving mid-operation
 - [ ] All remote handlers validate arguments; all yielding external calls wrapped in `pcall` with retry
 - [ ] Handlers that yield between a check and its use re-validate state after resuming (player still present, instance alive, session unchanged)
 - [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering

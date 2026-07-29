@@ -16,7 +16,7 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 4. Server computes damage from server-side stats, applies it, and replicates the result.
 5. Kill credit and rewards are computed once, server-side.
 **Never:** accept a client-sent damage value · trust client-reported positions for validation (only for display) · run the damage formula on the client.
-**Failure modes:** validating against the attacker's *current* position when the shot was fired hundreds of milliseconds ago. Either rewind to the fire timestamp or widen the tolerance deliberately; pick one and document the number.
+**Failure modes:** validating against the attacker's *current* position when the shot was fired hundreds of milliseconds ago. Either rewind to the fire timestamp or widen the tolerance deliberately. Pick one, and give the tolerance a named Configuration constant rather than a literal, so the value documents itself and stays out of comments.
 **Under Server Authority:** movement is engine-validated, so the position inputs are trustworthy and tolerances can shrink. Without it, the manual plausibility checks in [security-monetization.md](../security-monetization.md#movement--physics-sanity-checks) remain the baseline.
 **Verify:** test at 100–200 ms simulated latency with multiple clients; confirm honest hits register and impossible ones do not.
 **Deeper:** [genres.md](../genres.md#combat--fps--pvp)

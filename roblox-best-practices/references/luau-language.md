@@ -93,7 +93,7 @@ Code that follows the skill's normal rules (connect at setup time, react to even
 
 ## Error handling
 
-- **Every `pcall` needs a handled failure branch.** `local ok, err = pcall(...)` where `ok == false` is silently ignored hides real bugs; log the error with context or recover explicitly. If a failure is genuinely ignorable (optional cosmetic load), say so in a comment.
+- **Every `pcall` needs a handled failure branch.** `local ok, err = pcall(...)` where `ok == false` is silently ignored hides real bugs; log the error with context or recover explicitly. A genuinely ignorable failure (an optional cosmetic load) is one of the few cases that earns an in-body comment: one line, ≤ 75 characters, saying why it is safe to skip ([SKILL.md](../SKILL.md#in-body-comments-do-not-write-them)).
 - For telemetry, use `xpcall(fn, function(err) return debug.traceback(tostring(err), 2) end)` — the handler runs at throw time so the stack is still live; a plain `pcall` has already unwound it.
 - `assert(value, message)` evaluates `message` eagerly even on success — in hot paths use `if not value then error(...) end`, or keep the message a precomputed string, never a concatenation/format call.
 - `error(msg, 2)` blames the *caller* — use level 2 in argument-validation helpers so the reported location is the misuse site. Error values may be tables (`error({ code = "NO_FUNDS" })`) for structured handling; document that contract wherever it's used.

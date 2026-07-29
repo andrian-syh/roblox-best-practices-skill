@@ -4,6 +4,8 @@ When a project uses a community library that owns a concern, **the library's idi
 
 For an unknown/in-house library: read 2–3 existing usages in the codebase before writing against it; never guess its API.
 
+**Scope note.** This file covers **Luau libraries the project runs**. Agent-side tooling that shapes how the agent writes code, such as the optional Ponytail overlay, is not a project dependency and is handled in [minimal-code.md](minimal-code.md#ponytail-optional-agent-side-overlay). Do not add it to the community-library check or expect it in a `wally.toml`.
+
 ## Data: ProfileStore / ProfileService
 
 Replaces the raw DataStore patterns in [patterns.md](patterns.md) (`UpdateAsync`, manual retry, session locking) — the library handles all of that.

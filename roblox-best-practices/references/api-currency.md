@@ -63,6 +63,8 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | `Players:BanAsync`/`UnbanAsync` (`ExcludeAltAccounts`, `ApplyDeviceBlock`, `ApplyToUniverse`) | **[GA]** | |
 | `game.ServerRestartScheduled` | **[GA]** | Now also fires on delayed restarts |
 | Analytics: Client CPU Time Breakdown | **[GA]** | Scripts / Networking / Physics / Animation / Misc |
+| `Workspace.EnableSLIMAvatars`, `Model.LevelOfDetail = SLIM` | **[GA]** | Lightweight avatar and model stand-ins under streaming. `EnableSLIMAvatars` **cannot be set from a script**; it is configured in Studio. Excludes R6, NPCs, and custom proportions ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
+| Streaming tuning (`ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamingMinRadius`, `StreamingTargetRadius`, `StreamOutBehavior`) | **[GA]** | Recommended low-end values in [device-performance.md](device-performance.md#engine-levers-before-script-levers) |
 | `InstanceHandle` attributes (Instance references) | **[Beta]** 23 July 2026 | Option, not a default ([patterns.md](patterns.md#behavior-binding-works-with-any-framework)) |
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
 | Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |

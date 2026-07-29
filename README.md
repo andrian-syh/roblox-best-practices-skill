@@ -20,6 +20,8 @@ Works with Claude Code, Cursor, Codex, Gemini, Windsurf, Cline, Zed, and any oth
 
 **Platform ceilings in one place.** Data store size and request budgets, memory store quotas, message size caps, attribute windows, animation track limits. The agent checks them while designing, instead of discovering them in production.
 
+**Less code, running on weaker hardware.** The agent reaches for the engine API before writing one, keeps functions dense, and budgets frame time in milliseconds rather than guessing. Bulk work is spread across frames, quality degrades in a fixed order instead of arbitrarily, and low-end mobile is the baseline rather than an afterthought. Brevity applies to the implementation, never to what you asked for. Pairs with the optional [Ponytail](https://github.com/DietrichGebert/ponytail) agent plugin when it is installed, and works fully without it.
+
 **Safe hands on the Studio MCP.** When the agent drives Studio directly, it identifies which MCP variant it is connected to from the tools actually present, runs a preflight before the first write, and knows which operations cannot be undone: play mode discarding work, a mistyped path silently creating a new script, inserted assets carrying backdoor scripts. It also knows which calls quietly burn your budget, and avoids them.
 
 **Context that stays cheap.** The skill is 22 files, but only the entry point loads on activation. Everything else is routed on demand, so a task pulls the one reference it needs and nothing more.
@@ -115,6 +117,8 @@ Only the entry point loads by default. Everything below is read on demand.
 | Reference | Covers |
 |---|---|
 | [templates.md](roblox-best-practices/references/templates.md) | Annotated layouts for Scripts, LocalScripts, and ModuleScripts |
+| [minimal-code.md](roblox-best-practices/references/minimal-code.md) | Reuse before writing, what the engine already provides, and code density |
+| [edge-cases.md](roblox-best-practices/references/edge-cases.md) | The states production actually produces, and the guard for each |
 | [adaptive-mode.md](roblox-best-practices/references/adaptive-mode.md) | Analyzing and adopting an existing project's conventions |
 | [community-libraries.md](roblox-best-practices/references/community-libraries.md) | ProfileStore, Packet, ByteNet, Trove, Knit, Fusion, and friends |
 | [luau-language.md](roblox-best-practices/references/luau-language.md) | Typing, the new type solver, scheduling, deferred events, time APIs |
@@ -136,6 +140,7 @@ Only the entry point loads by default. Everything below is read on demand.
 | Reference | Covers |
 |---|---|
 | [performance.md](roblox-best-practices/references/performance.md) | Hot loops, memory, network, rendering, profiling |
+| [device-performance.md](roblox-best-practices/references/device-performance.md) | Frame budgets, low-end devices, quality degradation, time-slicing |
 | [patterns.md](roblox-best-practices/references/patterns.md) | Data stores, remotes, cleanup, pooling, streaming, character lifecycle |
 | [security-monetization.md](roblox-best-practices/references/security-monetization.md) | Threat model, validation layers, purchases, text filtering, policy |
 | [server-authority.md](roblox-best-practices/references/server-authority.md) | Authoritative simulation, with it and without it |

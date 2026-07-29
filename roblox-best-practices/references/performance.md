@@ -2,6 +2,8 @@
 
 Rules for writing lightweight, fast, resource-frugal Luau. Ordered by impact.
 
+**This file makes the code cheap.** For the budget it has to fit inside — frame time in milliseconds, time-slicing bulk work, device tiers, the quality degradation ladder, per-player bandwidth, and low-end memory ceilings — see [device-performance.md](device-performance.md).
+
 ## CPU
 
 - **Hoist out of hot loops.** Anything inside `RunService` callbacks, `while` loops, or per-entity iteration must not: create tables/closures, concatenate strings, call `Instance:FindFirstChild`/`WaitForChild`/`GetChildren`, or index deep Instance paths. Resolve references once in VARIABLES or at connection time. What counts as a *hot* path, and which allocations are genuinely irreducible, is defined in [false-positives.md](false-positives.md#performance--hot-loops--define-hot-first) — hoist only what can be hoisted, and reuse with `table.clear` when a per-iteration table is unavoidable.
