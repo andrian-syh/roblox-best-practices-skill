@@ -22,22 +22,26 @@ ROBLOX LUAU SKILL - INVARIANT CARD
    -- // VARIABLES // --   Services > Modules > Objects > Configuration > State Management
    -- // FUNCTIONS // --   definitions only (ModuleScript: Private before Public)
    -- // INITIALIZATION // --   everything that runs
-2  UDD (doc comments) - MANDATORY, and outranks Adaptive mode. Exactly two
-   permitted outcomes per function: write the block exactly as specified,
-   or write no doc comment at all. Never a third style.
-   Only an explicit user instruction switches to the project's comment style.
-   Block form: --[[ ]] above the function, desc > @param > @return.
-   - Desc <= 100 chars, ONE sentence, contract-level. No second sentence.
-   - Desc states PURPOSE only. It never names what the body does to get there:
-     no APIs, algorithms, collaborators, data structures, or code paths.
+2  Documentation Comments (Luau Comments) - default style, adapts to the project.
+   Default block: --[[ ]] above the function, desc > @param > @return.
+   Moonwave --[=[ ]=] or --- is equally correct when that is the project's style.
+   - Desc <= 250 chars, contract-level, states PURPOSE.
+   - Desc never names what the body does to get there: no APIs, algorithms,
+     collaborators, data structures, or code paths.
    - Desc carries NO volatile content: no numbers, thresholds, tunable names,
      feature names, or anything that needs editing when the body is retuned.
-   - @param/@return only when they add what the signature cannot show.
-   - English only. No em dashes. No emoji.
-   - IN-BODY COMMENTS: do not write them. The doc block carries the contract;
-     the code carries the mechanism. Never add one to code you write or edit.
-     Never delete one that already exists. Rare exception only for a
-     non-obvious external constraint: one line, <= 75 chars, WHY not WHAT.
+     When a detail cannot be avoided, state it at the most general level
+     that stays true after the body changes.
+   - Tags use Moonwave syntax: @param <name> <type> -- <description>
+     and @return <type> -- <description>. Only when they add what the
+     signature cannot show.
+   - English preferred as the universal language. No em dashes or double-hyphen
+     dashes as punctuation (the -- in a tag is a separator, not punctuation).
+     No emoji.
+   - IN-BODY COMMENTS: allowed. Same two tests apply - agnostic and
+     non-volatile. Never delete an existing one.
+   - Existing project comment style wins. Recommend this style when the user
+     asks to restyle; never impose it.
 3  Server is authoritative. Validate every remote arg: type, range, ownership, rate.
 4  Clean up everything created. Every connection has an owner and a teardown path.
 5  No avoidable per-frame garbage. Never poll what has a signal.
@@ -187,7 +191,7 @@ Both code paths, the forced settings, known limitations, and the adoption trade-
 When asked to *review or tidy existing code* (rather than write new code), give every finding exactly one severity — **Blocker** (security, data loss, or a guaranteed leak), **Correctness** (a real bug with a concrete failure scenario), or **Advisory** (style, layout, or micro-optimization). Before reporting anything, run it through [references/false-positives.md](references/false-positives.md): the "what NOT to flag" catalog, the severity taxonomy, and the four-step confidence gate.
 
 - **Blocker / Correctness** — violations of Non-Negotiable Runtime Rules and misused deprecated APIs → report as findings (and fix if asked). Apply the rules *as scoped*: the exceptions written into them (periodic loops, cold-path allocations, small state snapshots) are not violations, and discouraged-but-functional APIs are not deprecated ones.
-- **Advisory** — section-layout/naming deviations, module-require ordering, and missing doc comments on trivial private functions → *propose* as suggestions; never report as violations, never silently rewrite; the user decides. The UDD mandate binds what **you author**; it is not a cudgel for judging code someone else wrote, and existing comments are never deleted or rewritten to satisfy it.
+- **Advisory** — section-layout/naming deviations, module-require ordering, and missing doc comments on trivial private functions → *propose* as suggestions; never report as violations, never silently rewrite; the user decides. The Documentation Comment style guides what **you author**; it is not a standard for judging code someone else wrote, and existing comments are never deleted or rewritten to satisfy it.
 - Never reformat code unrelated to the request; consistency within the file beats consistency with this skill.
 - Before flagging an API as wrong/nonexistent, verify against the target environment (the [references/api-currency.md](references/api-currency.md) baseline; see Environment & Scale) — never flag from memory alone.
 - **Trace before flagging.** Follow the full flow across both sides of paired logic (writer/reader, serializer/deserializer, fire/handler) before reporting a bug — an asymmetry between paired sites is only a defect if tracing both sides shows a divergent outcome; it may deliberately compensate for the other side. Unusual-looking designs (state created before data exists, self-healing caches) may be intentional — check usage sites first. A finding needs a concrete failure scenario (inputs → wrong outcome); "could maybe fail" is not a finding. Full procedure: [references/verification.md](references/verification.md#review-verification-discipline-trace-before-flag).
@@ -240,33 +244,24 @@ Subsections in this fixed order (omit any that are empty):
 - **ModuleScripts** split functions into `-- | Private | --` (used only inside this script, `local function`) and `-- | Public | --` (exposed on the returned table). Private comes first.
 - **Scripts/LocalScripts** usually skip the Private/Public split — just list functions under the section header (use level-2 headers to group by topic if the script is large).
 
-#### UDD is mandatory and outranks mode selection
+#### Documentation Comments: the default style, and how it flexes
 
-The doc-comment rules (UDD) are **not** stylistic, and they do **not** adapt. They sit above Mode Selection: Adaptive mode adapts section headers, naming, ordering, and file organization — **it never adapts comments**.
+The official terms are **Luau Comments** (Roblox's own name for the `--` and `--[[ ]]` forms) and **Documentation Comments** (the comment block that documents an item). Roblox's own guidance is deliberately loose: use a block comment at the top of a file to describe its purpose, a block comment before a function or object to describe its intent, single-line comments for in-line notes, and focus on *why* rather than *what*. Everything below is this skill's default style layered on that guidance, plus the tag syntax borrowed from Moonwave, the de-facto standard for Luau doc comments.
 
-**There are exactly two permitted outcomes for any function you write:**
-
-| Outcome | When |
-|---|---|
-| **A UDD block written exactly as specified below** | The default, always available |
-| **No doc comment at all** | When a compliant description cannot be written, or the user asked for no comments |
-
-**There is no third option.** A block in the project's house style, a half-compliant block, a description that keeps "just a little" of the old habit — all forbidden. A missing comment costs a reader one function's worth of context; a wrong or stale comment misleads them into a bug. Silence beats a comment you cannot make compliant.
-
-**The only thing that switches to the project's comment style is an explicit user instruction** naming it ("use our moonwave format", "keep the existing comment style"). Detecting a house style during codebase analysis is **not** such an instruction, and neither is Adaptive mode being active. When the user does ask, follow their instruction in full — User Authority outranks this rule as it outranks every other.
-
-This applies to code you author. In **review**, the calculus differs: see [references/false-positives.md](references/false-positives.md#doc-comments--one-real-finding-the-rest-advisory).
+**This style is a default, not a mandate.** Where a project has an established comment style, that style wins — see [references/adaptive-mode.md](references/adaptive-mode.md#comments-follow-the-project). When the user asks which style to use, or asks to restyle the comments, **recommend this one** and explain why; never impose it on code that already has a convention.
 
 #### Writing the block
 
-- **Every function gets a doc comment**, ALWAYS wrapped in a `--[[ ... ]]` block placed directly above the function. Structure, in this fixed order: **description → params → returns**. Keep the whole block tight: doc comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
-  - **Description** — **one** technical sentence in clear English, **≤ 100 characters**. Not two sentences, not a sentence plus a clause bolted on. If the contract does not fit in one sentence, the function is doing too much.
-  - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing, and **no em dashes and no emoji** inside doc comments. English only, so developers of any origin can read it.
-  - **`@param` / `@return`** — just as terse (a few words each). Include only when they add information beyond what the signature already shows (non-obvious meaning, units, constraints, nil-behavior); omit them entirely when obvious.
+- **Every function gets a documentation comment** placed directly above it. Structure, in this fixed order: **description → params → returns**. Keep the block tight: documentation comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
+- **Block form.** The default is `--[[ ... ]]`. The Moonwave forms `--[=[ ... ]=]` and `---` are equally correct and are the ones tooling parses ([luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) recognises Moonwave style; Studio's hover tips accept any comment above the function). Use whichever the project uses; where there is no project convention, use `--[[ ... ]]`. Whatever the form, do not mix two forms within one file.
+  - **Description** — technical prose in clear English, **≤ 250 characters**. Short is still better: the limit is a ceiling, not a target. If the contract genuinely does not fit, the function is doing too much.
+  - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing. **No em dashes and no double-hyphen dashes used as punctuation** (the `--` inside a `@param`/`@return` tag is Moonwave's separator, not punctuation), and **no emoji**. English is preferred as the universal language, so developers of any origin can read it.
+  - **`@param` / `@return`** — Moonwave syntax: `@param <name> <type> -- <description>` and `@return <type> -- <description>`, each repeatable. The type may be omitted when the signature already declares it (Moonwave infers typed signatures automatically). Include a tag only when it adds information beyond what the signature shows — non-obvious meaning, units, constraints, nil-behavior — and omit it entirely when obvious.
+  - Other Moonwave tags (`@within`, `@class`, `@prop`, `@error`, `@yields`, `@deprecated`, `@server`/`@client`) are available and correct when the project generates Moonwave docs. Do not scatter them into a project that does not.
 
 #### The two description rules
 
-Both must hold for every description you write. They are the rules most often lost when a session is summarized — they are on the Invariant Card for that reason.
+Both must hold for **every comment you write** — documentation blocks and in-line notes alike. They are the rules most often lost when a session is summarized, which is why they are on the Invariant Card.
 
 **1. Agnostic to the implementation.** A description states *what the function is for*, never *what it does to get there*. Name the purpose and the contract; do not name the mechanism. Concretely, a description must not mention:
 
@@ -279,29 +274,42 @@ Both must hold for every description you write. They are the rules most often lo
 
 **2. Free of volatile content.** Nothing that a routine tuning pass would invalidate: no numbers, thresholds, or limits · no names of Configuration constants · no feature, system, or product names that may be renamed · no version, date, or environment specifics. Test it this way: **if someone rebalances a constant or replaces the body, would this comment need editing?** If yes, the comment is carrying volatile detail and must be rewritten at contract level.
 
-#### In-body comments: do not write them
+**When a detail genuinely cannot be avoided** — an engine quirk that only makes sense named, a platform constraint tied to a specific API — state it at the **most general level that still communicates the point**. "Rounded to the engine's replication precision" survives a refactor; "rounded to 3 decimals because SetAttribute truncates" does not. Aim for a comment that is still *relevant* after the next change, even if it is less specific today.
 
-**The default is none.** The doc block carries the contract and the code carries the mechanism; a comment among the statements is a third copy of the truth that nothing keeps honest. A function that needs internal narration is a function that needs splitting or renaming, and that is the fix.
+#### In-line notes inside the body
 
-- **Never add one to code you write.** Not a section marker, not a step label, not a restatement of the next line.
-- **Never add one to existing code you are editing.** Adding commentary is an unrequested change ([User Authority](#user-authority)).
-- **Never delete one that already exists.** Removing a comment is equally unrequested; leave it, and propose the removal if it is actively wrong.
+**In-body comments are allowed.** Roblox's own guidance recommends single-line `--` notes for in-line remarks, and a note that explains *why* a statement is there earns its place. Keep them rare and keep them useful: the documentation block carries the contract and the code carries the mechanism, so a note restating the next line is noise.
 
-**The narrow exception** is a constraint a reader cannot recover from the code itself, where its absence would invite a future bug. In practice that means: an engine quirk or platform behavior, an ordering requirement imposed from outside the function, a deliberate deviation that will look like a mistake, or a genuinely ignorable failure being swallowed ([patterns.md](references/patterns.md#anti-patterns-reject-on-sight) requires that one). Even then it is **one line, ≤ 75 characters, stating why and never what**. If you cannot justify it in those terms, it does not go in.
+- **Both description rules apply in full** — an in-line note is implementation-agnostic and free of volatile content exactly like a description. This matters more here, not less: a note sitting beside a statement is the first thing to go stale when that statement changes.
+- **Write them for the reason, not the action.** Engine quirks, ordering requirements imposed from outside, deliberate deviations that will look like mistakes, and genuinely ignorable failures being swallowed ([patterns.md](references/patterns.md#anti-patterns-reject-on-sight) requires that last one) are all worth a line. A step label or a restatement of the code is not.
+- **Prefer one line.** For a note spanning several lines, use several single-line `--` comments rather than a block, per Roblox's guidance.
+- **Never delete one that already exists.** Removing a comment is an unrequested change ([User Authority](#user-authority)); leave it, and propose the removal if it is actively wrong.
 
 ```lua
 --[[
 	Applies damage to a character and resolves the resulting state.
 
-	@param amount Damage in health points; must be positive
-	@return true when the damage was lethal
+	@param amount number -- Damage in health points; must be positive
+	@return boolean -- True when the damage was lethal
 ]]
 local function applyDamage(humanoid: Humanoid, amount: number): boolean
 	...
 end
 ```
 
-The body carries no commentary, which is the correct default.
+The same block in Moonwave form, for a project that generates docs from source:
+
+```lua
+--[=[
+	Applies damage to a character and resolves the resulting state.
+
+	@within Combat
+	@param amount number -- Damage in health points; must be positive
+	@return boolean -- True when the damage was lethal
+]=]
+```
+
+The body carries no commentary here because nothing in it needs explaining; that is the usual case, not a prohibition.
 
 Rejected descriptions for that same function, and why:
 
@@ -348,7 +356,7 @@ Full annotated templates (Script, LocalScript, ModuleScript): see [references/te
 - One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
 - Prefer `CollectionService` tags + `Attributes` to bind behavior to Instances — this is the most framework-agnostic wiring mechanism and survives any folder structure.
 - **Stay framework-agnostic by construction.** Core logic relies only on standard Roblox services and engine features; a community library's way of doing something is an overlay ([references/community-libraries.md](references/community-libraries.md)), never the baseline. Never assume a folder layout or framework beyond standard services — bind by tags/attributes, discover by service, and let the community-library check (not a hard-coded path) decide which idioms apply.
-- **Comment rules are mandatory and do not adapt.** Either write the UDD block exactly as specified, or write no doc comment at all — never a third style, and never the project's style unless the user explicitly asks. Descriptions are one sentence, ≤ 100 characters, implementation-agnostic and free of volatile detail, in a `--[[ ... ]]` block ordered desc → params → returns, English, no em dashes or emoji. **In-body comments are not written at all** except for a non-obvious external constraint (one line, ≤ 75 characters, why not what). Full rules: the FUNCTIONS section above.
+- **Documentation Comments follow the project; this skill's style is the recommendation.** Default block: `--[[ ... ]]` above the function, ordered desc → params → returns; Moonwave `--[=[ ... ]=]` or `---` when that is the project's style. Descriptions are ≤ 250 characters, implementation-agnostic and free of volatile detail, English preferred, no em dashes or double-hyphen dashes as punctuation, no emoji. Tags use Moonwave syntax (`@param <name> <type> -- <description>`). **In-line notes are allowed** and are held to the same two description rules. Full rules: the FUNCTIONS section above.
 - **`const` for bindings that must not be rebound** [GA in Studio, April 2026]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](references/luau-language.md#const-bindings).
 - Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](references/luau-language.md).
 
@@ -389,9 +397,9 @@ Before finishing any Luau code, verify:
 - [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
 - [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
 - [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
-- [ ] Every function authored either carries a compliant `--[[ ... ]]` block (desc → params → returns, one sentence ≤ 100 chars, English, no em dashes or emoji) **or carries no doc comment at all** — no third style, and the project's comment style used only where the user explicitly asked for it
-- [ ] Every description passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names) — retuning a constant or rewriting the body would not require editing it
-- [ ] **No in-body comments were written**, in new or edited code, beyond a justified non-obvious external constraint (one line, ≤ 75 chars, why not what); no pre-existing comment was deleted
+- [ ] Every function authored carries a Documentation Comment in the project's block form (`--[[ ]]` by default, Moonwave `--[=[ ]=]`/`---` where that is the project's style), ordered desc → params → returns, ≤ 250 chars, English preferred, no em dashes or double-hyphen punctuation, no emoji; tags in Moonwave syntax (`@param <name> <type> -- <description>`) and only where they add what the signature cannot show
+- [ ] **Every comment** — documentation block and in-line note alike — passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names); where a detail was unavoidable it was stated at the most general level that stays true after the body changes
+- [ ] In-line notes explain *why*, not what; none restates the code; no pre-existing comment was deleted
 - [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
 - [ ] All connections have an owner and a teardown path; no leaked Instances
 - [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven

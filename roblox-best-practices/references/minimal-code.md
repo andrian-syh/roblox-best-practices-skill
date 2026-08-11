@@ -47,7 +47,7 @@ The ladder asks "does this need to exist?", and the answer is always **yes** for
 
 - Server-side validation of remote arguments
 - Cleanup and teardown paths for anything created
-- The three-section layout and the UDD block
+- The three-section layout and the Documentation Comment on each function
 - `pcall` coverage on yielding external calls
 - Re-validation after a yield
 

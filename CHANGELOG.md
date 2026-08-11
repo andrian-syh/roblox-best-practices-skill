@@ -2,6 +2,24 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.13.0] - 2026-08-11
+
+**Documentation Comments: official terminology, Moonwave tag syntax, and style flexibility restored.** The comment rules are re-grounded in what Roblox and the Luau ecosystem actually document, and they go back to adapting to the project instead of overriding it.
+
+### Changed
+- **"UDD" is gone; the terms are now Luau Comments and Documentation Comments.** The old label appeared in no Roblox or Luau source. The rules are now stated as this skill's default style layered on [Roblox's own comment guidance](https://create.roblox.com/docs/luau/comments) (block comment above the item, single-line notes in-line, explain why not what).
+- **Comment style adapts to the project again.** It returns to the adaptable column in `adaptive-mode.md`, replacing "Comments never adapt" with "Comments follow the project". A project that documents with Moonwave keeps documenting with Moonwave. What does not adapt is the content discipline: implementation-agnostic and free of volatile content in any style. When the user asks which style to use or asks for a restyle, this skill's default is the recommendation, offered rather than imposed.
+- **Moonwave tag syntax adopted:** `@param <name> <type> -- <description>` and `@return <type> -- <description>`, each repeatable, type omissible where the signature declares it. The previous `@param name description` form parsed incorrectly under Moonwave and luau-lsp. Every example across `templates.md`, `security-monetization.md`, and `device-performance.md` updated.
+- **Block form: `--[[ ... ]]` stays the default, `--[=[ ... ]=]` and `---` are now equally correct** where they are the project's style — and are the forms tooling actually parses. Mixing two forms in one file remains wrong.
+- **Description limit raised from 100 to 250 characters**, and the one-sentence requirement dropped. The limit is a ceiling, not a target.
+- Em dashes, double-hyphen dashes used as punctuation, and emoji remain out; the `--` separator inside a Moonwave tag is explicitly exempt as a separator, not punctuation. English moves from "only" to "preferred as the universal language".
+- **Both description rules now bind in-line notes too**, with a new escape valve: where a detail cannot be stated agnostically, state it at the most general level that stays true after the body changes.
+- Review severities in `false-positives.md` updated — a house comment style in any block form is not a finding, and neither is the presence of an in-line note.
+
+### Removed
+- **The in-body comment prohibition.** In-line notes are allowed again, subject to the same two content rules and to explaining *why* rather than restating the code, matching Roblox's own recommendation of `--` for in-line remarks. The `≤ 75 characters` cap and the "narrow exception" framing are gone; "never delete an existing comment" stays.
+- **The two-permitted-outcomes rule** (a compliant block or nothing) and the "outranks Adaptive mode" precedence, both superseded by style flexibility.
+
 ## [1.12.2] - 2026-07-29
 
 **Code economy, device scalability, edge-case robustness, and non-negotiable comment rules.** Teaches the agent to write less code without writing less software, to fit a frame budget on weak hardware, and to walk a Roblox-specific edge-case list before calling a function done. Comment rules become mandatory and stop adapting to the project.

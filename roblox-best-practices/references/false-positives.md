@@ -137,9 +137,9 @@ Only the **deprecated** column is a Correctness (or Blocker) finding. The **disc
 
 Section-header deviations, subsection ordering, naming casing, module require ordering, and missing doc comments on trivial private helpers are **Advisory**. Propose them; do not report them as violations and do not silently rewrite. Consistency within the file outranks consistency with this skill. In Adaptive mode, the confirmed project convention wins outright.
 
-### Doc comments — one real finding, the rest Advisory
+### Documentation Comments — one real finding, the rest Advisory
 
-The UDD rules ([SKILL.md](../SKILL.md#udd-is-mandatory-and-outranks-mode-selection)) are **mandatory for code you author** and **not a standard you hold other people's code to**. That asymmetry is deliberate: binding your own output keeps what you add consistent, while judging an existing codebase by it would produce a flood of noise findings.
+The Documentation Comment style ([SKILL.md](../SKILL.md#documentation-comments-the-default-style-and-how-it-flexes)) is a **default for code you author**, not a standard you hold other people's code to. Style is adaptable by design; judging an existing codebase against this skill's default would produce a flood of noise findings.
 
 In review the rules collapse to a single distinction:
 
@@ -147,11 +147,12 @@ In review the rules collapse to a single distinction:
 |---|---|
 | A description that is **factually wrong** about the contract, or documents behavior the function no longer has | **Correctness** — it will mislead the next reader into a real bug |
 | A description naming the mechanism, or carrying a number/tunable/collaborator that has since drifted | **Advisory** — propose the contract-level rewrite |
-| An over-length or unnecessary in-body comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
-| A doc comment written in the project's own established house style | **Not a finding at all** |
+| An over-length comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
+| A comment written in the project's own established house style, in any block form (`--[[ ]]`, `--[=[ ]=]`, `---`) | **Not a finding at all** |
+| An in-line note that explains why a statement is there | **Not a finding at all** |
 | Existing in-body comments in code you did not write | **Not a finding at all** |
 
-Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. Never delete an existing comment to satisfy a length cap — shorten it, or leave it and propose. And do not report a project for having a house comment style: the no-adaptation rule governs what *you* write, not what already exists.
+Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. Never delete an existing comment to satisfy a length cap — shorten it, or leave it and propose. Do not report a project for its comment style: style adapts, and a Moonwave-documented codebase is doing it right. In-line notes are permitted, so their mere presence is never a finding — only a note that is wrong, or that restates the code it sits beside, is worth proposing.
 
 ## Regression set — these must pass a review clean
 

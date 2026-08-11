@@ -36,7 +36,7 @@ local playerConnections: {[Player]: {RBXScriptConnection}} = {}
 --[[
 	Handles a purchase request coming from a client, rejecting anything invalid.
 
-	@param itemId Untrusted client argument; validated before use
+	@param itemId unknown -- Untrusted client argument; validated before use
 ]]
 local function onPurchaseRequest(player: Player, itemId: unknown)
 	if typeof(itemId) ~= "string" then return end
@@ -126,8 +126,8 @@ local PlayerData = {}
 --[[
 	Runs a fallible operation under this module's retry policy.
 
-	@param fn The operation to attempt; may be retried multiple times
-	@return Whether it eventually succeeded, followed by its results
+	@param fn (() -> T...) -- The operation to attempt; may be retried multiple times
+	@return boolean -- Whether it eventually succeeded, followed by its results
 ]]
 local function withRetry<T...>(fn: () -> T...): (boolean, T...)
 	for attempt = 1, MAX_RETRIES do
@@ -232,8 +232,9 @@ updateCoinDisplay()
 - The LocalScript reads state via Attributes rather than a RemoteEvent — prefer attribute/tag replication for simple state; reserve remotes for actions.
 - Every declared Service/Module/Object/constant in these templates is used — copy that discipline: declare only what the script actually needs.
 - Bare `WaitForChild` is fine for containers that always replicate (ReplicatedStorage, PlayerGui). For `workspace` descendants under StreamingEnabled, use a timeout or a CollectionService tag signal instead ([patterns.md](patterns.md#streaming-streamingenabled)).
-- The doc comments here model the UDD rules (SKILL.md → FUNCTIONS), which are **mandatory and do not adapt to the project**. Either write the block exactly like these or write none at all. Three properties to copy deliberately:
+- The Documentation Comments here model this skill's default style (SKILL.md → FUNCTIONS). It is a **default, not a mandate**: a project that documents with Moonwave `--[=[ ]=]` or `---` blocks keeps its own form, and you match it. Three properties survive any style and are the ones to copy:
   - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to — that is why they would all still be true after a rewrite.
   - **No volatile content.** No thresholds, no Configuration constant names, no system names. `updateCoinDisplay` is documented as synchronizing a display, not as "reads the Coins attribute and writes CoinLabel.Text".
-  - **No in-body comments.** Every function body in these templates is bare, which is the rule, not an accident. Commentary among the statements is written only for a non-obvious external constraint, one line and ≤ 75 characters.
+  - **Moonwave tag syntax.** `@param <name> <type> -- <description>` and `@return <type> -- <description>`, present only where they say something the signature does not. The blocks with no tags are correct: their signatures already speak for themselves.
+- **In-line notes are allowed** and the templates use one (`-- players who joined before this script ran`, in INITIALIZATION). Note its shape: it explains *why* the loop exists, names no API, and would still be true after the body changes. Most bodies here carry no commentary because nothing in them needs explaining, which is the usual case rather than a prohibition.
 - The `--!strict` header shown is illustrative. Per SKILL.md it is opt-in — match the project's strictness and never add it unbidden.

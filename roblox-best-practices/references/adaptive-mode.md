@@ -12,22 +12,21 @@ Procedure for applying this skill while conforming to a studio's existing coding
 | Module require ordering | No per-frame garbage; no polling; event-driven design |
 | Framework idioms (Knit services, ECS systems, single-script, custom loaders) | `pcall` + retry on external/yielding calls |
 | File/module organization and bootstrap pattern | Data-safety rules (UpdateAsync, BindToClose, save on leave) |
-| | Type safety where the project already uses `--!strict` |
-| | **Comment rules (UDD) — see below** |
+| Documentation Comment style — block form, tag syntax, language ([see below](#comments-follow-the-project)) | Type safety where the project already uses `--!strict` |
+| | Comments stay implementation-agnostic and free of volatile content, whatever their style |
 
 If an existing project convention *directly conflicts* with a non-negotiable rule (e.g., their template uses `wait()`), flag it in the confirmation step — don't silently copy the bad practice, and don't silently break their convention either. Let the user decide, recommending the safe option.
 
-## Comments never adapt
+## Comments follow the project
 
-**Doc-comment style is not adaptable.** It moved out of the left column deliberately: comments are the one artifact that goes stale silently, so this skill fixes their form rather than inheriting a project's habits.
+**Documentation Comment style adapts like everything else in the left column.** A project that documents with Moonwave `--[=[ ]=]` blocks, with `---` lines, or with plain `--[[ ]]` has already made a choice, and consistency within the codebase is worth more than conformity to this skill.
 
-For every function you author, exactly two outcomes are permitted: **a UDD block exactly as [SKILL.md](../SKILL.md#udd-is-mandatory-and-outranks-mode-selection) specifies, or no doc comment at all.** Never a third style, never a hybrid. **In-body comments are not written at all**, save the narrow external-constraint exception.
+- **Match the project's block form, tag habits, and language.** If they run Moonwave and tag `@within`/`@prop`, keep tagging. If they write terse `--[[ ]]` blocks with no tags, match that.
+- **The content rules still hold in any style.** Whatever the form, a description stays implementation-agnostic and free of volatile content, and so does an in-line note ([SKILL.md](../SKILL.md#the-two-description-rules)). That is about staleness, not aesthetics, so it survives adaptation.
+- **Recommend this skill's style whenever the user asks.** If they ask which style to use, ask for a restyle, or have no convention at all, propose the default from [SKILL.md](../SKILL.md#documentation-comments-the-default-style-and-how-it-flexes) and say why. Recommend; never impose.
+- **Existing comments are left alone.** You do not rewrite them to match this skill, and you do not delete them.
 
-- Detecting a house comment style during Step 1 is a **finding to report**, not a convention to adopt.
-- Only an **explicit user instruction** ("keep our moonwave format") switches to the project's style. Adaptive mode being active is not such an instruction.
-- Existing comments in existing files are left alone. You do not rewrite them to match this skill, and you do not delete them.
-
-Record the project's comment style in the Step 2 summary so the user can see it and decide, but write your own code to the skill's rule unless they say otherwise.
+Record the project's comment style in the Step 2 summary so the user sees what you will follow.
 
 ## Step 1 — Analyze the codebase
 
@@ -43,7 +42,7 @@ Record for each dimension:
 4. **Framework** — Knit/Flamework/custom loader/none? How do scripts discover each other (require chains, service locator, tags, `_G` [flag it])? Where do remotes live and who creates them?
    - **Community libraries** — scan `require()`s for known libraries (ProfileStore/ProfileService, Packet/ByteNet/Zap, Trove/Maid/Janitor, Signal, Promise, Fusion/React-lua, ...). Each detected library shifts the applicable patterns per [community-libraries.md](community-libraries.md). Unknown recurring modules → read 2–3 usages to classify them.
 5. **Typing** — `--!strict` usage, annotation density, shared type modules.
-6. **Comment/doc style** — language, placement, format (`--`, `--[[]]`, moonwave `---`), density. Record it **for reporting only**; you write to the skill's comment rule regardless, unless the user explicitly instructs otherwise.
+6. **Comment/doc style** — language, placement, block form (`--`, `--[[ ]]`, Moonwave `--[=[ ]=]` or `---`), tag usage (`@param`/`@return`/`@within`), density. This is a convention to **adopt**; note whether a Moonwave doc site is generated from it (a `moonwave.toml` or a docs workflow settles it), since that makes the tag syntax load-bearing.
 7. **Existing quality level** — deprecated API usage, cleanup discipline, validation habits. This feeds the conflict list.
 
 ## Step 2 — Present findings and confirm
@@ -59,8 +58,8 @@ Before writing any code, show the user a compact summary and get explicit approv
 - Libraries detected: ProfileStore (data), Packet (networking), Trove (cleanup)
   -> defer data/network/cleanup patterns to them per community-libraries.md — confirm?
 - Typing: --!strict in ~80% of files
-- Docs: moonwave-style --- comments, English
-  -> comments do not adapt; new code uses the skill's UDD block unless you ask otherwise
+- Docs: moonwave-style --- comments with @param/@return, English
+  -> will match this style; say the word if you'd rather I propose the skill's default
 
 ## Proposed convention for new code
 [skill defaults merged with the above — list each point]
@@ -80,7 +79,7 @@ Wait for confirmation. Apply any corrections the user gives. If the user answers
 
 - Write all subsequent code in the confirmed convention.
 - Where the project had no convention for something, fill the gap with this skill's default.
-- When editing an existing file, match that file even if it predates the confirmed convention — consistency within a file beats global consistency. Note mismatches; offer (don't perform) refactors. **Comments are the exception to this file-matching rule:** any doc comment you author follows the skill's UDD block or is omitted, and you add no in-body commentary, whatever the surrounding file does.
+- When editing an existing file, match that file even if it predates the confirmed convention — consistency within a file beats global consistency. Note mismatches; offer (don't perform) refactors. **Comments follow the same file-matching rule** — write them in the form the surrounding file uses, and keep them agnostic and non-volatile whatever that form is.
 - The confirmed convention holds for the rest of the session/project unless the user changes it. Re-run analysis only if you enter a clearly different sub-project.
 
 ## Persisting the result

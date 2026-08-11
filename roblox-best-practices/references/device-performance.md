@@ -36,7 +36,7 @@ local FRAME_BUDGET = 0.004
 --[[
 	Drains a work queue without stalling the frame.
 
-	@param queue Consumed in place; empty when this returns
+	@param queue {() -> ()} -- Consumed in place; empty when this returns
 ]]
 local function processQueue(queue: {() -> ()})
 	while #queue > 0 do

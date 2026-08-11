@@ -26,8 +26,8 @@ local buckets: {[Player]: {[string]: {count: number, windowStart: number}}} = {}
 --[[
 	Decides whether a player may perform an action under its rate policy.
 
-	@param window Seconds; defaults to 1
-	@return false when the request should be rejected
+	@param window number? -- Seconds; defaults to a one-second window
+	@return boolean -- False when the request should be rejected
 ]]
 local function allowRate(player: Player, action: string, maxPerWindow: number, window: number?): boolean
 	local now = os.clock()
