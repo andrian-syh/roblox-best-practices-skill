@@ -69,7 +69,7 @@ Character physics is client-owned; validate *outcomes*, not inputs:
 
 ## Server Authority (engine-level)
 
-Roblox offers an **engine-level server-authoritative mode** [GA, 9 July 2026] that moves physics simulation and movement validation onto the server, closing the client-owned-movement gap that the manual sanity checks above only *mitigate*.
+Roblox offers an **engine-level server-authoritative mode** [GA] that moves physics simulation and movement validation onto the server, closing the client-owned-movement gap that the manual sanity checks above only *mitigate*.
 
 **It is off by default.** Roblox does not enable it for you; a place has it only if `Workspace.AuthorityMode = "Server"` was set explicitly. Confirm the mode before assuming either way — the gate, the full behavior contract, and the with/without comparison live in [server-authority.md](server-authority.md).
 

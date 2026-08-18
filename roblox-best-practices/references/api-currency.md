@@ -14,19 +14,8 @@ The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm
 - [Engine](#engine)
 - [Studio MCP tooling](#studio-mcp-tooling)
 - [Deprecated (report as findings)](#deprecated-report-as-findings)
+- [Dates live here, and only here](#dates-live-here-and-only-here)
 - [Maintaining this file](#maintaining-this-file)
-
-### Upstream Luau is not Roblox Studio
-
-**A feature shipping in a `luau-lang/luau` release does not mean it is usable in Studio.** Three distinct states, and conflating them is the most expensive mistake this file can cause:
-
-| State | Meaning | How to treat it |
-|---|---|---|
-| **RFC merged** | The design was accepted. Nothing has shipped. | Not an API. Never write code against it. |
-| **Upstream released** | It exists in a numbered Luau release. | Studio gets it later, or never. **[Verify]** unless a Studio source confirms it. |
-| **Live in Studio** | Confirmed working in-game or in Studio. | **[GA]**, safe to use. |
-
-The lag is real and variable: `const` took roughly two months from merged RFC (February 2026) to live in Studio (April 2026). Some upstream features never arrive at all, because they target standalone runtimes. The **Studio** column below records this state explicitly — read it before recommending anything.
 
 ## Luau language and libraries
 
@@ -102,6 +91,14 @@ Tool names, limits, and variants are recorded in [studio-mcp.md](studio-mcp.md) 
 - `AdGui.OnAdEvent` (deprecated in release notes 734, August 2026)
 
 Discouraged-but-functional APIs are **not** in this list; the split is in [false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
+
+## Dates live here, and only here
+
+**No other file in this skill carries a date or a year.** They carry the maturity tag — **[GA]**, **[Beta]**, **[Verify]**, **[UNVERIFIED]** — and link back to the row here that holds the evidence.
+
+The reason is maintenance, not style: when a feature's status changes, exactly one file needs editing. A date copied into `luau-language.md` or `patterns/` is a second thing to remember, and the one that gets forgotten is the one that quietly starts lying. `scripts/validate-skill.py` enforces this — a four-digit year anywhere outside this file fails the check.
+
+The same applies to "new", "recent", and "coming soon": a feature described that way stays described that way long after it stopped being true. State the tag instead.
 
 ## Maintaining this file
 

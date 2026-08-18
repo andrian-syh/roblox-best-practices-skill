@@ -107,7 +107,7 @@ Every engine release creates a fresh crop of "that API does not exist" false pos
 - **CCL instances and properties** (`ControllerManager`, `GroundController`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) — all real. Equally, a project still using `Humanoid` is correct; `Humanoid` is not deprecated.
 - **`Player:GetCameraState()`**, `GroupService:GetRolesInGroupAsync`, `game.ServerRestartScheduled`, DataStore version APIs, `Model.ModelStreamingMode` — all shipped.
 - **`vector` library, `buffer.readbits`/`writebits`, `math.map`/`lerp`/`isnan`/`isinf`/`isfinite`** — all shipped Luau.
-- **`const` bindings** — a real keyword, live in Studio since April 2026. `const MAX = 100` is not a syntax error and not a typo for `local`. Equally, **do not demand `const`**: a file using `local` throughout is correct, and converting a codebase to `const` is a stylistic sweep only the user can request.
+- **`const` bindings** — a real keyword, **[GA]** in Studio ([api-currency.md](api-currency.md)). `const MAX = 100` is not a syntax error and not a typo for `local`. Equally, **do not demand `const`**: a file using `local` throughout is correct, and converting a codebase to `const` is a stylistic sweep only the user can request.
 - **`read` / `write` table members** (`{ read x: number }`), **yielding inside a custom iterator**, and **`declare extern type`** — all shipped upstream. Verify the solver before flagging the first, and never "correct" `declare extern type` back to `declare class`, which was removed.
 - **The `@deprecated` attribute** — real, with optional `use` and `reason`. A project marking its own function deprecated is doing the right thing, not leaving dead code.
 

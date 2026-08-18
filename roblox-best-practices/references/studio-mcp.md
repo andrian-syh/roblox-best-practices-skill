@@ -130,4 +130,4 @@ Each of these is a common way to spend the user's budget without gaining informa
 
 ## Snapshot note
 
-Tool names and limits here reflect a **July 2026** snapshot of the official built-in server plus the known standalone lineage. They are an aid to interpretation, never an authority: the connected tool list and each tool's own schema always take precedence ([api-currency.md](api-currency.md)).
+Tool names and limits here reflect a **point-in-time snapshot** (dated in [api-currency.md](api-currency.md)) of the official built-in server plus the known standalone lineage. They are an aid to interpretation, never an authority: the connected tool list and each tool's own schema always take precedence ([api-currency.md](api-currency.md)).

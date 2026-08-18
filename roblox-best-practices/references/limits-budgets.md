@@ -8,11 +8,11 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 
 | Limit | Value | Notes |
 |---|---|---|
-| Value size per key | **4 MB** | Unchanged by the 2026 limit revision |
+| Value size per key | **4 MB** | Unchanged by the latest limit revision |
 | Key name length | **50 characters** | |
-| Storage per experience | **500 MB + 1 MB × lifetime players** | Raised from a 100 MB base, **effective 29 July 2026** [Verify] |
+| Storage per experience | **500 MB + 1 MB × lifetime players** | Raised from a 100 MB base, **[Verify]** — effective date in [api-currency.md](api-currency.md#engine) |
 | Request budget | **300 baseline + (CCU × multiplier), per minute** | Separate budget per request type (Standard Read, Ordered List, ...) |
-| Budget scope | **Unified across in-game and Open Cloud** | Both increment the same counters, **effective 29 July 2026** [Verify] |
+| Budget scope | **Unified across in-game and Open Cloud** | Both increment the same counters, **[Verify]** — effective date in [api-currency.md](api-currency.md#engine) |
 | Value shape | JSON-serializable only | No userdata, no mixed/sparse keys, no NaN/inf, no cycles ([patterns/data.md](patterns/data.md#data-persistence)) |
 
 Consequences for design:

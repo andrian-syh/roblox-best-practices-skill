@@ -11,6 +11,7 @@ Checks, in the order Anthropic's authoring guidance cares about them:
   4. Reference files over 100 lines carry a table of contents.
   5. Every table of contents matches the headings actually in its file.
   6. The YAML frontmatter stays inside the spec's name and description limits.
+  7. No file except the API-currency baseline carries a date.
 """
 
 import os
@@ -23,6 +24,8 @@ MAX_SKILL_LINES = 500
 # Frontmatter limits from the Agent Skills spec.
 MAX_NAME_CHARS = 64
 MAX_DESCRIPTION_CHARS = 1024
+# The one file allowed to carry dates; everywhere else uses maturity tags.
+DATE_OWNER = "api-currency.md"
 SKILL_TOKEN_BUDGET = 5000
 TOC_REQUIRED_ABOVE_LINES = 100
 # Characters per token, measured against this corpus rather than assumed.
@@ -131,6 +134,14 @@ def main():
             failures.append(f"SKILL.md: name '{name_value}' must be lowercase letters, numbers, and hyphens only")
         if len(desc_value) > MAX_DESCRIPTION_CHARS:
             failures.append(f"SKILL.md: description is {len(desc_value)} chars, over {MAX_DESCRIPTION_CHARS}")
+
+    # 7. dates live only in the API-currency baseline
+    for path in files:
+        if os.path.basename(path) == DATE_OWNER:
+            continue
+        for n, line in enumerate(read(path).splitlines(), 1):
+            if re.search(r"\b(19|20)\d{2}\b", line):
+                failures.append(f"{path}:{n}: contains a year; dates belong in {DATE_OWNER}, elsewhere use the maturity tag")
 
     corpus = sum(len(read(f)) for f in files)
     print(f"files:      {len(files)}")

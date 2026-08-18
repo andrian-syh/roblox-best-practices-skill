@@ -1,6 +1,6 @@
 # Server Authority — Engine-Level Authoritative Simulation
 
-Server Authority moves physics simulation and movement validation onto the server, with client prediction and rollback for responsiveness. It reached **[GA] general release on 9 July 2026**.
+Server Authority moves physics simulation and movement validation onto the server, with client prediction and rollback for responsiveness. It reached **[GA] general release** ([api-currency.md](api-currency.md#engine)).
 
 > **Never assume it is on.** Roblox does **not** enable Server Authority by default; a place has it only if someone explicitly set `Workspace.AuthorityMode = "Server"`. Most existing places are **not** server-authoritative. Confirm before writing or reviewing anything in the trigger list below — the confirmation gate is defined in [SKILL.md](../SKILL.md#session-setup-decide-once-then-cache).
 

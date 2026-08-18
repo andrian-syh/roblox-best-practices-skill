@@ -2,6 +2,18 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.16.1] - 2026-08-18
+
+**Dates now live in one file, enforced by the validator.** The last open item from the Agent Skills audit: guidance that carries a date goes stale silently, and a date copied into eight files is eight things to remember when a status changes.
+
+### Changed
+- **Every date and year removed from all files except `api-currency.md`** — sixteen occurrences across `luau-language.md`, `limits-budgets.md`, `false-positives.md`, `security.md`, `server-authority.md`, `style-rules.md`, `studio-mcp.md`, and both split `patterns/` files. Each now carries the maturity tag it always should have (**[GA]**, **[Beta]**, **[Verify]**) and links to the row in `api-currency.md` holding the evidence.
+- `luau-language.md` no longer says the old type solver "remains available through 2026" — a sentence with an expiry date built in. It now says the migration window is open and tells the reader to confirm it still is.
+- `api-currency.md` gained a **"Dates live here, and only here"** section stating the rule and its reason, and extending it to "new", "recent", and "coming soon" — descriptions that stay attached long after they stop being true.
+
+### Added
+- **A seventh validator check:** any four-digit year outside `api-currency.md` fails. Verified by reintroducing one on purpose. It immediately caught an occurrence in `studio-mcp.md` that a manual grep had missed, because the grep filtered on link text rather than file path.
+
 ## [1.16.0] - 2026-08-18
 
 **Structural pass: one session-setup procedure, and three bundled files split by domain.** Nothing was rewritten as guidance; the same rules are grouped so an agent loads only the domain it is working in, and runs the once-per-session decisions as one procedure instead of four scattered reminders.

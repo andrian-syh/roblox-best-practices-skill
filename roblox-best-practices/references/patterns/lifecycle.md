@@ -53,7 +53,7 @@ Characters respawn; players persist. Confusing the two lifetimes is a standing l
 
 ### Humanoid vs the Character Controller Library
 
-The **Character Controller Library (CCL)** reached **[GA]** in April 2026. It reimplements character movement as configurable Luau on top of `ControllerManager` instead of hard-coded `Humanoid` behavior, adding ground friction, momentum conservation, and tunable acceleration curves.
+The **Character Controller Library (CCL)** reached **[GA]** ([api-currency.md](../api-currency.md#engine)). It reimplements character movement as configurable Luau on top of `ControllerManager` instead of hard-coded `Humanoid` behavior, adding ground friction, momentum conservation, and tunable acceleration curves.
 
 **`Humanoid` is not deprecated.** This is an architectural *choice*, not a migration mandate — existing experiences keep working unchanged.
 

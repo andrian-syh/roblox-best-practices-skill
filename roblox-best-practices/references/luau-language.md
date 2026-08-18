@@ -19,16 +19,16 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 - **Share types through a dedicated types module:** `export type Loadout = { ... }` in one ModuleScript, consumed as `Types.Loadout` on both server and client — one definition, zero drift.
 - **The cast operator `::` silences the checker — treat every cast as a claim you must have already proven.** Cast to *narrow* after a runtime check (`value :: string` after `typeof(value) == "string"`), never to force incompatible shapes through. An unchecked cast is a suppressed error, not a fix.
 - Generics (`local function first<T>(list: {T}): T?`) and type packs (`T...`) beat `any` in reusable utilities.
-- **Read-only table members** — prefix a property or indexer with `read` to forbid writes through that type: `{ read x: number }` and `{ read [string]: Part }`. Use it on types handed to consumers that should only observe (config snapshots, replicated state views); it documents the contract and the checker enforces it, which is cheaper than a runtime guard. `write` exists as the mirror modifier. Landed in Luau 0.721 (May 2026); requires the new solver for full enforcement, so treat it as **[Verify]** in old-solver projects.
-- **Extern types replace the old `class` tag.** Type declaration files now use `declare extern type`; the `declare class` and `extern class` spellings were removed in Luau 0.727 (June 2026). This only affects hand-written declaration files — ordinary gameplay code never declares extern types. Do not "fix" a project to the old spelling.
-- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them (`issubtypeof` landed in Luau 0.724, June 2026). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
+- **Read-only table members** — prefix a property or indexer with `read` to forbid writes through that type: `{ read x: number }` and `{ read [string]: Part }`. Use it on types handed to consumers that should only observe (config snapshots, replicated state views); it documents the contract and the checker enforces it, which is cheaper than a runtime guard. `write` exists as the mirror modifier. Landed in Luau 0.721; requires the new solver for full enforcement, so treat it as **[Verify]** in old-solver projects.
+- **Extern types replace the old `class` tag.** Type declaration files now use `declare extern type`; the `declare class` and `extern class` spellings were removed in Luau 0.727. This only affects hand-written declaration files — ordinary gameplay code never declares extern types. Do not "fix" a project to the old spelling.
+- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them (`issubtypeof` landed in Luau 0.724). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
 
 ### The new type solver — what is on by default
 
-Reached **[GA] general release on 20 November 2025**. It is a rewrite, not a tweak: better inference, fewer false positives, read-only table properties, refinements that track variable changes, type functions, and relaxed casting rules.
+Reached **[GA] general release** ([api-currency.md](api-currency.md#luau-language-and-libraries)). It is a rewrite, not a tweak: better inference, fewer false positives, read-only table properties, refinements that track variable changes, type functions, and relaxed casting rules.
 
 - **Default for `--!nocheck` and `--!nonstrict`** for all users. Projects on those modes are already using it.
-- **`--!strict` stays on the old solver by default** and must opt in explicitly. The old solver remains available through 2026 for migration.
+- **`--!strict` stays on the old solver by default** and must opt in explicitly. The old solver remains available during the migration window; confirm it is still there before relying on it ([api-currency.md](api-currency.md#luau-language-and-libraries)).
 - Configure per place with the workspace properties **`UseNewLuauTypeSolver`** and **`LuauTypeCheckMode`** (nocheck / nonstrict / strict).
 - **`nonstrict` was redesigned to report only definite runtime errors**, not speculative warnings. A nonstrict file that stays quiet is behaving correctly — never flag that as missing type safety.
 - It is **not fully backwards compatible**: enabling it under strict mode on a large existing codebase can surface a wall of new errors. That is a migration project the user chooses, never something this skill starts on its own ([SKILL.md](../SKILL.md#language--style-rules)).
@@ -39,11 +39,11 @@ Reached **[GA] general release on 20 November 2025**. It is a rewrite, not a twe
 - **String interpolation:** `` `Hello {player.Name}` `` over concatenation chains.
 - `continue`, compound assignment (`+=`, `-=`, `*=`, `..=`), floor division (`//`), and `if x then a else b` expressions are standard Luau — use them where they read better.
 - **`table.freeze` constant tables.** Module-level config/constant tables should be frozen at declaration: writes then error at the mutation site instead of silently corrupting shared state. Freezing is *shallow* (nested tables need their own freeze) and checkable with `table.isfrozen`. Don't freeze tables that legitimately mutate.
-- **Yielding inside iterators** is supported since Luau 0.722 (May 2026): a custom iterator function may now yield, so generator-style iteration over paged or async sources no longer has to be rewritten as a manual loop. The yield still costs a frame like any other — do not put one inside a hot loop, and the re-validate-after-yield rule (Non-Negotiable #7) applies to every iteration that yields, not just to the loop as a whole.
+- **Yielding inside iterators** is supported since Luau 0.722: a custom iterator function may now yield, so generator-style iteration over paged or async sources no longer has to be rewritten as a manual loop. The yield still costs a frame like any other — do not put one inside a hot loop, and the re-validate-after-yield rule (Non-Negotiable #7) applies to every iteration that yields, not just to the loop as a whole.
 
 ### `const` bindings
 
-**[GA] in Roblox Studio since April 2026** (RFC merged February 2026; keyword live in-game and in Studio with no beta flag). `const` is a **contextual keyword**, valid exactly where `local` is valid, so adding it can never break existing code that uses `const` as an identifier.
+**[GA] in Roblox Studio** — the keyword is live in-game and in Studio with no beta flag ([api-currency.md](api-currency.md#luau-language-and-libraries)). `const` is a **contextual keyword**, valid exactly where `local` is valid, so adding it can never break existing code that uses `const` as an identifier.
 
 ```lua
 const MAX_HEALTH = 100
@@ -65,7 +65,7 @@ Where not to: State Management variables (they exist to change), and **existing 
 
 ### `export` value semantics
 
-Luau 0.723 (May 2026) implemented export-by-value semantics for modules, extending `export` beyond `export type`. Exported values are **`const` by default**, which is the RFC's stated motivation for introducing `const` at all: it prevents a module reassigning a binding internally while external consumers still observe the original value.
+Luau 0.723 implemented export-by-value semantics for modules, extending `export` beyond `export type`. Exported values are **`const` by default**, which is the RFC's stated motivation for introducing `const` at all: it prevents a module reassigning a binding internally while external consumers still observe the original value.
 
 **Status in Roblox Studio is [Verify].** Confirmed in upstream Luau; this skill could not confirm it is live in Studio. Until you verify it in the target place, keep using the standard `local Module = {} ... return Module` shape, which is unaffected and remains correct.
 
@@ -77,7 +77,7 @@ Confirmed available per [api-currency.md](api-currency.md) — use them, and don
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
 - **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns/data.md](patterns/data.md#data-persistence)).
 
-### Compiler and analysis changes worth knowing (2026)
+### Compiler and analysis changes worth knowing
 
 - **Immediately invoked lambdas are now inlined** — the `(function() ... end)()` idiom no longer carries a call-overhead penalty, so use it freely where it improves scoping.
 - **Refinements survive loops** — a narrowed type stays narrowed across loop iterations, removing a common source of spurious "possibly nil" errors.

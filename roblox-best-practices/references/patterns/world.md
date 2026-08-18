@@ -29,7 +29,7 @@ CollectionService:GetInstanceAddedSignal("Lava"):Connect(bindLava)
 - Pair with `GetInstanceRemovedSignal` to clean up per-instance state (mandatory with StreamingEnabled — instances come and go).
 - Per-instance tuning via **Attributes** (`part:GetAttribute("Damage")`), not name-parsing or config child-values.
 - **Attribute limits:** attributes support a fixed set of value types (booleans, numbers, strings, and Roblox data types like `Vector3`/`Color3`/`UDim2`) — **no tables**. For structured per-instance data, keep a module-side registry keyed by the instance (with a removal path per the cleanup rules); don't make JSON-encoded attribute blobs a habit. Full ceilings, including the Server Authority replication window: [limits-budgets.md](../limits-budgets.md#attributes).
-- **Instance references via `InstanceHandle` [Beta]** (announced 23 July 2026). An attribute can point at another Instance, replacing the `ObjectValue` workaround:
+- **Instance references via `InstanceHandle` [Beta]** ([api-currency.md](../api-currency.md#engine)). An attribute can point at another Instance, replacing the `ObjectValue` workaround:
 
 ```lua
 part:SetAttribute("Target", workspace.TargetPart)
