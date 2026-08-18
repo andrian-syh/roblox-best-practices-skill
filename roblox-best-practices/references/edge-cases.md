@@ -6,6 +6,19 @@ A catalog of the states Roblox code actually meets in production, grouped by wha
 
 **Handling these is not optional padding.** Terse code and complete code are the same goal ([minimal-code.md](minimal-code.md#1-minimalism-never-reduces-what-gets-delivered)); a guard that prevents a real failure is never the thing to cut for brevity.
 
+## Contents
+
+- [Player lifetime](#player-lifetime)
+- [Character lifetime](#character-lifetime)
+- [Instance lifetime](#instance-lifetime)
+- [Pooled and reused objects](#pooled-and-reused-objects)
+- [Numbers](#numbers)
+- [Collections](#collections)
+- [Timing and ordering](#timing-and-ordering)
+- [Network and client input](#network-and-client-input)
+- [Data and schema](#data-and-schema)
+- [The finishing pass](#the-finishing-pass)
+
 ## Player lifetime
 
 | State | What breaks | Guard |
@@ -15,11 +28,11 @@ A catalog of the states Roblox code actually meets in production, grouped by wha
 | Data not loaded yet | Gameplay reads defaults and later overwrites the real save | Gate gameplay on a loaded flag; never let an unloaded session write |
 | Load failed | Defaults get saved over real progress, destroying it | Mark the session unsaveable and tell the player, rather than saving defaults |
 | Player rejoins the same server | Stale per-player entries from the previous session still present | Clear on `PlayerRemoving`, and treat setup as idempotent |
-| Last player leaves, server shuts down | Final save races the shutdown | `BindToClose` and `game.ServerRestartScheduled` flush ([patterns.md](patterns.md#data-persistence)) |
+| Last player leaves, server shuts down | Final save races the shutdown | `BindToClose` and `game.ServerRestartScheduled` flush ([patterns/data.md](patterns/data.md#data-persistence)) |
 
 ## Character lifetime
 
-Characters respawn; players persist. Confusing the two lifetimes is a standing source of leaks and ghost state ([patterns.md](patterns.md#character-lifecycle)).
+Characters respawn; players persist. Confusing the two lifetimes is a standing source of leaks and ghost state ([patterns/lifecycle.md](patterns/lifecycle.md#character-lifecycle)).
 
 | State | What breaks | Guard |
 |---|---|---|
@@ -30,17 +43,32 @@ Characters respawn; players persist. Confusing the two lifetimes is a standing s
 | Character dies mid-action | Effects apply to a corpse; state never clears | Check `Humanoid.Health` after yields; clear per-life state on `Died` |
 | Respawn during a yield | Work resumes against the **old** character model | Capture the character before the yield and compare identity after |
 | R6 versus R15 | Part names and joint structure differ | Do not hard-code rig parts unless the project fixes the rig |
-| `Humanoid` absent entirely | Custom or CCL-driven characters may not have one | Check for it; do not assume ([patterns.md](patterns.md#humanoid-vs-the-character-controller-library)) |
+| `Humanoid` absent entirely | Custom or CCL-driven characters may not have one | Check for it; do not assume ([patterns/lifecycle.md](patterns/lifecycle.md#humanoid-vs-the-character-controller-library)) |
 
 ## Instance lifetime
 
 | State | What breaks | Guard |
 |---|---|---|
 | Destroyed mid-operation | Property access on a destroyed instance errors | Re-check after yields; prefer connections that die with the instance |
-| Streamed out on the client | The instance never existed there, or vanished mid-session | Tag signals with a removal path; `WaitForChild` with a timeout for workspace descendants ([patterns.md](patterns.md#streaming-streamingenabled)) |
+| Streamed out on the client | The instance never existed there, or vanished mid-session | Tag signals with a removal path; `WaitForChild` with a timeout for workspace descendants ([patterns/network.md](patterns/network.md#streaming-streamingenabled)) |
 | Not yet replicated | Client code runs before the server's instance arrives | Wait on the container, or drive from a replicated attribute instead |
 | Parent set to nil rather than destroyed | The instance is invisible but alive, and its connections still fire | `Destroy()` what you mean to discard |
 | `Destroying` fires after the fact | Reading the instance inside the handler yields nothing useful | Capture what you need **before** it dies ([luau-language.md](luau-language.md#deferred-engine-events)) |
+
+## Pooled and reused objects
+
+Reuse trades allocation cost for state that outlives one use. Every entry here is a bug that only exists because the object was not freshly created ([patterns/lifecycle.md](patterns/lifecycle.md#object-pooling)).
+
+| State | What breaks | Guard |
+|---|---|---|
+| Returned to the pool twice | The pool holds two entries for one object and hands it to two owners, who then fight over it | Mark the object as parked on return (an attribute or a set) and ignore a second return |
+| Used after being returned | Writes land on an object someone else now owns, or on one already reset | Drop the reference at the return call site; never keep a pooled object in long-lived state |
+| Not every mutated property reset | The next use inherits the last one: stale velocity, invisibility, disabled collision | Reset on **return**, not on take, so a leaked object cannot enter the pool dirty |
+| Per-use connections never disconnected | Handlers accumulate one per cycle and all of them fire on the next use | One cleanup object per checkout, emptied on return |
+| Attributes and tags left set | Tag-bound behavior re-triggers, or an owner attribute names a player who left | Clear both on return, exactly like properties |
+| `Destroy()` called on a parked object | The pool later hands out a destroyed instance and every property access errors | Objects leave the pool before they are destroyed, never while in it |
+| Pool grows to the worst spike and stays there | Memory never comes back after the burst that caused it | Cap the pool and destroy the overflow |
+| Pool drained under load | `table.remove` returns nil and the take path silently returns nothing | Create on empty rather than assuming the pool has stock |
 
 ## Numbers
 
@@ -51,7 +79,7 @@ Characters respawn; players persist. Confusing the two lifetimes is a standing s
 | `NaN` | Every comparison is false, so range checks silently pass | `math.isnan`; reject before it enters state |
 | Infinity | Propagates into positions and CFrames, corrupting the physics state | `math.isfinite` on anything derived from client input or division |
 | Beyond 2^53 | Integer precision is lost; counters stop incrementing correctly | Big-number representation for idle and simulator economies ([genres.md](genres.md#simulator--tycoon--idle)) |
-| `NaN` or `inf` in a save | The DataStore rejects anything it cannot serialize, so the write **itself** fails and nothing saves. The error is generic and does not name the offending field | Keep values valid at write time, not at save time; log the failure so it is never silent ([patterns.md](patterns.md#data-persistence)) |
+| `NaN` or `inf` in a save | The DataStore rejects anything it cannot serialize, so the write **itself** fails and nothing saves. The error is generic and does not name the offending field | Keep values valid at write time, not at save time; log the failure so it is never silent ([patterns/data.md](patterns/data.md#data-persistence)) |
 
 ## Collections
 
@@ -80,8 +108,8 @@ Characters respawn; players persist. Confusing the two lifetimes is a standing s
 | State | What breaks | Guard |
 |---|---|---|
 | Remote fires before the receiver is ready | The event is lost with no error | Create remotes in one place at startup; have clients `WaitForChild` |
-| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([security-monetization.md](security-monetization.md#processreceipt-developer-products--correctness-rules)) |
-| Arguments of any type, at any rate | Type errors, or the handler acting on garbage | Validate type, range, ownership, rate ([patterns.md](patterns.md#remote-communication)) |
+| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([security.md](monetization-policy.md#processreceipt-developer-products--correctness-rules)) |
+| Arguments of any type, at any rate | Type errors, or the handler acting on garbage | Validate type, range, ownership, rate ([patterns/network.md](patterns/network.md#remote-communication)) |
 | Flooding | The handler starves the server | One shared rate limiter ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
 | Client-reported position or time | Trivially forged | Treat as a hint; validate outcomes server-side |
 | Teleport data | Travels through the client and is tamperable | Re-validate on arrival, or pass a server-generated token |
@@ -106,5 +134,6 @@ Before calling a function done, ask in order:
 4. **What is stale after each yield in this function?**
 5. **What if this runs twice, or two clients trigger it in the same frame?**
 6. **What if the player leaves right now?**
+7. **If this object is reused rather than created, what does it still carry from its last use?**
 
-Six questions, most answered in seconds. They catch the failures that only appear in a live server with real players, which is precisely where they are most expensive to find.
+Seven questions, most answered in seconds. They catch the failures that only appear in a live server with real players, which is precisely where they are most expensive to find.

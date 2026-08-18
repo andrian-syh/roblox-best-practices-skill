@@ -16,10 +16,10 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 4. Keep the value JSON-serializable **at write time**, not by sanitizing at save time.
 5. Version the store name and migrate on load.
 **Never:** read a DataStore during gameplay · accept a client-reported balance or progress value · return success before the write is durable.
-**Failure modes:** a failed load silently falling through to defaults, which then overwrites real data on save. Guard it: if the load failed, mark the session unsaveable and tell the player, rather than saving defaults over their history.
+**Failure modes:** a failed load silently falling through to defaults, which then overwrites real data on save. Guard it: if the load failed, mark the session unsaveable and tell the player, rather than saving defaults over their history — the fail-loud class in [patterns/data.md](../patterns/data.md#failure-policy-what-happens-after-the-last-retry).
 **Budget:** 4 MB per key, 50-character keys, shared in-game/Open Cloud request budget ([limits-budgets.md](../limits-budgets.md#data-stores)).
 **Verify:** rejoin after a change, then force a shutdown mid-session; assert values survive both.
-**Deeper:** [patterns.md](../patterns.md#data-persistence) · ProfileStore/ProfileService overlay: [community-libraries.md](../community-libraries.md#data-profilestore--profileservice)
+**Deeper:** [patterns/data.md](../patterns/data.md#data-persistence) · ProfileStore/ProfileService overlay: [community-libraries.md](../community-libraries.md#data-profilestore--profileservice)
 
 ## Currency and transactions
 
@@ -32,9 +32,9 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 3. Clamp and type-check every amount; reject non-integers and negatives outright.
 4. Mirror to `leaderstats` or attributes for display **after** the authoritative change, never as the source of truth.
 **Never:** let the client compute a price, a discount, or a total · store balance only in `leaderstats` · grant before the debit is confirmed.
-**Failure modes:** two remotes arriving in the same frame both passing an affordability check before either deducts. Serialize per-player economy operations, or re-check inside the applying step.
+**Failure modes:** two remotes arriving in the same frame both passing an affordability check before either deducts. Serialize per-player economy operations ([patterns/data.md](../patterns/data.md#serialized-operations-per-owner-locks)), or re-check inside the applying step.
 **Verify:** fire the purchase remote twice in the same frame and assert the balance cannot go negative.
-**Deeper:** [security-monetization.md](../security-monetization.md#server-side-validation-layers) · [patterns.md](../patterns.md#remote-communication)
+**Deeper:** [security.md](../security.md#server-side-validation-layers) · [patterns/network.md](../patterns/network.md#remote-communication)
 
 ## Inventory and items
 
@@ -64,6 +64,6 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 4. Perform the swap as one server-side step with no yields inside it; if a yield is unavoidable, re-validate both inventories after resuming.
 5. Persist both sides before releasing the trade lock, and log the trade with both user ids and the item ids.
 **Never:** trust client-reported item ids or quantities · allow a trade to proceed while either player is leaving, teleporting, or has unloaded data · run a trade across servers.
-**Failure modes:** a player disconnecting mid-swap so one side persists and the other does not. Guard with a per-player trade lock, cancel on `PlayerRemoving`, and make the swap-and-save sequence the last step.
+**Failure modes:** a player disconnecting mid-swap so one side persists and the other does not. Guard with a per-player trade lock ([patterns/data.md](../patterns/data.md#serialized-operations-per-owner-locks)), cancel on `PlayerRemoving`, and make the swap-and-save sequence the last step.
 **Verify:** run a trade where one client leaves immediately after confirming; assert no item is created or destroyed.
-**Deeper:** [security-monetization.md](../security-monetization.md) · [false-positives.md](../false-positives.md#security--validation--what-is-not-a-trust-boundary)
+**Deeper:** [security.md](../security.md) · [false-positives.md](../false-positives.md#security--validation--what-is-not-a-trust-boundary)

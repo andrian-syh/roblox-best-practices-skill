@@ -2,6 +2,17 @@
 
 [performance.md](performance.md) makes the code cheap. **This file makes it fit**: the frame budget it must live inside, and the low-end device it must still run on. Read it when the work is frame-critical, when it spawns bulk work, or when the target audience includes weak hardware, which on Roblox it always does.
 
+## Contents
+
+- [The frame budget](#the-frame-budget)
+- [Time-slicing bulk work](#time-slicing-bulk-work)
+- [Device tiers](#device-tiers)
+- [Engine levers before script levers](#engine-levers-before-script-levers)
+- [The degradation ladder](#the-degradation-ladder)
+- [Adaptive quality](#adaptive-quality)
+- [Bandwidth per player](#bandwidth-per-player)
+- [Memory on low-end devices](#memory-on-low-end-devices)
+
 ## The frame budget
 
 A frame is a fixed amount of time shared by everything:
@@ -67,7 +78,7 @@ Assume a wide spread of hardware and design for the bottom of it.
 - **Pick a named baseline device and test on it throughout development**, watching frame rate and memory. This is Roblox's own recommendation, not a nicety.
 - **Published budgets for a baseline device: under 1,000 draw calls and under 1,000,000 triangles.** Use `Shift+F2` debug stats to see where a scene stands.
 - **Build for low and scale up.** Adding effects for strong devices is easy; discovering the game is unplayable on a phone after launch is not.
-- **Never infer power from input type.** `UserInputService.TouchEnabled` says a touchscreen exists, not that the device is weak, and the reverse is equally wrong. The existing rule against branching on it for input ([ui-ux-testing.md](ui-ux-testing.md#cross-platform-ux)) applies here for the same reason.
+- **Never infer power from input type.** `UserInputService.TouchEnabled` says a touchscreen exists, not that the device is weak, and the reverse is equally wrong. The existing rule against branching on it for input ([ui-crossplatform.md](ui-crossplatform.md#cross-platform-ux)) applies here for the same reason.
 - Infer capability from **observed frame time**, which is the only honest signal available at runtime, and let the player override it.
 - Test with a full server at the maximum realistic entity and player count, not with two testers in an empty place.
 - **Studio's device emulator is not a memory test.** It runs the server and client in one process, which inflates the reading. Memory conclusions come from real hardware ([verification.md](verification.md)).
@@ -76,7 +87,7 @@ Assume a wide spread of hardware and design for the bottom of it.
 
 Roblox ships settings that buy more headroom than most script optimization, and they cost no runtime code. Reach for these first.
 
-**Streaming settings tuned for low-end devices** ([patterns.md](patterns.md#streaming-streamingenabled) covers the code-side rules):
+**Streaming settings tuned for low-end devices** ([patterns/network.md](patterns/network.md#streaming-streamingenabled) covers the code-side rules):
 
 | Property | Recommended | Why |
 |---|---|---|
@@ -106,7 +117,7 @@ Roblox does not publish an official cut order, so treat this as a **practical de
 2. **Shadows** — expensive on fill-rate-bound devices.
 3. **Post-processing** — bloom, blur, colour correction.
 4. **Texture and mesh detail tier** — cheaper assets, fewer unique textures.
-5. **Draw distance and streaming radius** — smaller streamed region ([patterns.md](patterns.md#streaming-streamingenabled)).
+5. **Draw distance and streaming radius** — smaller streamed region ([patterns/network.md](patterns/network.md#streaming-streamingenabled)).
 6. **Non-essential instances** — decorative props, ambient NPCs, secondary VFX.
 
 Gameplay-critical visuals are never on this ladder. A player on a low tier must still be able to see hitboxes, telegraphs, and interactables; degrade the scenery, never the information.

@@ -2,6 +2,13 @@
 
 Canonical, fully-annotated examples of the section layout. Copy the shape, not the content. Omit any subsection that would be empty — never leave placeholder headers.
 
+## Contents
+
+- [Server Script](#server-script)
+- [ModuleScript](#modulescript)
+- [LocalScript](#localscript)
+- [Notes on the templates](#notes-on-the-templates)
+
 ## Server Script
 
 ```lua
@@ -231,7 +238,7 @@ updateCoinDisplay()
 - `table.pack`/`table.unpack` in `withRetry` is acceptable here because retries are rare-path; never do this in a hot loop.
 - The LocalScript reads state via Attributes rather than a RemoteEvent — prefer attribute/tag replication for simple state; reserve remotes for actions.
 - Every declared Service/Module/Object/constant in these templates is used — copy that discipline: declare only what the script actually needs.
-- Bare `WaitForChild` is fine for containers that always replicate (ReplicatedStorage, PlayerGui). For `workspace` descendants under StreamingEnabled, use a timeout or a CollectionService tag signal instead ([patterns.md](patterns.md#streaming-streamingenabled)).
+- Bare `WaitForChild` is fine for containers that always replicate (ReplicatedStorage, PlayerGui). For `workspace` descendants under StreamingEnabled, use a timeout or a CollectionService tag signal instead ([patterns/network.md](patterns/network.md#streaming-streamingenabled)).
 - The Documentation Comments here model this skill's default style (SKILL.md → FUNCTIONS). It is a **default, not a mandate**: a project that documents with Moonwave `--[=[ ]=]` or `---` blocks keeps its own form, and you match it. Three properties survive any style and are the ones to copy:
   - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to — that is why they would all still be true after a rewrite.
   - **No volatile content.** No thresholds, no Configuration constant names, no system names. `updateCoinDisplay` is documented as synchronizing a display, not as "reads the Coins attribute and writes CoinLabel.Text".

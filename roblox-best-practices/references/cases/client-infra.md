@@ -19,7 +19,7 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Failure modes:** attribute updates firing far more often than the display can meaningfully change. Throttle at the source, or compare against the last displayed value and early-return when unchanged.
 **Under Server Authority:** attribute replication is limited to the first 64 attributes with 50-character names and string values ([limits-budgets.md](../limits-budgets.md#attributes)).
 **Verify:** watch frame time while the value updates at its maximum realistic rate.
-**Deeper:** [ui-ux-testing.md](../ui-ux-testing.md#ui-construction) · [templates.md](../templates.md)
+**Deeper:** [ui-crossplatform.md](../ui-crossplatform.md#ui-construction) · [templates.md](../templates.md)
 
 ## Rate limiting and the anti-cheat layer
 
@@ -37,7 +37,7 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Failure modes:** a rate limit tuned on a desktop LAN test that kicks mobile players on a train. Pick tolerances from logged production distributions.
 **Not a trust boundary:** server-side `BindableEvent`s and internal module calls do not need client-style validation ([false-positives.md](../false-positives.md#security--validation--what-is-not-a-trust-boundary)).
 **Verify:** replay a burst at several multiples of the intended rate and confirm the server rejects cleanly without erroring.
-**Deeper:** [security-monetization.md](../security-monetization.md#server-side-validation-layers)
+**Deeper:** [security.md](../security.md#server-side-validation-layers)
 
 ## Analytics and telemetry instrumentation
 
@@ -54,4 +54,4 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Never:** log per frame · send player-identifying free text without filtering · let an analytics failure propagate into a gameplay path.
 **Failure modes:** a client error storm from one broken build saturating the error-forwarding remote. The rate limit on that remote is not optional.
 **Verify:** trigger an error deliberately and confirm it appears with context, while gameplay continues unaffected.
-**Deeper:** [ui-ux-testing.md](../ui-ux-testing.md#error-telemetry--logging) · [performance.md](../performance.md#measurement-never-optimize-blind)
+**Deeper:** [ui-crossplatform.md](../verification.md#error-telemetry--logging) · [performance.md](../performance.md#measurement-never-optimize-blind)

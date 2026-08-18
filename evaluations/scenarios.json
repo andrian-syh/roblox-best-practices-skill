@@ -1,0 +1,75 @@
+[
+  {
+    "id": "authoring-remote-handler",
+    "skills": ["roblox-best-practices"],
+    "query": "Buatkan server script untuk menangani permintaan pembelian item dari client.",
+    "gap_it_covers": "Agents write remote handlers that trust client input and leak per-player state.",
+    "expected_behavior": [
+      "Produces the three top-level sections in order: VARIABLES, FUNCTIONS, INITIALIZATION",
+      "Orders VARIABLES as Services, Modules, Objects, Configuration, State Management",
+      "Validates the client argument with a typeof check before any use",
+      "Applies a server-side rate limit and an ownership or affordability check",
+      "Registers a PlayerRemoving teardown for every per-player table it creates",
+      "Uses task.* APIs and game:GetService(), never wait/spawn/delay or direct indexing",
+      "Gives each function a Documentation Comment: --[[ ]] block, description then @param/@return, description under 250 characters, no mechanism and no tunable numbers"
+    ]
+  },
+  {
+    "id": "authoring-player-data",
+    "skills": ["roblox-best-practices"],
+    "query": "Tolong buat sistem save/load player data (coins dan level).",
+    "gap_it_covers": "The highest-consequence system in most experiences; a failed load that falls through to defaults destroys real save data.",
+    "expected_behavior": [
+      "Loads once into a session cache on PlayerAdded and serves gameplay reads from the cache, never from the DataStore",
+      "Uses UpdateAsync rather than SetAsync, wrapped in pcall with bounded exponential backoff",
+      "Saves on PlayerRemoving, on a periodic autosave, and flushes in BindToClose",
+      "Handles players who joined before the PlayerAdded connection existed",
+      "On a load that fails after its retries, marks the session unsaveable and refuses to save over the existing data rather than persisting defaults",
+      "Keeps the stored value JSON-serializable at write time (no mixed keys, no Instances, no NaN)"
+    ]
+  },
+  {
+    "id": "review-triage",
+    "skills": ["roblox-best-practices"],
+    "query": "Review script ini.",
+    "input_files": ["fixtures/review-target.lua"],
+    "gap_it_covers": "Agents either miss real defects or bury them under style noise.",
+    "expected_behavior": [
+      "Reports the unvalidated RemoteEvent argument as Blocker severity",
+      "Reports the PlayerAdded table with no removal path as Blocker severity",
+      "Reports the wait() call as Correctness with the task.wait() replacement",
+      "Reports the private balance published through a player Attribute, because attributes replicate to every client",
+      "Proposes layout and naming deviations as Advisory only, never as violations",
+      "Rewrites nothing that the request did not ask for"
+    ]
+  },
+  {
+    "id": "false-positive-resistance",
+    "skills": ["roblox-best-practices"],
+    "query": "Review script ini, apakah ada masalah?",
+    "input_files": ["fixtures/correct-but-odd.lua"],
+    "gap_it_covers": "Over-firing reviews erode trust faster than missed findings.",
+    "expected_behavior": [
+      "Does NOT flag the periodic `while task.wait(N)` autosave loop as polling",
+      "Does NOT flag the allocation inside a Touched callback as hot-path garbage",
+      "Does NOT demand client-style validation on a server-side BindableEvent handler",
+      "Does NOT flag bare WaitForChild on ReplicatedStorage as a missing timeout",
+      "Does NOT flag pairs/ipairs, or the project's own house comment style",
+      "Reports zero Blocker or Correctness findings, and says so plainly instead of inventing Advisory items to look useful"
+    ]
+  },
+  {
+    "id": "adaptive-mode",
+    "skills": ["roblox-best-practices"],
+    "query": "Tambahkan module baru untuk sistem quest, ikuti struktur project kami.",
+    "input_files": ["fixtures/existing-project/"],
+    "gap_it_covers": "Imposing this skill's conventions on a codebase that already has its own.",
+    "expected_behavior": [
+      "Analyzes the existing project before writing code, checking toolchain files first where present",
+      "Presents a convention summary and waits for confirmation (or reports it and proceeds under !go)",
+      "Matches the project's section header syntax, naming, and Documentation Comment style, including Moonwave form where the project uses it",
+      "Still enforces the non-negotiables through the adapted style: validation, cleanup, no deprecated APIs, pcall on yielding calls",
+      "Does not rewrite or restyle existing files it was not asked to touch"
+    ]
+  }
+]

@@ -8,6 +8,14 @@ The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm
 
 **Authority order when a claim is in doubt:** create.roblox.com Engine API Reference (primary) → the API dump / `ReflectionService` → a quick in-Studio test. Absence from this file is **not** evidence an API is missing — Roblox ships continuously; this list removes friction, it never overrides the docs.
 
+## Contents
+
+- [Luau language and libraries](#luau-language-and-libraries)
+- [Engine](#engine)
+- [Studio MCP tooling](#studio-mcp-tooling)
+- [Deprecated (report as findings)](#deprecated-report-as-findings)
+- [Maintaining this file](#maintaining-this-file)
+
 ### Upstream Luau is not Roblox Studio
 
 **A feature shipping in a `luau-lang/luau` release does not mean it is usable in Studio.** Three distinct states, and conflating them is the most expensive mistake this file can cause:
@@ -51,7 +59,7 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 |---|---|---|
 | Server Authority (`Workspace.AuthorityMode`) | **[GA]** 9 July 2026 | **Off by default.** Full contract and the confirmation gate: [server-authority.md](server-authority.md) |
 | `Player:GetCameraState()` | **[GA]** | Returns CFrame, FieldOfView, ViewportSize; replaces the deprecated InputContext/InputAction camera replication path |
-| Character Controller Library (`ControllerManager`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) | **[GA]** April 2026 | `Humanoid` is **not** deprecated; CCL is a choice ([patterns.md](patterns.md#humanoid-vs-the-character-controller-library)) |
+| Character Controller Library (`ControllerManager`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) | **[GA]** April 2026 | `Humanoid` is **not** deprecated; CCL is a choice ([patterns/lifecycle.md](patterns/lifecycle.md#humanoid-vs-the-character-controller-library)) |
 | Input Action System | **[GA]** | Mandatory under Server Authority |
 | Animation Graphs | **[GA]** July 2026 | |
 | Studio Script Sync (external editors, bidirectional) | **[GA]** June 2026 | A third project environment alongside Studio-native and Rojo |
@@ -62,10 +70,10 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | Unified DataStore limits and raised storage | **[Verify]** — effective **29 July 2026** | Numbers in [limits-budgets.md](limits-budgets.md#data-stores) |
 | Streaming (`Model.ModelStreamingMode`, `Player:RequestStreamAroundAsync`) | **[GA]** | |
 | `Player.FrustumStreaming` + `FrustumStreamingMode` enum | **[Verify]** | Release notes 734, August 2026. Streams by view frustum rather than radius alone; test the camera-turn case before adopting ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
-| `MemoryStoreService:GetDistributedCounter` (`MemoryStoreDistributedCounter`) | **[Verify]** | Release notes 733, August 2026. A counter primitive for cross-server totals, replacing hand-rolled sorted-map arithmetic ([patterns.md](patterns.md#cross-server-communication)) |
+| `MemoryStoreService:GetDistributedCounter` (`MemoryStoreDistributedCounter`) | **[Verify]** | Release notes 733, August 2026. A counter primitive for cross-server totals, replacing hand-rolled sorted-map arithmetic ([patterns/network.md](patterns/network.md#cross-server-communication)) |
 | CollectionService tag signal methods | **[Verify]** | Release notes 732, July 2026. Additions alongside `GetInstanceAddedSignal`/`GetInstanceRemovedSignal`; confirm the exact names against the API reference before using them |
 | `WorldRoot` collision groups (`RegisterCollisionGroup`, `UnregisterCollisionGroup`, ...) | **[Verify]** | Release notes 732–734. Brings `WorldModel` raycasts to parity with `Workspace` |
-| `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier`, `UserGameSettings.UIScaleMultiplierHundredths` | **[Verify]** | Release notes 734, August 2026. A player-facing UI scale factor; read it rather than inferring scale from viewport size ([ui-ux-testing.md](ui-ux-testing.md)) |
+| `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier`, `UserGameSettings.UIScaleMultiplierHundredths` | **[Verify]** | Release notes 734, August 2026. A player-facing UI scale factor; read it rather than inferring scale from viewport size ([ui-crossplatform.md](ui-crossplatform.md)) |
 | `ViewportCamera`, `Logger` classes | **[Verify]** | Release notes 734, August 2026. `Logger` may overlap structured `LogService`; confirm which one the target environment expects |
 | `UIShadow` (`ApplyShadowMode`, `Inset`, `ShowBehindParent`, `Mode`) | **[Verify]** | Release notes 732–733 |
 | EditableMesh methods promoted from Unsafe to Safe (thread safety) | **[Verify]** | Release notes 733, August 2026 |
@@ -74,7 +82,7 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | Analytics: Client CPU Time Breakdown | **[GA]** | Scripts / Networking / Physics / Animation / Misc |
 | `Workspace.EnableSLIMAvatars`, `Model.LevelOfDetail = SLIM` | **[GA]** | Lightweight avatar and model stand-ins under streaming. `EnableSLIMAvatars` **cannot be set from a script**; it is configured in Studio. Excludes R6, NPCs, and custom proportions ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
 | Streaming tuning (`ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamingMinRadius`, `StreamingTargetRadius`, `StreamOutBehavior`) | **[GA]** | Recommended low-end values in [device-performance.md](device-performance.md#engine-levers-before-script-levers) |
-| `InstanceHandle` attributes (Instance references) | **[Beta]** 23 July 2026 | Option, not a default ([patterns.md](patterns.md#behavior-binding-works-with-any-framework)) |
+| `InstanceHandle` attributes (Instance references) | **[Beta]** 23 July 2026 | Option, not a default ([patterns/world.md](patterns/world.md#behavior-binding-works-with-any-framework)) |
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
 | Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |
 | Acoustic simulation with Occlusion/Reverb subcategories | **[UNVERIFIED]** | Engine release notes indicate it shipped; the 2026 roadmap lists acoustic simulation as later-2026 work. Confirm before relying on it |

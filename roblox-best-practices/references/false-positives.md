@@ -4,6 +4,28 @@ The anti-false-positive filter for review/refactor mode. This file collects the 
 
 Read this **before reporting any finding**. A rule in this skill says what good code does; every such rule has a matching set of shapes that *look* like violations but are correct. Reporting those erodes trust faster than missing a real issue.
 
+## Contents
+
+- [Severity taxonomy (use these three words everywhere)](#severity-taxonomy-use-these-three-words-everywhere)
+- [Confidence gate (all four must pass before reporting)](#confidence-gate-all-four-must-pass-before-reporting)
+- [Guardrails by category](#guardrails-by-category)
+  - [Performance / hot loops — define "hot" first](#performance--hot-loops--define-hot-first)
+  - [Cleanup / leaks — what does NOT leak](#cleanup--leaks--what-does-not-leak)
+  - [Security / validation — what is NOT a trust boundary](#security--validation--what-is-not-a-trust-boundary)
+  - [Security / validation — a handler can already be complete](#security--validation--a-handler-can-already-be-complete)
+  - [Streaming — bare WaitForChild is often correct](#streaming--bare-waitforchild-is-often-correct)
+  - [Newer APIs — do not flag what simply postdates your memory](#newer-apis--do-not-flag-what-simply-postdates-your-memory)
+  - [Code economy and device scalability — authoring goals, not review standards](#code-economy-and-device-scalability--authoring-goals-not-review-standards)
+  - [State ownership, failure policy, and locks — design decisions, not defects](#state-ownership-failure-policy-and-locks--design-decisions-not-defects)
+  - [MCP tooling — not the code under review](#mcp-tooling--not-the-code-under-review)
+  - [Authority mode — establish it before judging movement, input, or camera code](#authority-mode--establish-it-before-judging-movement-input-or-camera-code)
+  - [Typing — do not flag the project for tools it does not use](#typing--do-not-flag-the-project-for-tools-it-does-not-use)
+  - [Deprecated vs. discouraged — do not conflate them](#deprecated-vs-discouraged--do-not-conflate-them)
+  - [Style / layout — propose, never report](#style--layout--propose-never-report)
+  - [Documentation Comments — one real finding, the rest Advisory](#documentation-comments--one-real-finding-the-rest-advisory)
+- [Regression set — these must pass a review clean](#regression-set--these-must-pass-a-review-clean)
+- [Review mode: what happens to a finding once it is real](#review-mode-what-happens-to-a-finding-once-it-is-real)
+
 ## Severity taxonomy (use these three words everywhere)
 
 Every finding carries exactly one severity. This is the shared vocabulary for SKILL.md review mode, [verification.md](verification.md), and the Review Checklist.
@@ -56,7 +78,7 @@ Flag a leak only when the owner **outlives** the connected object **and** no tea
 
 ### Security / validation — what is NOT a trust boundary
 
-Non-Negotiable #1 and [security-monetization.md](security-monetization.md) demand validation of client input. That applies to **client-reachable inputs only**:
+Non-Negotiable #1 and [security.md](security.md) demand validation of client input. That applies to **client-reachable inputs only**:
 
 - **`BindableEvent`/`BindableFunction` fired on the server are not a trust boundary** — an exploiter cannot fire them; they run server-to-server. Do not demand client-style type/rate/ownership checks on a server-side bindable handler.
 - Internal module function calls and server-side custom signals are not client input either.
@@ -70,12 +92,12 @@ A remote handler that type-checks its arguments and **early-returns on bad input
 
 - Do not demand it also log every rejection. Silent rejection is often deliberate (an error reply helps fuzzing); logging is Advisory, and only where the team wants telemetry.
 - Do not demand a reply — many actions are fire-and-forget by design.
-- The skeleton in [patterns.md](patterns.md#remote-communication) is the *maximum* shape; a handler that needs only type + execute (no rate/ownership because the action is harmless and idempotent) is not missing layers.
+- The skeleton in [patterns/network.md](patterns/network.md#remote-communication) is the *maximum* shape; a handler that needs only type + execute (no rate/ownership because the action is harmless and idempotent) is not missing layers.
 
 ### Streaming — bare `WaitForChild` is often correct
 
 - `WaitForChild` **without** a timeout on always-replicated containers (`ReplicatedStorage`, `PlayerGui`, the local player's `PlayerScripts`) is fine — those always arrive. Do not flag them.
-- Only flag a missing timeout on **workspace descendants under StreamingEnabled**, where the instance may never stream in. See [patterns.md](patterns.md#streaming-streamingenabled).
+- Only flag a missing timeout on **workspace descendants under StreamingEnabled**, where the instance may never stream in. See [patterns/network.md](patterns/network.md#streaming-streamingenabled).
 
 ### Newer APIs — do not flag what simply postdates your memory
 
@@ -97,6 +119,16 @@ The reuse ladder ([minimal-code.md](minimal-code.md)), the frame and device budg
 - Do **not** flag a hand-written helper as a violation because an engine API exists. Propose the replacement as **Advisory**; the team may have had a reason, and a deliberate, justified reimplementation is not a defect.
 - Do **not** report a missing edge-case guard on suspicion. It is a finding only with a concrete failure scenario, exactly like every other finding — the catalog is a prompt for your own writing, not a list of things to demand.
 - Do **not** flag code for being longer than you would have written it. Length alone is Advisory at most, and rewriting for brevity is an unrequested refactor.
+
+### State ownership, failure policy, and locks — design decisions, not defects
+
+Three patterns added for authoring ([patterns/data.md](patterns/data.md#one-owner-per-fact), [Failure Policy](patterns/data.md#failure-policy-what-happens-after-the-last-retry), [Serialized Operations](patterns/data.md#serialized-operations-per-owner-locks)) describe how to *write* a system. Applied backwards to existing code they generate noise, because each has a legitimate shape that looks like its own violation:
+
+- **A second copy of a value is not automatically a divergence bug.** Caches, mirrors, and denormalized fields are common and often deliberate. It is a finding only when you can show the two copies being written independently **and** a scenario where they disagree — otherwise propose the ownership cleanup as **Advisory**.
+- **Fail-open is a valid policy, not a missing guard.** A `pcall` that logs and continues is correct for cosmetics, telemetry, and optional enrichment. Do not demand a fail-closed branch without showing what the failure lets a player get away with. The one case that clears the bar on its own: a **failed data load falling through to defaults on a path that later saves** — that is Blocker severity, because it destroys real data.
+- **A missing lock is a finding only with a real interleaving.** Name the yield between the check and the effect, and the two callers that reach it in one frame. An operation with no yield in that window cannot interleave, and a lock added there would be ceremony. Equally, do **not** flag an existing lock as unnecessary without tracing the same path.
+- **Do not propose a global lock as a fix.** Serializing all players to remove one player's race is a performance regression dressed as a correctness fix.
+- Absent all three patterns, a small project is not defective. These matter at the scale where concurrency and data loss are real risks; a one-script experience does not need a lock table.
 
 ### MCP tooling — not the code under review
 
@@ -139,7 +171,7 @@ Section-header deviations, subsection ordering, naming casing, module require or
 
 ### Documentation Comments — one real finding, the rest Advisory
 
-The Documentation Comment style ([SKILL.md](../SKILL.md#documentation-comments-the-default-style-and-how-it-flexes)) is a **default for code you author**, not a standard you hold other people's code to. Style is adaptable by design; judging an existing codebase against this skill's default would produce a flood of noise findings.
+The Documentation Comment style ([section-layout.md](section-layout.md#documentation-comments-the-default-style-and-how-it-flexes)) is a **default for code you author**, not a standard you hold other people's code to. Style is adaptable by design; judging an existing codebase against this skill's default would produce a flood of noise findings.
 
 In review the rules collapse to a single distinction:
 
@@ -214,3 +246,12 @@ pcall(function()
 	ContentProvider:PreloadAsync({ decorativeSound }) -- cosmetic; safe to skip on failure
 end)
 ```
+
+## Review mode: what happens to a finding once it is real
+
+The gate above decides **whether** a finding is real; the taxonomy decides **how bad**. This section covers what to do with it. It does not restate either — apply them.
+
+- **Blocker / Correctness** — violations of the Non-Negotiable Runtime Rules and misused deprecated APIs are reported (and fixed if asked). Apply those rules *as scoped*: the exceptions written into them — periodic loops, cold-path allocations, small state snapshots — are not violations, and discouraged-but-functional APIs are not deprecated ones.
+- **Advisory** — layout and naming deviations, require ordering, and missing doc comments on trivial private helpers are **proposed**, never reported as violations and never silently rewritten. The user decides.
+- **Never reformat code unrelated to the request.** Consistency within the file beats consistency with this skill.
+- **Deliver the severity with the finding.** A list of observations without severities forces the user to triage what you were asked to triage.

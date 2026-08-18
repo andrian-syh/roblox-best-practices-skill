@@ -13,7 +13,7 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 | Storage per experience | **500 MB + 1 MB × lifetime players** | Raised from a 100 MB base, **effective 29 July 2026** [Verify] |
 | Request budget | **300 baseline + (CCU × multiplier), per minute** | Separate budget per request type (Standard Read, Ordered List, ...) |
 | Budget scope | **Unified across in-game and Open Cloud** | Both increment the same counters, **effective 29 July 2026** [Verify] |
-| Value shape | JSON-serializable only | No userdata, no mixed/sparse keys, no NaN/inf, no cycles ([patterns.md](patterns.md#data-persistence)) |
+| Value shape | JSON-serializable only | No userdata, no mixed/sparse keys, no NaN/inf, no cycles ([patterns/data.md](patterns/data.md#data-persistence)) |
 
 Consequences for design:
 - **Self-throttle.** The unified budget means an Open Cloud tool and live gameplay now compete for the same allowance. A batch job run against Open Cloud can starve the running experience; schedule it or rate-limit it.
@@ -44,7 +44,7 @@ Send ids and references, not data blobs; receivers re-read authoritative state f
 | Limit | Value | Scope |
 |---|---|---|
 | Supported types | booleans, numbers, strings, Roblox datatypes (`Vector3`, `Color3`, `UDim2`, ...) | Always. **No tables** |
-| Instance references | via **`InstanceHandle`** | **[Beta]** ([patterns.md](patterns.md#behavior-binding-works-with-any-framework)) |
+| Instance references | via **`InstanceHandle`** | **[Beta]** ([patterns/world.md](patterns/world.md#behavior-binding-works-with-any-framework)) |
 | Replicated attribute count | **first 64 attributes** on the instance | **Server Authority only** |
 | Attribute name length | **≤ 50 characters** | Server Authority only |
 | String value length | **≤ 50 characters** | Server Authority only |

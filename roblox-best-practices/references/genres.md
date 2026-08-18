@@ -2,6 +2,19 @@
 
 Every rule in this skill applies to every genre — but each genre has a **dominant risk profile** that decides where to invest the most care. Real games mix genres: pick the profile *per feature* (a combat system in an RPG follows the Combat profile), not per game.
 
+## Contents
+
+- [Simulator / Tycoon / Idle](#simulator--tycoon--idle)
+- [Tower Defense / Wave Defense](#tower-defense--wave-defense)
+- [Combat / FPS / PvP](#combat--fps--pvp)
+- [Battlegrounds / Fighting / Melee PvP](#battlegrounds--fighting--melee-pvp)
+- [Obby / Platformer](#obby--platformer)
+- [RPG / Adventure / Open World](#rpg--adventure--open-world)
+- [Racing / Vehicle](#racing--vehicle)
+- [Horror / Story / Atmosphere](#horror--story--atmosphere)
+- [Social / Hangout / Roleplay](#social--hangout--roleplay)
+- [Using this playbook](#using-this-playbook)
+
 ## Simulator / Tycoon / Idle
 
 **Dominant risk: data integrity & economy.** Players grind for numbers; losing or duping them kills the game.
@@ -17,7 +30,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 
 **Dominant risk: server CPU at unit scale & economy integrity.**
 
-- One staggered update system iterates *all* units — never a script or loop per unit; pool units and projectiles ([performance.md](performance.md), [patterns.md](patterns.md#object-pooling)).
+- One staggered update system iterates *all* units — never a script or loop per unit; pool units and projectiles ([performance.md](performance.md), [patterns/lifecycle.md](patterns/lifecycle.md#object-pooling)).
 - Pathfinding: compute a path once per path-change event (map edit, tower placement) and share the waypoint list across every unit on it — never per-unit, never per-frame. Clients interpolate movement from minimal replicated state (path id + progress scalar) instead of receiving per-frame CFrames.
 - Tower placement fully server-validated: funds, grid/zone legality, collision and placement limits — the client-side preview is cosmetic only.
 - Wave and economy state is server-side, data-driven config (wave tables, spawn schedules, scaling curves) — not bespoke scripts per wave.
@@ -30,7 +43,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - Server-authoritative hits with *lag tolerance*: validate the shot server-side (distance, line-of-sight, fire-rate, ammo) but accept small client-side discrepancy windows; a pure server raycast feels terrible at 150 ms ping.
 - Client predicts (muzzle flash, tracer, hit-marker immediately), server confirms (damage, kill). Reconcile visibly wrong predictions quietly.
 - `UnreliableRemoteEvent` for tracers/VFX/footsteps; reliable remotes for damage events.
-- Anti-cheat sanity checks ([security-monetization.md](security-monetization.md)): speed/teleport deltas, fire-rate caps, ammo accounting — all server-side.
+- Anti-cheat sanity checks ([security.md](security.md)): speed/teleport deltas, fire-rate caps, ammo accounting — all server-side.
 - **Confirm the authority mode before designing the netcode.** Server Authority is [GA] but **off unless the place enables it**; under it, movement validation is engine-side and inputs flow through the Input Action System, while without it the manual checks above are the correct baseline. Both paths: [server-authority.md](server-authority.md). This genre is the strongest candidate for adopting it.
 - Character physics is client-owned by design; never trust reported positions for hit *validation*, only for display.
 - Fixed-rate combat logic (`RunService` Heartbeat with accumulated dt; `BindToSimulation` only for synchronized physics/prediction code under `Workspace.UseFixedSimulation` — see [performance.md](performance.md)) so higher-FPS clients gain no advantage.

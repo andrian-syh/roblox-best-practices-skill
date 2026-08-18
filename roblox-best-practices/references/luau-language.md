@@ -2,6 +2,17 @@
 
 Language-level and scheduler-level rules that go deeper than SKILL.md's Language & Style section. For the newest items, the verify-first rule from SKILL.md → Environment & Scale applies: confirm availability in the target environment before relying on them.
 
+## Contents
+
+- [Typing](#typing)
+- [Modern idioms](#modern-idioms)
+- [Standard library — recent additions](#standard-library--recent-additions)
+- [Scheduling: the task library](#scheduling-the-task-library)
+- [Deferred engine events](#deferred-engine-events)
+- [Error handling](#error-handling)
+- [Time APIs — one job each](#time-apis--one-job-each)
+- [Attributes](#attributes)
+
 ## Typing
 
 - `--!strict` per SKILL.md; annotate public signatures, Configuration constants, and State tables.
@@ -64,7 +75,7 @@ Confirmed available per [api-currency.md](api-currency.md) — use them, and don
 
 - **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, and `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`. Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
-- **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns.md](patterns.md#data-persistence)).
+- **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns/data.md](patterns/data.md#data-persistence)).
 
 ### Compiler and analysis changes worth knowing (2026)
 
@@ -93,7 +104,7 @@ Code that follows the skill's normal rules (connect at setup time, react to even
 
 ## Error handling
 
-- **Every `pcall` needs a handled failure branch.** `local ok, err = pcall(...)` where `ok == false` is silently ignored hides real bugs; log the error with context or recover explicitly. A genuinely ignorable failure (an optional cosmetic load) is exactly the case an in-line note is for: one line saying why it is safe to skip ([SKILL.md](../SKILL.md#in-line-notes-inside-the-body)).
+- **Every `pcall` needs a handled failure branch.** `local ok, err = pcall(...)` where `ok == false` is silently ignored hides real bugs; log the error with context or recover explicitly. A genuinely ignorable failure (an optional cosmetic load) is exactly the case an in-line note is for: one line saying why it is safe to skip ([section-layout.md](section-layout.md#in-line-notes-inside-the-body)).
 - For telemetry, use `xpcall(fn, function(err) return debug.traceback(tostring(err), 2) end)` — the handler runs at throw time so the stack is still live; a plain `pcall` has already unwound it.
 - `assert(value, message)` evaluates `message` eagerly even on success — in hot paths use `if not value then error(...) end`, or keep the message a precomputed string, never a concatenation/format call.
 - `error(msg, 2)` blames the *caller* — use level 2 in argument-validation helpers so the reported location is the misuse site. Error values may be tables (`error({ code = "NO_FUNDS" })`) for structured handling; document that contract wherever it's used.

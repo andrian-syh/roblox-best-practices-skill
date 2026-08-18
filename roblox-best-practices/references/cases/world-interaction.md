@@ -1,6 +1,6 @@
 # Cases: World & Interaction
 
-Blueprints for things players touch, build, and bring along. All three are streaming-sensitive: assume any workspace instance may not exist on a given client ([patterns.md](../patterns.md#streaming-streamingenabled)).
+Blueprints for things players touch, build, and bring along. All three are streaming-sensitive: assume any workspace instance may not exist on a given client ([patterns/network.md](../patterns/network.md#streaming-streamingenabled)).
 
 **Preflight:** identify the case → check ceilings ([limits-budgets.md](../limits-budgets.md)) → fix the server/client split → decide how you will verify it ([verification.md](../verification.md)).
 
@@ -19,7 +19,7 @@ Blueprints for things players touch, build, and bring along. All three are strea
 **Never:** a script parented to every door · a `while task.wait()` proximity scan · trust that a prompt firing means the player was actually in range.
 **Failure modes:** per-instance state accumulating for objects that streamed out. The removed-signal cleanup is what prevents the leak.
 **Verify:** stream the area out and back in, and confirm behavior rebinds exactly once with no duplicate connections.
-**Deeper:** [patterns.md](../patterns.md#behavior-binding-works-with-any-framework)
+**Deeper:** [patterns/world.md](../patterns/world.md#behavior-binding-works-with-any-framework)
 
 ## Placement and building (plots, tycoons)
 

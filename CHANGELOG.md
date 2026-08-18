@@ -2,6 +2,79 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.16.0] - 2026-08-18
+
+**Structural pass: one session-setup procedure, and three bundled files split by domain.** Nothing was rewritten as guidance; the same rules are grouped so an agent loads only the domain it is working in, and runs the once-per-session decisions as one procedure instead of four scattered reminders.
+
+### Changed
+- **`## Session Setup (decide once, then cache)`** replaces the separate Supervision Level and Mode Selection sections. The four one-time decisions — supervision level, Default vs Adaptive, community libraries, Server Authority — now sit in one table with how to resolve each and what to assume when it cannot be resolved. Scattered one-time checks are the ones that get half-skipped; as one procedure they are read together.
+- **`ui-ux-testing.md` split.** UI construction and cross-platform work became `ui-crossplatform.md`; the testing, testable-architecture, and telemetry halves folded into `verification.md`, which already owned that domain. Two files competing for one topic was the next duplication waiting to happen.
+- **`security-monetization.md` split** into `security.md` (threat model, validation layers, movement sanity, text filtering, logging) and `monetization-policy.md` (purchases, `ProcessReceipt`, PolicyService). An anti-exploit question no longer loads receipt-processing rules.
+- **Description gained an anti-trigger clause** — not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or design discussion with no Luau involved — and was tightened to 803 characters to make room for it.
+- SKILL.md carries a version marker, so a stale installed copy is identifiable from the file itself.
+
+### Added
+- **Grep hints for the lookup-style references** (`limits-budgets.md`, `genres.md`, `edge-cases.md`), which are tables rather than narratives and should be searched for one row rather than read whole.
+- **Two more validator checks:** tables of contents must match their file's headings, and the frontmatter must stay inside the spec's `name` and `description` limits. Both verified by breaking them on purpose — the description overran 1,024 characters while this entry was being written, and the check caught it.
+
+### Fixed
+- The function-ordering rule appeared in both SKILL.md and `section-layout.md` after the 1.15.0 split; it now lives only where the detail is.
+
+## [1.15.0] - 2026-08-18
+
+**Audited against Anthropic's Agent Skills authoring spec, and restructured to match it.** The skill's architecture already followed the spec; its density and its testing did not. Nothing was deleted — heavy reference material moved out of the always-loaded file and into routed reference files.
+
+### Added
+- **Evaluation fixtures**, so all five scenarios run: `review-target.lua` (four real defects plus deviations that must return Advisory), `correct-but-odd.lua` (entirely shapes carved out in `false-positives.md`; must return zero findings), and `existing-project/` (a small codebase with its own conventions and two deliberate non-negotiable conflicts).
+- **`references/patterns/`** — the pattern set split by domain: `data.md` (ownership, persistence, failure policy, locks), `network.md` (remotes, cross-server, streaming), `lifecycle.md` (cleanup, character, pooling), `world.md` (binding, input, anti-patterns). `patterns.md` becomes a four-row index; a task about remotes reads ~1.4k tokens instead of ~7.1k.
+- **Tables of contents in all thirteen reference files over 100 lines.** The spec requires this because agents preview long files with partial reads (`head -100`) and cannot see past the cut without one. Files under 100 lines are left alone.
+- `references/section-layout.md` — the full three-section specification, header hierarchy, subsection contents, and the complete Documentation Comment rules with worked rejections, moved out of SKILL.md.
+- `references/style-rules.md` — the complete Language & Style set, including the full deprecated-API list and `const` guidance.
+- `references/review-checklist.md` — the completion gate, now read at the end of a task instead of loaded at the start of every one.
+- `evaluations/` — five scenarios with explicit `expected_behavior` lists (remote-handler authoring, player data persistence, review triage, false-positive resistance, adaptive mode) plus notes on running them across models. The spec treats evaluations, not prose, as the source of truth for skill effectiveness; there were none.
+- `scripts/validate-skill.py` — structural checks that were previously done by hand: every link and anchor resolves, every reference is reachable one level from SKILL.md, SKILL.md stays within its line and token ceilings, and long references carry a table of contents. Neither directory ships in the npm package.
+
+### Changed
+- **SKILL.md cut from ~12,300 to ~7,100 tokens (259 lines).** It now holds only what every task needs: the Invariant Card, the routing table, authority and supervision, mode selection, the environment rules, the non-negotiables, the preflight, and compact summaries pointing at the moved detail. The spec's 500-line ceiling was already met; its ~5k Level 2 token budget was not, and the remainder is decision-making content whose removal would cost capability rather than tokens.
+- Server Authority detection detail moved into `server-authority.md`; review-mode finding procedure moved into `false-positives.md`. SKILL.md keeps the trigger list, the default-off rule, the severity vocabulary, and the gate.
+- Three routing rows added so every moved file is reachable directly from SKILL.md; inbound links across five files repointed to the moved anchors.
+
+### Fixed
+- **Duplicated review guidance in `false-positives.md`** — the moved block restated the confidence gate sitting 200 lines above it, in different words. It now covers only what happens to a finding once the gate has passed it.
+- `server-authority.md` crossed 100 lines during the move and lost its table of contents; the validator caught it on first run.
+- Link labels reading `patterns.md` while pointing into `patterns/` corrected across 18 files.
+
+## [1.14.0] - 2026-08-18
+
+**Object reuse, navigable performance guidance, and three design rules the skill kept assuming.** Four areas that were referenced far more often than they were specified: pooling appeared in five files but was defined in nine lines, `performance.md` was a flat rule list with no way to choose between its rules, and state ownership, failure policy, and per-owner locks were each invoked by name in the case recipes without ever being written down. Every new rule ships with its matching carve-out in `false-positives.md`.
+
+### Added
+- `edge-cases.md` gains a **"Pooled and reused objects"** section: double-return, use-after-return, incomplete reset, per-use connections accumulating, stale attributes and tags, `Destroy()` on a parked object, unbounded growth, and a drained pool. The finishing pass becomes seven questions, the new one asking what a reused object still carries from its last use.
+- `patterns.md` → Object Pooling gains a **pool ceiling with overflow destruction** (an uncapped pool is a memory leak shaped like an optimization), a **full reset table** covering transform/physics, appearance, collision, per-use connections, attributes and tags, and children added during use, plus notes that `Parent = nil` frees nothing, that a parked object is never destroyed in place, and that tables pool the same way as Instances.
+- A lower bound on when to pool at all: below roughly once per second, `Clone`/`Destroy` is simpler and the pool is pure complexity.
+- `performance.md` gains **"Start here: find what is actually slow"** — a symptom-to-cause triage table (client FPS flat vs. scaling with entities, server-wide lag, memory climbing across a session, a spike at one moment, low-end-only, network-triggered stutter), each routed to the section that actually owns the cost. Measurement is promoted from an appendix to the file's stated entry point.
+- `performance.md` gains **"Physics queries and contact detection"**, the gap most likely to produce a laggy server: `Touched` framed as a coarse trigger rather than a hit test, spatial queries and shapecasts as the deliberate alternative, `RaycastParams`/`OverlapParams` reuse (with the detail that assigning `FilterDescendantsInstances` copies the table), engine-side filtering and `MaxParts` over post-filtering in Luau, broadphase opt-out flags, Humanoid state-machine cost on the server, and the rule that a client-side cast is a prediction the server re-runs.
+- **Which side pays** is now stated: rendering and input cost the client, physics and replication fan-out cost the server, and the rules that error when misplaced are marked rather than left to inference.
+- `performance.md` gains **"What costs what (relative, not measured)"** — eight orderings (table field vs. property read vs. replicating write, cached reference vs. per-frame path resolution, pooled reuse vs. `Instance.new`, one fat remote vs. ten thin ones, distance check vs. raycast, `table.clear` vs. reallocation, `table.concat` vs. loop concatenation) stated explicitly as orderings rather than benchmarks, plus the rule to order guards cheapest-first.
+- A **post-optimization discipline** in the Measurement section: record the number first, change one thing, re-measure on the target device rather than in Studio, revert what did not move, and report the measurement rather than the intent.
+- Animation and effect churn added to Memory: load an `Animation` once per `Animator` and keep the track, prefer `:Emit()` on a persistent emitter and a reused `Sound` over cloning per hit, and note that emitter cost scales with `Rate` × `Lifetime`.
+- Two Review Checklist items: private per-player state never travels by attribute, and no performance claim without a before/after number.
+- `patterns.md` gains **"One Owner Per Fact"**: one writing owner per piece of state, every other copy a view updated after the fact and never read back to decide anything, derived values recomputed rather than stored twice, and the settling test — *if these two copies disagreed right now, which is right?*
+- `patterns.md` gains **"Failure Policy (what happens after the last retry)"**: every guarded call states its behavior on final failure as **fail closed** (money, permissions, policy — an unavailable check is not a passing check), **fail open** (cosmetics, telemetry), or **fail loud** (persistence). The fail-loud case is spelled out because it is the expensive one: a failed load falling through to defaults produces an empty profile whose next autosave destroys the real history.
+- `patterns.md` gains **"Serialized Operations (per-owner locks)"**, the pattern two recipes already demanded by name but no file defined. Includes the lock released on every path including errors, cleared on `PlayerRemoving`, scoped per owner rather than globally, and explicitly not a replacement for post-yield re-validation.
+- `false-positives.md` gains the matching carve-out for all three: a second copy of a value is not automatically a divergence bug, fail-open is a valid policy rather than a missing guard, a missing lock needs a named yield and two concurrent callers before it is a finding, a global lock is never the proposed fix, and a small project lacking all three is not defective. The one shape that clears the bar alone stays Blocker: a failed load falling through to defaults on a path that later saves.
+- Three Review Checklist items covering failure policy, single ownership, and lock release on every path.
+
+### Fixed
+- **Parallel Luau was missing its precondition:** the script must be a descendant of an `Actor` or `task.desynchronize()` does nothing useful — the most common way that feature is written wrong.
+- **An attribute is a broadcast, and the old rule did not say so.** "Prefer attributes for state" is now bounded to genuinely public state; per-player data an exploiter could read — inventory, currency, cooldowns — goes through a targeted remote. Choosing an attribute for private state was a security decision disguised as a performance one. Paired with a note that rewriting a property to its current value neither replicates nor fires a change signal, so a compare-before-write guard removes the traffic outright.
+- The `Touched` guidance is scoped for review as well as authoring: an existing trigger is not a finding on its own, only one with a concrete failure behind it.
+
+### Changed
+- The pooling snippet gains its Configuration constants and Documentation Comments in the current style; the remote-handler and cleanup-bag snippets in the same file were carried to that style too.
+- `performance.md` pooling bullet now points at both the ceiling/reset rules and the reuse edge cases.
+- SKILL.md: System Design Preflight step 3 now asks who owns each fact, not just the server/client split; the reference-routing rows name physics queries, state ownership, failure policy, locks, and reused state, and the finishing-pass checklist item covers state carried over by a pooled object.
+
 ## [1.13.1] - 2026-08-18
 
 **API currency refreshed to Luau 0.734 and engine 734.** A maintenance pass over `api-currency.md` plus the three references the new APIs touch.

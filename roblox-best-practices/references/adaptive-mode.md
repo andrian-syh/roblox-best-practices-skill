@@ -22,8 +22,8 @@ If an existing project convention *directly conflicts* with a non-negotiable rul
 **Documentation Comment style adapts like everything else in the left column.** A project that documents with Moonwave `--[=[ ]=]` blocks, with `---` lines, or with plain `--[[ ]]` has already made a choice, and consistency within the codebase is worth more than conformity to this skill.
 
 - **Match the project's block form, tag habits, and language.** If they run Moonwave and tag `@within`/`@prop`, keep tagging. If they write terse `--[[ ]]` blocks with no tags, match that.
-- **The content rules still hold in any style.** Whatever the form, a description stays implementation-agnostic and free of volatile content, and so does an in-line note ([SKILL.md](../SKILL.md#the-two-description-rules)). That is about staleness, not aesthetics, so it survives adaptation.
-- **Recommend this skill's style whenever the user asks.** If they ask which style to use, ask for a restyle, or have no convention at all, propose the default from [SKILL.md](../SKILL.md#documentation-comments-the-default-style-and-how-it-flexes) and say why. Recommend; never impose.
+- **The content rules still hold in any style.** Whatever the form, a description stays implementation-agnostic and free of volatile content, and so does an in-line note ([section-layout.md](section-layout.md#the-two-description-rules)). That is about staleness, not aesthetics, so it survives adaptation.
+- **Recommend this skill's style whenever the user asks.** If they ask which style to use, ask for a restyle, or have no convention at all, propose the default from [section-layout.md](section-layout.md#documentation-comments-the-default-style-and-how-it-flexes) and say why. Recommend; never impose.
 - **Existing comments are left alone.** You do not rewrite them to match this skill, and you do not delete them.
 
 Record the project's comment style in the Step 2 summary so the user sees what you will follow.

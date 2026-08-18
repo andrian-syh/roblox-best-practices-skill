@@ -1,4 +1,6 @@
-# UI/UX, Cross-Platform & Testing
+# UI/UX and Cross-Platform
+
+Building interfaces that survive every screen and every input device. Proving that they work is a separate concern: [verification.md](verification.md).
 
 ## UI Construction
 
@@ -17,31 +19,9 @@ Rotated GuiObjects and `Path2D` instances now clip cleanly without a performance
 
 Assume every game runs on touch, gamepad, and mouse/keyboard unless the user says otherwise.
 
-- **Input:** Input Action System (or `ContextActionService` in legacy projects) per [patterns.md](patterns.md#input-client) — never branch on `UserInputService.TouchEnabled` to build three separate input systems. The **Input Action Manager [Beta]** is a Studio-side visual editor for building and auditing cross-platform mappings; it complements the runtime API rather than replacing it. Under Server Authority the Input Action System is mandatory ([server-authority.md](server-authority.md)).
+- **Input:** Input Action System (or `ContextActionService` in legacy projects) per [patterns/world.md](patterns/world.md#input-client) — never branch on `UserInputService.TouchEnabled` to build three separate input systems. The **Input Action Manager [Beta]** is a Studio-side visual editor for building and auditing cross-platform mappings; it complements the runtime API rather than replacing it. Under Server Authority the Input Action System is mandatory ([server-authority.md](server-authority.md)).
 - **Gamepad/console:** every interactive GuiObject reachable via `Selectable`/`NextSelectionUp/Down/Left/Right`; set `GuiService.SelectedObject` when opening a menu; test that focus never traps.
 - **Touch:** minimum ~44 px effective touch targets; keep actions away from screen edges reserved by the OS; `ContextActionService`-created touch buttons for gameplay actions.
 - Detect the *active* input type via `UserInputService:GetLastInputType()` + `LastInputTypeChanged` to swap prompt icons (keyboard "E" vs gamepad "X" vs touch button) — players switch mid-session.
 - **Accessibility basics:** don't encode meaning in color alone; support `GuiService.ReducedMotionEnabled` (skip/shorten camera shakes and large tweens when set); keep flashing effects mild.
 - **Performance tiers:** treat low-end mobile as the baseline — test there, scale effects *up* for strong devices, not down from PC. Never infer device power from `TouchEnabled`. Frame budgets, the degradation ladder, and adaptive quality: [device-performance.md](device-performance.md).
-
-## Testing & Debugging Workflow
-
-- **Multi-client testing:** Studio's multi-client Team Test / Start Server+Players for anything involving replication — single-Play sessions hide every networking bug. Server-script breakpoints during Team Test where available.
-- **Network conditions:** Advanced Network Simulation (Studio Settings → Network) — test remotes and prediction at 100–200 ms latency with loss *before* shipping; it always works on localhost.
-- **Profiling:** MicroProfiler/ScriptProfiler workflow and memory-leak watching per [performance.md](performance.md#measurement-never-optimize-blind).
-- **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall in [verification.md](verification.md).
-
-### Unit-testable architecture (framework-agnostic)
-
-You don't need a test framework mandate — you need testable *shape*:
-
-- Keep pure logic (damage formulas, economy math, inventory operations, state machines) in ModuleScripts that touch **no Instances and no services** — pass data in, get data out. These run under any runner (TestEZ, Jest-Lua, or a plain assert script) and even in CI via Luau CLI/lune.
-- Push Instance access, remotes, and DataStores to thin edge scripts that *call* the pure modules. If a function needs a `Player`, pass the data it actually uses (userId, profile table) instead.
-- If the project has a test runner, match its conventions; if not, offer a `Tests` folder with plain assert-based specs rather than forcing a framework.
-
-### Error telemetry & logging
-
-- Capture unhandled errors: `ScriptContext.Error` (server + client), forward client errors to the server via a rate-limited remote; log with script name and stack.
-- Structured logging (`LogService` `Info`/`Warn`/`Error` with context where available; else prefix-tagged `warn`) — consistent, greppable, and off by default for debug-level spam behind a Configuration flag.
-- **AnalyticsService** custom events for funnels (onboarding steps, purchase flows, feature usage) and economy events — instrument at ship time, not after the retention problem appears.
-- Wrap telemetry itself in `pcall`; diagnostics must never crash gameplay.

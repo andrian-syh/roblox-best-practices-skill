@@ -2,6 +2,16 @@
 
 The cheapest code is the code never written. This file governs **how much** code to produce; [performance.md](performance.md) governs how cheap it is to run, and [device-performance.md](device-performance.md) governs whether it fits the frame.
 
+## Contents
+
+- [Three precedence rules (read these before the ladder)](#three-precedence-rules-read-these-before-the-ladder)
+- [The ladder](#the-ladder)
+- [Already exists — do not hand-roll these](#already-exists--do-not-hand-roll-these)
+- [Searching the project first](#searching-the-project-first)
+- [Density rules](#density-rules)
+- [When reimplementation is justified](#when-reimplementation-is-justified)
+- [Ponytail (optional agent-side overlay)](#ponytail-optional-agent-side-overlay)
+
 ## Three precedence rules (read these before the ladder)
 
 ### 1. Minimalism never reduces what gets delivered

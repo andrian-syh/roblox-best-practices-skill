@@ -18,7 +18,7 @@ Blueprints for systems that compare players or gate rewards on time. Both are or
 **Never:** query a store per player per frame · accept a client-submitted score · let a leaderboard refresh block gameplay.
 **Failure modes:** a popular experience burning the shared request budget on leaderboard refreshes and starving player-data saves. Budget leaderboard reads explicitly against [limits-budgets.md](../limits-budgets.md#data-stores).
 **Verify:** run with a short refresh interval under load and confirm data saves still succeed.
-**Deeper:** [patterns.md](../patterns.md#cross-server-communication)
+**Deeper:** [patterns/network.md](../patterns/network.md#cross-server-communication)
 
 ## Time-gated rewards (daily, streaks, offline progress)
 

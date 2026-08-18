@@ -1,6 +1,15 @@
-# Security & Monetization
+# Security and Anti-Exploit
 
-Deep-dive on the "server is authoritative" rule and on purchase handling. The remote-handler skeleton (type → rate → ownership → game-state) lives in [patterns.md](patterns.md#remote-communication) — this file adds the layers around it.
+What an exploiter can reach, and the server-side layers that stop them. Purchases and platform policy live in [monetization-policy.md](monetization-policy.md).
+
+## Contents
+
+- [Threat model (assume all of these exist)](#threat-model-assume-all-of-these-exist)
+- [Server-side validation layers](#server-side-validation-layers)
+- [Movement & physics sanity checks](#movement--physics-sanity-checks)
+- [Server Authority (engine-level)](#server-authority-engine-level)
+- [User-generated text (filtering)](#user-generated-text-filtering)
+- [Logging & response](#logging--response)
 
 ## Threat model (assume all of these exist)
 
@@ -69,31 +78,6 @@ Two rules hold regardless of mode:
 - Server Authority *strengthens* Non-Negotiable #1; it does not replace validation. Remote handlers and input consumers still validate type, range, ownership, and rate — server-authoritative transport is not the same as trusted intent.
 - Where it is **not** enabled, the manual movement and physics sanity checks above remain the baseline, and using them is correct rather than outdated.
 
-## Purchases
-
-### ProcessReceipt (Developer Products) — correctness rules
-
-`MarketplaceService.ProcessReceipt` is the single most bug-prone monetization API. Rules:
-
-- **Exactly one** callback game-wide; set it in one server script.
-- **Idempotent:** Roblox retries receipts (server crash, prior `NotProcessedYet`, rejoin). Record processed `PurchaseId`s durably (in the player's data profile, as a capped history list) and return `PurchaseGranted` immediately for already-processed IDs — never grant twice.
-- **Grant, persist, then acknowledge:** apply the product effect, *save it* (or mark it inside the already-managed data profile), and only then return `Enum.ProductPurchaseDecision.PurchaseGranted`. Returning `PurchaseGranted` before the grant is durable = paid item lost on crash.
-- Return `NotProcessedYet` when: the player left, their data isn't loaded, or the grant failed. Roblox will retry — that's the mechanism, not an error.
-- Wrap the whole handler logic in `pcall`; an error inside ProcessReceipt otherwise silently drops the receipt until retry.
-- Player may be offline on retry: either handle `player == nil` by returning `NotProcessedYet`, or design grants to work through the data store directly.
-
-### Choosing the product type
-
-| Type | Use for | Notes |
-|---|---|---|
-| Game Pass | Permanent one-time perks (VIP, x2 coins) | Check `UserOwnsGamePassAsync` (cache per session; also listen to `PromptGamePassPurchaseFinished`) |
-| Developer Product | Consumables, repeatable (currency, revives) | ProcessReceipt rules above |
-| Subscription | Recurring benefits | Check status on join + `UserSubscriptionStatusChanged`; always handle lapse |
-| Paid access / Managed Pricing | Whole-experience monetization | Managed Pricing (regional + optimization) is platform-side; don't hardcode price displays — read from `GetProductInfo` |
-
-- Never trust a client claim of ownership — verify server-side, cache the result, invalidate on purchase-finished events.
-- Prompt purchases from the client (`PromptProductPurchase` etc. work there), but *effects* only ever originate from server-side verification.
-
 ## User-generated text (filtering)
 
 Any user-written text displayed to *any other player* — pet names, guild names, signs, notes, custom messages — **must** pass text filtering. This is a platform requirement, not a style choice; it applies in every genre (a pet name in a simulator is as much UGC text as a chat message).
@@ -102,20 +86,6 @@ Any user-written text displayed to *any other player* — pet names, guild names
 - Wrap the call in `pcall`; on failure **reject the text or fall back to a safe default** — never display the unfiltered original.
 - Store the raw original server-side and filter at display time (filters improve over time); cache the filtered result per session to avoid repeated calls for the same string.
 - Chat through `TextChatService` is filtered automatically — this section is about *custom* text surfaces you build yourself.
-
-## Policy compliance (PolicyService)
-
-Some features are legal for one player and prohibited for another (region, age). On join, `pcall` `PolicyService:GetPolicyInfoForPlayerAsync(player)` once, cache it per session, and gate features with it. On API failure, **fail closed** — treat the player as most-restricted.
-
-| Field | Gates |
-|---|---|
-| `ArePaidRandomItemsRestricted` | Loot boxes / random rewards purchasable (directly or indirectly) with Robux — hide or disable when `true`; where offered at all, disclose the odds |
-| `AllowedExternalLinkReferences` | Which social links may be shown (Discord, YouTube, ...) — show only the ones in the list |
-| `AreAdsAllowed` | Ad content of any kind |
-| `IsPaidItemTradingAllowed` | Trading items bought with paid currency |
-| `IsSubjectToChinaPolicies` | Additional China-specific compliance requirements |
-
-Genre note: gacha/lootbox-heavy designs (simulators, RPGs) must build the `ArePaidRandomItemsRestricted` branch from day one — retrofitting it after monetization ships is far more expensive.
 
 ## Logging & response
 

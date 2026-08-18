@@ -1,6 +1,6 @@
 # Verification Workflow
 
-How to prove a change actually works — in the running engine, not just by reading the code. Complements the testable-architecture and multi-client guidance in [ui-ux-testing.md](ui-ux-testing.md#testing--debugging-workflow).
+How to prove a change actually works — in the running engine, not just by reading the code. Testable architecture, multi-client sessions, and error telemetry now live here too.
 
 ## Principles
 
@@ -27,7 +27,7 @@ Confirm availability in the target environment before relying on these ([api-cur
 
 ## Rojo / filesystem environments
 
-- Pure-logic modules (no Instances, no services — see [ui-ux-testing.md](ui-ux-testing.md#unit-testable-architecture-framework-agnostic)) run under the Luau CLI or lune in CI; match the project's runner (TestEZ, Jest-Lua, plain asserts) if one exists.
+- Pure-logic modules (no Instances, no services — see [ui-crossplatform.md](verification.md#unit-testable-architecture-framework-agnostic)) run under the Luau CLI or lune in CI; match the project's runner (TestEZ, Jest-Lua, plain asserts) if one exists.
 - CI passing does not exempt engine-touching paths from an in-Studio session — sync the change in and drive the flow there too.
 
 ## Review verification discipline (trace before flag)
@@ -42,3 +42,25 @@ When reviewing code (rather than writing it), findings must survive this filter 
 These four steps are what keep a review objective: they filter out bias toward "code that looks different from how I'd write it".
 
 Once a finding passes all four steps, assign it a severity — **Blocker**, **Correctness**, or **Advisory** — using the taxonomy and the full "what NOT to flag" catalog in [false-positives.md](false-positives.md). The gate decides *whether* a finding is real; the severity decides *how bad* it is. Advisory items are proposed, never reported as violations, and never silently rewritten.
+
+## Studio testing workflow
+
+- **Multi-client testing:** Studio's multi-client Team Test / Start Server+Players for anything involving replication — single-Play sessions hide every networking bug. Server-script breakpoints during Team Test where available.
+- **Network conditions:** Advanced Network Simulation (Studio Settings → Network) — test remotes and prediction at 100–200 ms latency with loss *before* shipping; it always works on localhost.
+- **Profiling:** MicroProfiler/ScriptProfiler workflow and memory-leak watching per [performance.md](performance.md#measurement-never-optimize-blind).
+- **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall below.
+
+## Unit-testable architecture (framework-agnostic)
+
+You don't need a test framework mandate — you need testable *shape*:
+
+- Keep pure logic (damage formulas, economy math, inventory operations, state machines) in ModuleScripts that touch **no Instances and no services** — pass data in, get data out. These run under any runner (TestEZ, Jest-Lua, or a plain assert script) and even in CI via Luau CLI/lune.
+- Push Instance access, remotes, and DataStores to thin edge scripts that *call* the pure modules. If a function needs a `Player`, pass the data it actually uses (userId, profile table) instead.
+- If the project has a test runner, match its conventions; if not, offer a `Tests` folder with plain assert-based specs rather than forcing a framework.
+
+## Error telemetry & logging
+
+- Capture unhandled errors: `ScriptContext.Error` (server + client), forward client errors to the server via a rate-limited remote; log with script name and stack.
+- Structured logging (`LogService` `Info`/`Warn`/`Error` with context where available; else prefix-tagged `warn`) — consistent, greppable, and off by default for debug-level spam behind a Configuration flag.
+- **AnalyticsService** custom events for funnels (onboarding steps, purchase flows, feature usage) and economy events — instrument at ship time, not after the retention problem appears.
+- Wrap telemetry itself in `pcall`; diagnostics must never crash gameplay.

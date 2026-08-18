@@ -18,7 +18,7 @@ Blueprints for the systems that move players through time and across servers. Th
 **Never:** rely on `task.wait` chains to sequence a round · leave per-round connections attached to persistent objects · assume the player set is stable across a phase.
 **Failure modes:** a `task.delay` from round N firing during round N+1. The generation id check is what prevents it; a pending delay should also be cancelled in teardown ([luau-language.md](../luau-language.md#scheduling-the-task-library)).
 **Verify:** run several rounds back to back and watch connection and instance counts stay flat.
-**Deeper:** [patterns.md](../patterns.md#lifecycle--cleanup)
+**Deeper:** [patterns/lifecycle.md](../patterns/lifecycle.md#lifecycle--cleanup)
 
 ## Matchmaking and reserved servers
 
@@ -34,7 +34,7 @@ Blueprints for the systems that move players through time and across servers. Th
 **Never:** grant rewards or permissions based on unvalidated teleport data · teleport without a failure path · assume the destination server exists when the player arrives.
 **Failure modes:** data saved on the origin server after the teleport begins, racing the load on the destination. Save, confirm, then teleport.
 **Verify:** teleport with a forced failure injected and confirm the player lands somewhere valid with data intact.
-**Deeper:** [patterns.md](../patterns.md#cross-server-communication)
+**Deeper:** [patterns/network.md](../patterns/network.md#cross-server-communication)
 
 ## Cross-server events and announcements
 
@@ -51,4 +51,4 @@ Blueprints for the systems that move players through time and across servers. Th
 **Failure modes:** an event that "mostly works" in testing and desynchronizes servers in production. The periodic re-read is what makes it converge.
 **Budget:** message size and MemoryStore quotas in [limits-budgets.md](../limits-budgets.md#messaging).
 **Verify:** drop a message deliberately and confirm the affected server converges on the next re-read.
-**Deeper:** [patterns.md](../patterns.md#cross-server-communication)
+**Deeper:** [patterns/network.md](../patterns/network.md#cross-server-communication)

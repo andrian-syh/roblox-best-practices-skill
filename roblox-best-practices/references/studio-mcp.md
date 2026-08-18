@@ -2,6 +2,18 @@
 
 How to drive a Studio MCP connection without destroying work, corrupting a place, or burning the user's tokens. This governs *how the agent uses its tools*, not how Luau is written.
 
+## Contents
+
+- [Ground truth rules](#ground-truth-rules)
+- [Identify the variant once per session](#identify-the-variant-once-per-session)
+- [Capability map](#capability-map)
+- [MCP preflight](#mcp-preflight)
+- [Irreversible operations](#irreversible-operations)
+- [The Edit-context VM trap](#the-edit-context-vm-trap)
+- [Token discipline](#token-discipline)
+- [Standard workflows](#standard-workflows)
+- [Snapshot note](#snapshot-note)
+
 ## Ground truth rules
 
 **1. The connected tool list wins over this document.** Whatever tools are actually available in the session are the authority. This file helps you interpret them; it never decides what exists.
@@ -14,7 +26,7 @@ How to drive a Studio MCP connection without destroying work, corrupting a place
 
 ## Identify the variant once per session
 
-Read the available tools and classify. Cache the result for the session, the same way the community-library and Server Authority checks are cached ([SKILL.md](../SKILL.md#mode-selection-before-the-first-coding-task)).
+Read the available tools and classify. Cache the result for the session, the same way the community-library and Server Authority checks are cached ([SKILL.md](../SKILL.md#session-setup-decide-once-then-cache)).
 
 | Variant | Signature tools | Treatment |
 |---|---|---|

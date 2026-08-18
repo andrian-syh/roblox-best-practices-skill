@@ -17,7 +17,7 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 5. Kill credit and rewards are computed once, server-side.
 **Never:** accept a client-sent damage value · trust client-reported positions for validation (only for display) · run the damage formula on the client.
 **Failure modes:** validating against the attacker's *current* position when the shot was fired hundreds of milliseconds ago. Either rewind to the fire timestamp or widen the tolerance deliberately. Pick one, and give the tolerance a named Configuration constant rather than a literal, so the value documents itself and stays out of comments.
-**Under Server Authority:** movement is engine-validated, so the position inputs are trustworthy and tolerances can shrink. Without it, the manual plausibility checks in [security-monetization.md](../security-monetization.md#movement--physics-sanity-checks) remain the baseline.
+**Under Server Authority:** movement is engine-validated, so the position inputs are trustworthy and tolerances can shrink. Without it, the manual plausibility checks in [security.md](../security.md#movement--physics-sanity-checks) remain the baseline.
 **Verify:** test at 100–200 ms simulated latency with multiple clients; confirm honest hits register and impossible ones do not.
 **Deeper:** [genres.md](../genres.md#combat--fps--pvp)
 
@@ -33,9 +33,9 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 4. Buffer at most **one** queued input. Deeper queues become macro exploits.
 5. Store cooldown timestamps with `os.clock()` for in-session durations; persist only what must survive a rejoin, using `os.time()`.
 **Never:** let the client report that a cooldown elapsed · trust a client-sent ability id without checking the player actually has it · leave per-character ability state uncleared on respawn.
-**Failure modes:** per-character state (active buffs, channel handles) surviving a respawn because it was keyed by player. Key per-life state by the **character** and clear it on `CharacterRemoving` ([patterns.md](../patterns.md#character-lifecycle)).
+**Failure modes:** per-character state (active buffs, channel handles) surviving a respawn because it was keyed by player. Key per-life state by the **character** and clear it on `CharacterRemoving` ([patterns/lifecycle.md](../patterns/lifecycle.md#character-lifecycle)).
 **Verify:** spam the cast remote far above the intended rate and assert the server applies exactly the allowed number.
-**Deeper:** [security-monetization.md](../security-monetization.md#server-side-validation-layers) · [genres.md](../genres.md#battlegrounds--fighting--melee-pvp)
+**Deeper:** [security.md](../security.md#server-side-validation-layers) · [genres.md](../genres.md#battlegrounds--fighting--melee-pvp)
 
 ## Projectiles
 
@@ -43,7 +43,7 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 **Dominant risk:** allocation churn and per-projectile scripts.
 **Server/client:** the server owns the authoritative trajectory or hit resolution; clients render.
 **Assembly:**
-1. **Pool** projectile instances; take, reset every mutated property, use, return ([patterns.md](../patterns.md#object-pooling)).
+1. **Pool** projectile instances; take, reset every mutated property, use, return ([patterns/lifecycle.md](../patterns/lifecycle.md#object-pooling)).
 2. Drive all active projectiles from **one** update loop iterating a table, never a script or loop per projectile.
 3. Replicate a compact spawn message (origin, direction, speed, id) and let clients simulate the visual; do not stream per-frame positions.
 4. Use `UnreliableRemoteEvent` for cosmetic tracers and impacts; reliable remotes for damage events.

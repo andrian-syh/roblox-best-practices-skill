@@ -1,6 +1,6 @@
 ---
 name: roblox-best-practices
-description: Framework-agnostic Roblox/Luau coding standards. Use when writing, reviewing, or refactoring any Luau code (Script, LocalScript, ModuleScript) in a Roblox project, or when the user asks to keep best practices in mind as standing guidance — enforces the VARIABLES/FUNCTIONS/INITIALIZATION section layout, naming rules, performance, memory, networking, and security best practices regardless of the project's framework, folder structure, or game genre. Supports two modes — Default (apply this skill's conventions as-is) and Adaptive (study the project's existing coding conventions first, confirm with the user, then apply best practices in the project's own style) — adapts to community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) when the project uses them, and honors user-selected supervision levels (!ask / !bal / !go) controlling how often the agent confirms before acting.
+description: Framework-agnostic Roblox/Luau coding standards. Use when writing, reviewing, or refactoring any Luau code (Script, LocalScript, ModuleScript) in a Roblox project, or when the user asks to keep best practices in mind as standing guidance — enforces the VARIABLES/FUNCTIONS/INITIALIZATION layout, naming, performance, memory, networking, and security rules regardless of framework, folder structure, or genre. Two modes: Default (apply these conventions as-is) and Adaptive (study the project's existing style first, confirm, then apply). Adapts to community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) and honors supervision levels (!ask / !bal / !go). Not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or game design discussion with no Luau to write or review.
 ---
 
 # Roblox Game Development Best Practices
@@ -8,6 +8,8 @@ description: Framework-agnostic Roblox/Luau coding standards. Use when writing, 
 Framework-agnostic standards for writing clean, efficient, lightweight, and resource-frugal Luau code. These rules fit any architecture (single-script, module-based, Knit, actor-based, ECS, etc.) — they govern *how each script is written*, not how the project is structured.
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
+
+*Skill version 1.16.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 ## Session Invariants (must survive compaction)
 
@@ -67,10 +69,12 @@ Everything below expands these; nothing below overrides them.
 | Situation | Read |
 |---|---|
 | Writing a new Script/LocalScript/ModuleScript | [references/templates.md](references/templates.md) |
+| Section layout detail, what belongs in each subsection, Documentation Comment rules and rejected examples | [references/section-layout.md](references/section-layout.md) |
+| Naming, deprecated-API list, `const`, typing opt-in, module hygiene — the full style set | [references/style-rules.md](references/style-rules.md) |
 | Existing codebase with its own conventions (Adaptive mode) | [references/adaptive-mode.md](references/adaptive-mode.md) |
 | Project uses community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) | [references/community-libraries.md](references/community-libraries.md) |
 | About to write a helper, a utility, or anything that might already exist; keeping code dense | [references/minimal-code.md](references/minimal-code.md) |
-| Finishing a function: what nil, empty, stale, duplicate, or departed state will it meet | [references/edge-cases.md](references/edge-cases.md) |
+| Finishing a function: what nil, empty, stale, duplicate, reused, or departed state will it meet | [references/edge-cases.md](references/edge-cases.md) |
 | Typing depth, standard-library additions (vector/buffer/math), new type solver, task.spawn vs task.defer, deferred events, error handling, time APIs, native codegen | [references/luau-language.md](references/luau-language.md) |
 
 **Implementing a known system** (read the one file whose domain matches; recipes give assembly order and case-specific failure modes)
@@ -89,21 +93,34 @@ Everything below expands these; nothing below overrides them.
 
 | Situation | Read |
 |---|---|
-| Hot loops, memory, network traffic, rendering, profiling | [references/performance.md](references/performance.md) |
+| Hot loops, memory, network traffic, physics queries and contact detection, rendering, profiling | [references/performance.md](references/performance.md) |
 | Frame budget in milliseconds, low-end/"potato" devices, quality degradation, time-slicing bulk work, per-player bandwidth | [references/device-performance.md](references/device-performance.md) |
-| Data stores (+ version history), remotes, cleanup, pooling, input, character lifecycle (Humanoid vs CCL), streaming, cross-server, anti-patterns | [references/patterns.md](references/patterns.md) |
-| Purchases, anti-exploit, remote validation depth, text filtering, policy compliance | [references/security-monetization.md](references/security-monetization.md) |
+| State ownership, data stores (+ version history), failure policy after a failed retry, per-owner locks | [references/patterns/data.md](references/patterns/data.md) |
+| Remotes, cross-server (MemoryStore, MessagingService, reserved servers), StreamingEnabled | [references/patterns/network.md](references/patterns/network.md) |
+| Connection cleanup, character lifecycle (Humanoid vs CCL), object pooling | [references/patterns/lifecycle.md](references/patterns/lifecycle.md) |
+| CollectionService binding and attributes, client input, anti-patterns to reject on sight | [references/patterns/world.md](references/patterns/world.md) |
+| Anti-exploit, remote validation depth, movement sanity checks, text filtering | [references/security.md](references/security.md) |
+| Developer Products and passes, `ProcessReceipt`, PolicyService compliance | [references/monetization-policy.md](references/monetization-policy.md) |
 | Anything touching movement, physics, input, camera, animation timing, `BindToSimulation`, or network ownership | [references/server-authority.md](references/server-authority.md) |
-| UI/UX, cross-platform, testing, debugging, telemetry | [references/ui-ux-testing.md](references/ui-ux-testing.md) |
+| UI construction, cross-platform and accessibility, input device handling | [references/ui-crossplatform.md](references/ui-crossplatform.md) |
 | Genre is known (simulator, FPS, obby, RPG, racing, horror, social, tower defense, battlegrounds) | [references/genres.md](references/genres.md) |
+
+**Lookup files** — these are tables, not narratives. Grep them for the row you need instead of reading them whole:
+
+```bash
+grep -i "datastore" references/limits-budgets.md      # a ceiling or quota
+grep -i "obby"      references/genres.md              # one genre's rules
+grep -i "yield"     references/edge-cases.md          # one failure state
+```
 
 **Checking yourself**
 
 | Situation | Read |
 |---|---|
-| Verifying that a change works (playtest workflow, test injection, command-bar VM pitfall) or verifying a review finding | [references/verification.md](references/verification.md) |
+| Proving a change works — playtest workflow, multi-client sessions, test injection, testable architecture, error telemetry, the command-bar VM pitfall | [references/verification.md](references/verification.md) |
 | Working through a Roblox Studio MCP connection — which tool to use, what is irreversible, and how not to burn tokens | [references/studio-mcp.md](references/studio-mcp.md) |
 | Reviewing code — deciding whether a finding is real and how severe, and what NOT to flag | [references/false-positives.md](references/false-positives.md) |
+| **Finishing any task** — the completion gate before calling work done | [references/review-checklist.md](references/review-checklist.md) |
 | Whether a newer engine/Luau API is confirmed available before relying on it or flagging it as missing | [references/api-currency.md](references/api-currency.md) |
 | Designing against a platform ceiling (DataStore size/requests, MemoryStore, messaging, attributes, animation tracks) | [references/limits-budgets.md](references/limits-budgets.md) |
 
@@ -122,79 +139,47 @@ Users may invoke this skill purely as a standing reminder — "use best practice
 - Hold these rules as active guidance for all subsequent Luau work in the session.
 - Resolve Mode Selection and the community-library check **lazily** — at the first actual coding/review task, and only the parts that task needs.
 
-## Supervision Level (how often to confirm)
+## Session Setup (decide once, then cache)
 
-The user controls how much the agent asks before acting. Three levels:
+Four decisions govern every later task. Resolve each **once**, cache the answer for the session, and never re-ask per file. Resolve them **lazily** — at the first task that actually depends on one, not upfront.
+
+| Decision | How to resolve | Default when unresolved | Detail |
+|---|---|---|---|
+| **Supervision level** | Inline token (`!ask`/`!bal`/`!go`) > session declaration in any words ("awasi penuh", "jangan banyak tanya") > default | **Balanced** — never ask which level the user wants; absence *is* the answer | table below |
+| **Default vs Adaptive mode** | Obey an explicit statement; otherwise ask once if an existing codebase has visible conventions | **Default** for new files; for edits, match the file being edited and note the assumption | [references/adaptive-mode.md](references/adaptive-mode.md) |
+| **Community libraries** | Ask once, or detect from `require()`s and `wally.toml` | **None** — use the built-in patterns | [references/community-libraries.md](references/community-libraries.md) |
+| **Server Authority** | Read `Workspace.AuthorityMode`, or scan for `AuthorityMode`/`BindToSimulation`; ask once at the first task touching movement, physics, input, camera, animation timing, network ownership, or hit registration | **OFF** — most places are not server-authoritative, and assuming otherwise produces confidently wrong code | [references/server-authority.md](references/server-authority.md) |
+
+**The two modes:** *Default* applies this skill's conventions as written. *Adaptive* studies the project's existing structure, proposes an adapted convention, and waits for confirmation before writing. Only stylistic and structural conventions adapt — the Non-Negotiable Runtime Rules and the safety items hold in full through either.
+
+**Community libraries win for the concern they own.** Where one is in use, its idioms replace the overlapping built-in pattern; the non-negotiables still hold through them.
+
+**Never migrate a project to Server Authority on this skill's initiative** — recommend, explain the cost, let the user decide.
+
+### Supervision levels
 
 | Level | Token | Behavior |
 |---|---|---|
-| **Supervised** | `!ask` | Confirm before every meaningful decision: convention choices, the list of files to create/modify, any deviation from this skill, and before writing code. The user sees and approves everything. |
-| **Balanced** (default) | `!bal` | Ask only when genuinely needed: real ambiguity, conflict with a Non-Negotiable Runtime Rule, or wide-impact/destructive changes. Otherwise proceed. |
-| **Autonomous** | `!go` | Don't ask; make sensible best-practice decisions and record every assumption in the final summary. Stop only for destructive/irreversible actions. |
+| **Supervised** | `!ask` | Confirm before every meaningful decision: convention choices, the file list, any deviation from this skill, and before writing code. |
+| **Balanced** (default) | `!bal` | Ask only on real ambiguity, a conflict with a Non-Negotiable Runtime Rule, or a wide-impact/destructive change. Otherwise proceed. |
+| **Autonomous** | `!go` | Don't ask; make sensible best-practice decisions and record every assumption in the final summary. Stop only for destructive or irreversible actions. |
 
-**How the level is set:**
-1. **Session declaration** — the user states it in any words ("supervised mode", "awasi penuh", "jangan banyak tanya", "bebas saja") → holds for the whole session until changed.
-2. **Inline token** — `!ask` / `!bal` / `!go` anywhere in a prompt → overrides the session level for that prompt only.
-
-**Precedence:** inline token > session declaration > Balanced default. Never ask the user which level they want — absence of a declaration *is* the Balanced choice. Explicit user instructions (User Authority) outrank the level itself.
-
-**Effect on this skill's confirmation points:**
+The level modifies each decision above, and User Authority outranks the level itself:
 
 | Confirmation point | Supervised | Balanced | Autonomous |
 |---|---|---|---|
-| Default/adaptive mode question | Always ask | Ask once if a codebase exists | Infer; report the assumption |
-| Adaptive convention confirmation (Step 2) | Wait for approval | Wait for approval | Present as a report; proceed |
+| Mode question | Always ask | Ask once if a codebase exists | Infer; report the assumption |
+| Adaptive convention (Step 2) | Wait for approval | Wait for approval | Present as a report; proceed |
 | Community-library check | Ask | Ask once / detect | Detect via `require()`s |
+| Server Authority check | Always ask | Ask once, at the first SA-adjacent task | Detect; assume OFF if inconclusive and record it |
 | Conflict with a non-negotiable | Ask | Ask | Warn in summary; choose the safe option |
 | Review mode: stylistic restructuring | Propose, wait | Propose, wait | Still propose only (User Authority — unchanged) |
 
-## Mode Selection (before the first coding task)
-
-This skill runs in one of two modes. Determine the mode before writing any code:
-
-- **Default mode** — apply this skill's conventions exactly as written below (section layout, naming, ordering). Use when: the user asked for it, the project is new/empty, or the existing code has no consistent conventions worth preserving.
-- **Adaptive mode** — first study the project's existing coding structure and conventions, present what you found together with a proposed adapted convention, **get the user's confirmation**, then write code following the confirmed convention. The universal rules (Non-Negotiable Runtime Rules, Language & Style safety items, everything in the performance/patterns references) still apply in full — only *stylistic/structural* conventions adapt.
-
-How to decide:
-1. If the user explicitly stated a mode (e.g., "pakai default", "ikuti struktur project ini", "pelajari dulu kode kami") → obey it.
-2. Otherwise, if there is an existing codebase with visible conventions → ask the user once: *"Use this skill's default conventions, or should I study your project's existing structure first and adapt to it (with your confirmation)?"*
-3. If asking is impossible (autonomous run) → default mode for new files; for edits to existing files, match the file's existing style and note the assumption in your summary.
-
-Adaptive-mode procedure (analysis checklist, confirmation format, precedence rules): see [references/adaptive-mode.md](references/adaptive-mode.md).
-
-### Community-library check (part of mode selection)
-
-Also determine, once, whether the project uses community libraries that replace built-in APIs — ask the user (*"Does this project use community libraries such as ProfileStore/ProfileService for data, Packet/ByteNet for networking, Trove/Maid for cleanup, Knit/Flamework, Fusion/React-lua, ...?"*) or, in autonomous runs, detect them by scanning `require()`s. If any are in use, read [references/community-libraries.md](references/community-libraries.md) and defer the overlapping built-in patterns to the library — library idioms win for the concern they own; the Non-Negotiable Runtime Rules still hold through them.
-
-### Server Authority check (part of mode selection)
-
-Engine-level **Server Authority** is [GA], but **Roblox does not enable it by default** — a place is server-authoritative only if someone set `Workspace.AuthorityMode = "Server"`. Most places are not. Assuming the wrong mode produces confidently wrong code and false review findings, because the correct answer for input, camera, simulation stepping, and movement anti-cheat *inverts* between the two modes.
-
-**Trigger topics.** The first time a task touches any of these, resolve the mode before writing or flagging anything: character movement or physics · input handling · camera control · animation timing · `BindToSimulation` · network ownership · hit registration or lag compensation · movement anti-cheat.
-
-**Procedure:**
-1. **Detect first.** Read `Workspace.AuthorityMode` where the environment allows it, or scan the project for `AuthorityMode`, `BindToSimulation`, and Input Action usage.
-2. **If undetermined, ask once:** *"Does this place have Server Authority enabled (`Workspace.AuthorityMode = "Server"`)? It changes how input, camera, and the gameplay loop must be written."*
-3. **Cache the answer for the session**, exactly like the community-library check. Do not re-ask per file.
-4. **Default assumption is OFF.** Never write Server Authority-only advice as if it were universal.
-
-| Supervision level | Behavior |
-|---|---|
-| Supervised (`!ask`) | Always ask |
-| Balanced (`!bal`) | Ask once, at the first SA-adjacent task |
-| Autonomous (`!go`) | Detect; if inconclusive, assume **not** server-authoritative and record the assumption in the summary |
-
-Both code paths, the forced settings, known limitations, and the adoption trade-off: [references/server-authority.md](references/server-authority.md). Never migrate a project to Server Authority on this skill's initiative — recommend, explain the cost, let the user decide.
-
 ### Review/refactor mode
 
-When asked to *review or tidy existing code* (rather than write new code), give every finding exactly one severity — **Blocker** (security, data loss, or a guaranteed leak), **Correctness** (a real bug with a concrete failure scenario), or **Advisory** (style, layout, or micro-optimization). Before reporting anything, run it through [references/false-positives.md](references/false-positives.md): the "what NOT to flag" catalog, the severity taxonomy, and the four-step confidence gate.
+When reviewing rather than writing, give every finding exactly one severity — **Blocker** (security, data loss, guaranteed leak), **Correctness** (a real bug with a concrete failure scenario), or **Advisory** (style, layout, micro-optimization) — and run it through the confidence gate before reporting anything: trace both sides of paired logic, assume the odd shape may be intentional, demand a concrete failure scenario, verify the API against the target environment.
 
-- **Blocker / Correctness** — violations of Non-Negotiable Runtime Rules and misused deprecated APIs → report as findings (and fix if asked). Apply the rules *as scoped*: the exceptions written into them (periodic loops, cold-path allocations, small state snapshots) are not violations, and discouraged-but-functional APIs are not deprecated ones.
-- **Advisory** — section-layout/naming deviations, module-require ordering, and missing doc comments on trivial private functions → *propose* as suggestions; never report as violations, never silently rewrite; the user decides. The Documentation Comment style guides what **you author**; it is not a standard for judging code someone else wrote, and existing comments are never deleted or rewritten to satisfy it.
-- Never reformat code unrelated to the request; consistency within the file beats consistency with this skill.
-- Before flagging an API as wrong/nonexistent, verify against the target environment (the [references/api-currency.md](references/api-currency.md) baseline; see Environment & Scale) — never flag from memory alone.
-- **Trace before flagging.** Follow the full flow across both sides of paired logic (writer/reader, serializer/deserializer, fire/handler) before reporting a bug — an asymmetry between paired sites is only a defect if tracing both sides shows a divergent outcome; it may deliberately compensate for the other side. Unusual-looking designs (state created before data exists, self-healing caches) may be intentional — check usage sites first. A finding needs a concrete failure scenario (inputs → wrong outcome); "could maybe fail" is not a finding. Full procedure: [references/verification.md](references/verification.md#review-verification-discipline-trace-before-flag).
+Advisory items are **proposed, never forced**, and unrelated code is never reformatted. The full "what NOT to flag" catalog, the taxonomy, and the gate: [references/false-positives.md](references/false-positives.md).
 
 ## Environment & Scale
 
@@ -205,160 +190,42 @@ When asked to *review or tidy existing code* (rather than write new code), give 
 
 ## Script Section Layout (MANDATORY)
 
-Every script is divided into exactly three top-level sections, in this order:
+Three top-level sections, always in this order, in every script:
 
 ```lua
--- // VARIABLES // --
-
--- // FUNCTIONS // --
-
--- // INITIALIZATION // --
+-- // VARIABLES // --      Services > Modules > Objects > Configuration > State Management
+-- // FUNCTIONS // --      definitions only (ModuleScript: Private before Public)
+-- // INITIALIZATION // -- everything that runs
 ```
 
-### Section header hierarchy
-
-Five nesting levels. Use deeper levels only when a section genuinely needs subdivision:
+Nesting, deeper levels only when a section genuinely needs subdividing:
 
 ```lua
--- // Level 1 // --    top-level sections only (the three below)
+-- // Level 1 // --    the three sections above
 -- | Level 2 | --      standard subsections (Services, Modules, ...)
 -- [ Level 3 ] --      grouping within a subsection
--- { Level 4 } --      rare, fine-grained grouping
--- / Level 5 / --      rarest, last resort
+-- { Level 4 } --      rare
+-- / Level 5 / --      last resort
 ```
 
-### 1. `-- // VARIABLES // --`
+- **Module requires** are ordered by source: ServerScriptService → ServerStorage → ReplicatedStorage → Workspace → script-relative, counting only locations the script can legally reach.
+- **Every function gets a Documentation Comment**: `--[[ ]]` above it (Moonwave `--[=[ ]=]`/`---` where that is the project's style), ordered description → `@param` → `@return`, description ≤ 250 characters, implementation-agnostic and free of volatile content. Tags use Moonwave syntax `@param <name> <type> -- <description>`.
 
-Subsections in this fixed order (omit any that are empty):
-
-| Subsection | Content |
-|---|---|
-| `-- \| Services \| --` | Roblox services via `game:GetService()`, one per line, only the ones actually used |
-| `-- \| Modules \| --` | `require()` calls, ordered by source location: **ServerScriptService → ServerStorage → ReplicatedStorage → Workspace**, then script-relative requires (`script.Parent.X`) last. A `Packages`/`ServerPackages` folder sorts as its containing service. Only locations the script can legally reach apply (client scripts skip server locations) |
-| `-- \| Objects \| --` | References to Instances (models, folders, remotes, UI). Optional — only if needed |
-| `-- \| Configuration \| --` | Constants and tunable values used across the script. `UPPER_SNAKE_CASE` |
-| `-- \| State Management \| --` | Mutable runtime state variables (counters, caches, flags, connection tables) |
-
-### 2. `-- // FUNCTIONS // --`
-
-- **ModuleScripts** split functions into `-- | Private | --` (used only inside this script, `local function`) and `-- | Public | --` (exposed on the returned table). Private comes first.
-- **Scripts/LocalScripts** usually skip the Private/Public split — just list functions under the section header (use level-2 headers to group by topic if the script is large).
-
-#### Documentation Comments: the default style, and how it flexes
-
-The official terms are **Luau Comments** (Roblox's own name for the `--` and `--[[ ]]` forms) and **Documentation Comments** (the comment block that documents an item). Roblox's own guidance is deliberately loose: use a block comment at the top of a file to describe its purpose, a block comment before a function or object to describe its intent, single-line comments for in-line notes, and focus on *why* rather than *what*. Everything below is this skill's default style layered on that guidance, plus the tag syntax borrowed from Moonwave, the de-facto standard for Luau doc comments.
-
-**This style is a default, not a mandate.** Where a project has an established comment style, that style wins — see [references/adaptive-mode.md](references/adaptive-mode.md#comments-follow-the-project). When the user asks which style to use, or asks to restyle the comments, **recommend this one** and explain why; never impose it on code that already has a convention.
-
-#### Writing the block
-
-- **Every function gets a documentation comment** placed directly above it. Structure, in this fixed order: **description → params → returns**. Keep the block tight: documentation comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
-- **Block form.** The default is `--[[ ... ]]`. The Moonwave forms `--[=[ ... ]=]` and `---` are equally correct and are the ones tooling parses ([luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) recognises Moonwave style; Studio's hover tips accept any comment above the function). Use whichever the project uses; where there is no project convention, use `--[[ ... ]]`. Whatever the form, do not mix two forms within one file.
-  - **Description** — technical prose in clear English, **≤ 250 characters**. Short is still better: the limit is a ceiling, not a target. If the contract genuinely does not fit, the function is doing too much.
-  - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing. **No em dashes and no double-hyphen dashes used as punctuation** (the `--` inside a `@param`/`@return` tag is Moonwave's separator, not punctuation), and **no emoji**. English is preferred as the universal language, so developers of any origin can read it.
-  - **`@param` / `@return`** — Moonwave syntax: `@param <name> <type> -- <description>` and `@return <type> -- <description>`, each repeatable. The type may be omitted when the signature already declares it (Moonwave infers typed signatures automatically). Include a tag only when it adds information beyond what the signature shows — non-obvious meaning, units, constraints, nil-behavior — and omit it entirely when obvious.
-  - Other Moonwave tags (`@within`, `@class`, `@prop`, `@error`, `@yields`, `@deprecated`, `@server`/`@client`) are available and correct when the project generates Moonwave docs. Do not scatter them into a project that does not.
-
-#### The two description rules
-
-Both must hold for **every comment you write** — documentation blocks and in-line notes alike. They are the rules most often lost when a session is summarized, which is why they are on the Invariant Card.
-
-**1. Agnostic to the implementation.** A description states *what the function is for*, never *what it does to get there*. Name the purpose and the contract; do not name the mechanism. Concretely, a description must not mention:
-
-| Never in a description | Because |
-|---|---|
-| Engine/library APIs the body calls | The body gets refactored; the comment quietly becomes a lie |
-| Algorithms, loops, branches, or ordering of steps | That is the code's job, and the reader already has the code |
-| Collaborating modules or services by name | Renaming or swapping a collaborator should not touch this comment |
-| Data structures or field names used internally | Internals are free to change without a contract change |
-
-**2. Free of volatile content.** Nothing that a routine tuning pass would invalidate: no numbers, thresholds, or limits · no names of Configuration constants · no feature, system, or product names that may be renamed · no version, date, or environment specifics. Test it this way: **if someone rebalances a constant or replaces the body, would this comment need editing?** If yes, the comment is carrying volatile detail and must be rewritten at contract level.
-
-**When a detail genuinely cannot be avoided** — an engine quirk that only makes sense named, a platform constraint tied to a specific API — state it at the **most general level that still communicates the point**. "Rounded to the engine's replication precision" survives a refactor; "rounded to 3 decimals because SetAttribute truncates" does not. Aim for a comment that is still *relevant* after the next change, even if it is less specific today.
-
-#### In-line notes inside the body
-
-**In-body comments are allowed.** Roblox's own guidance recommends single-line `--` notes for in-line remarks, and a note that explains *why* a statement is there earns its place. Keep them rare and keep them useful: the documentation block carries the contract and the code carries the mechanism, so a note restating the next line is noise.
-
-- **Both description rules apply in full** — an in-line note is implementation-agnostic and free of volatile content exactly like a description. This matters more here, not less: a note sitting beside a statement is the first thing to go stale when that statement changes.
-- **Write them for the reason, not the action.** Engine quirks, ordering requirements imposed from outside, deliberate deviations that will look like mistakes, and genuinely ignorable failures being swallowed ([patterns.md](references/patterns.md#anti-patterns-reject-on-sight) requires that last one) are all worth a line. A step label or a restatement of the code is not.
-- **Prefer one line.** For a note spanning several lines, use several single-line `--` comments rather than a block, per Roblox's guidance.
-- **Never delete one that already exists.** Removing a comment is an unrequested change ([User Authority](#user-authority)); leave it, and propose the removal if it is actively wrong.
-
-```lua
---[[
-	Applies damage to a character and resolves the resulting state.
-
-	@param amount number -- Damage in health points; must be positive
-	@return boolean -- True when the damage was lethal
-]]
-local function applyDamage(humanoid: Humanoid, amount: number): boolean
-	...
-end
-```
-
-The same block in Moonwave form, for a project that generates docs from source:
-
-```lua
---[=[
-	Applies damage to a character and resolves the resulting state.
-
-	@within Combat
-	@param amount number -- Damage in health points; must be positive
-	@return boolean -- True when the damage was lethal
-]=]
-```
-
-The body carries no commentary here because nothing in it needs explaining; that is the usual case, not a prohibition.
-
-Rejected descriptions for that same function, and why:
-
-| Rejected | Fault |
-|---|---|
-| `Subtracts amount from Humanoid.Health, then triggers the ragdoll module if health reaches zero` | Describes the mechanism; dies with the next refactor |
-| `Applies damage, capped at 100, after the 0.25 armor multiplier` | Carries tunable numbers; wrong the moment balance changes |
-| `Applies damage by calling DamageService:Resolve` | Names a collaborator; wrong when it is renamed or replaced |
-| `Handles the damage flow for the new combat system` | Names a system that will not stay "new"; says nothing about the contract |
-
-The accepted form survives all four of those changes, because it commits only to the contract: damage goes in, lethality comes out.
-
-- Order functions so dependencies come first (callee above caller) — Luau requires it for locals anyway.
-
-### 3. `-- // INITIALIZATION // --`
-
-Everything that *runs*: function calls, event connections, loops. No function definitions here. Use level-2 subsections to group by context when the script wires up several concerns:
-
-```lua
--- // INITIALIZATION // --
-
--- | Player Events | --
-Players.PlayerAdded:Connect(onPlayerAdded)
-Players.PlayerRemoving:Connect(onPlayerRemoving)
-
--- | Remotes | --
-purchaseRemote.OnServerEvent:Connect(onPurchaseRequest)
-
--- | Startup | --
-loadWorldState()
-```
-
-Full annotated templates (Script, LocalScript, ModuleScript): see [references/templates.md](references/templates.md).
+**Full specification** — what belongs in each subsection, the header examples, the two description rules with worked rejections, in-line note guidance: [references/section-layout.md](references/section-layout.md). Annotated templates: [references/templates.md](references/templates.md).
 
 ## Language & Style Rules
 
-- **Type safety is opt-in.** Do not add `--!strict` (or raise a file's strictness) on your own initiative — it requires an explicit request from the user. When a file or the surrounding project already declares a strictness level, match it for consistency, but never introduce or upgrade strictness unbidden; forcing strict can surface false type errors against loosely-typed engine APIs. Where strict is in use, type-annotate public function signatures, Configuration constants, and State tables.
-- **Naming:** `PascalCase` for services and required module tables; `camelCase` for local variables, functions, and Instance references (`purchaseRemote`, `coinLabel`); `UPPER_SNAKE_CASE` for Configuration constants. Module public methods `PascalCase` (`Inventory.AddItem`), private functions `camelCase`.
-- Always `game:GetService()` — never `game.Workspace`-style direct indexing (exception: `workspace` global is fine).
-- **Never use deprecated APIs:** `wait()`/`spawn()`/`delay()` → `task.wait()`/`task.spawn()`/`task.delay()`; `:connect()`/`:wait()` lowercase → `:Connect()`/`:Wait()`; `Body*` movers (`BodyVelocity`/`BodyGyro`/`BodyPosition`/...) → constraints (`LinearVelocity`, `AlignOrientation`, `AlignPosition`); `Humanoid:LoadAnimation` → `Animator:LoadAnimation`; `Part.Velocity`/`RotVelocity` → `AssemblyLinearVelocity`/`AssemblyAngularVelocity`; `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame` → `PivotTo`/`GetPivot`; `Camera.CoordinateFrame` → `Camera.CFrame`; `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`; InputContext/InputAction camera replication → `Player:GetCameraState()`; `tick()` → the right time API per [references/luau-language.md](references/luau-language.md#time-apis--one-job-each).
-- **Deprecated is not the same as discouraged.** Setting `Instance.new`'s second `parent` argument (create → set properties → parent last is a *performance* preference), or `FireAllClients` where a targeted list would do, are Advisory choices, not deprecated APIs — don't report them as violations. Full split: [references/false-positives.md](references/false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
-- Guard external/yielding calls (`DataStore`, `MarketplaceService`, `HttpService`, `TeleportService`) with `pcall` and a retry policy. Never let an unprotected yield crash a player flow.
-- **Reuse before writing, and keep it dense.** Search the project, the Luau standard library, and the engine API before writing a helper — a second implementation of the same thing is a bug factory. Prefer guard clauses to nesting, and add no wrapper, abstraction, or defensive branch that has no caller. Two limits bound this: it **never reduces what gets delivered** (a function short because it does less than asked has failed), and it **never costs readability** — one statement per line, descriptive names, blank lines between logical groups, no clever one-liners. "Less code" means less *work*, not less whitespace. Catalog of what already exists, the density rules, and the optional Ponytail overlay: [references/minimal-code.md](references/minimal-code.md).
-- One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
-- Prefer `CollectionService` tags + `Attributes` to bind behavior to Instances — this is the most framework-agnostic wiring mechanism and survives any folder structure.
-- **Stay framework-agnostic by construction.** Core logic relies only on standard Roblox services and engine features; a community library's way of doing something is an overlay ([references/community-libraries.md](references/community-libraries.md)), never the baseline. Never assume a folder layout or framework beyond standard services — bind by tags/attributes, discover by service, and let the community-library check (not a hard-coded path) decide which idioms apply.
-- **Documentation Comments follow the project; this skill's style is the recommendation.** Default block: `--[[ ... ]]` above the function, ordered desc → params → returns; Moonwave `--[=[ ... ]=]` or `---` when that is the project's style. Descriptions are ≤ 250 characters, implementation-agnostic and free of volatile detail, English preferred, no em dashes or double-hyphen dashes as punctuation, no emoji. Tags use Moonwave syntax (`@param <name> <type> -- <description>`). **In-line notes are allowed** and are held to the same two description rules. Full rules: the FUNCTIONS section above.
-- **`const` for bindings that must not be rebound** [GA in Studio, April 2026]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](references/luau-language.md#const-bindings).
-- Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](references/luau-language.md).
+The ones that apply on nearly every task:
+
+- **Naming:** `PascalCase` services and module tables · `camelCase` locals, functions, Instance references · `UPPER_SNAKE_CASE` Configuration constants. Module publics `PascalCase`, privates `camelCase`.
+- Always `game:GetService()`; never direct indexing (the `workspace` global is fine).
+- **Never use deprecated APIs** — `wait`/`spawn`/`delay`, `tick`, lowercase `:connect`/`:wait`, `Body*` movers, `Humanoid:LoadAnimation`, `SetPrimaryPartCFrame`, and the rest of the list in [references/style-rules.md](references/style-rules.md). Discouraged-but-functional APIs are **not** deprecated ones.
+- **Type safety is opt-in.** Never add or raise `--!strict` unbidden; match what the file or project already declares.
+- Guard external and yielding calls (`DataStore`, `MarketplaceService`, `HttpService`, `TeleportService`) with `pcall` plus a retry policy and a stated failure policy ([references/patterns.md](references/patterns/data.md#failure-policy-what-happens-after-the-last-retry)).
+- **Reuse before writing, and keep it dense** — search the project, the standard library, then the engine API. Brevity never reduces what gets delivered and never costs readability.
+- **Stay framework-agnostic by construction:** bind by tags and attributes, discover by service, assume no folder layout.
+
+**Complete set** — `const` bindings, `CollectionService` binding, circular requires, one responsibility per module, the full deprecation list: [references/style-rules.md](references/style-rules.md).
 
 ## Non-Negotiable Runtime Rules
 
@@ -378,7 +245,7 @@ Before implementing any non-trivial system (not needed for a one-off script or a
 
 1. **Which case is this?** Match it to a recipe in the Implementing-a-known-system routing block and read that one file. If nothing matches, proceed with the general rules.
 2. **What are the ceilings?** Check [references/limits-budgets.md](references/limits-budgets.md) for the limits this design will approach (payload size, request budget, attribute window, entity counts). Designing into a ceiling is far cheaper than discovering it in production.
-3. **What is the server/client split?** Name what the server owns authoritatively and what the client merely renders or requests, before writing either side.
+3. **What is the server/client split, and who owns each fact?** Name what the server owns authoritatively and what the client merely renders or requests, before writing either side. Every piece of state gets exactly one writing owner; all other copies are views updated after the fact ([references/patterns.md](references/patterns/data.md#one-owner-per-fact)).
 4. **Does this already exist?** Check in order: the project's own modules, the Luau standard library, the engine API, then an installed library — whose idioms replace the built-in pattern if the project uses ProfileStore, Packet, Trove, Knit, Fusion, or similar ([references/minimal-code.md](references/minimal-code.md), [references/community-libraries.md](references/community-libraries.md)).
 5. **How will this be proven to work?** Pick the observable outcome and the session type (multi-client for anything touching replication) up front ([references/verification.md](references/verification.md)).
 
@@ -386,29 +253,6 @@ If the system touches movement, input, camera, animation timing, or simulation s
 
 ## Review Checklist
 
-Before finishing any Luau code, verify:
+Before calling any Luau work finished, run the checklist in [references/review-checklist.md](references/review-checklist.md). It covers supervision, mode, layout, comments, cleanup, hot loops, ownership, failure policy, locks, edge cases, validation, and delivery completeness.
 
-- [ ] Supervision level respected (inline token > session declaration > Balanced); in Autonomous, all assumptions listed in the summary
-- [ ] Mode determined (default vs adaptive); in adaptive mode, the convention was confirmed by the user before coding (or reported, in Autonomous)
-- [ ] Community libraries identified (asked or detected); overlapping patterns deferred to them
-- [ ] For SA-adjacent work (movement, physics, input, camera, animation timing, `BindToSimulation`, network ownership): authority mode detected or confirmed, never assumed; default is OFF
-- [ ] For a non-trivial system: the five-step System Design Preflight was run, and the matching case recipe read
-- [ ] No [Beta] feature made the default in production code; its status stated wherever it was proposed
-- [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
-- [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
-- [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
-- [ ] Every function authored carries a Documentation Comment in the project's block form (`--[[ ]]` by default, Moonwave `--[=[ ]=]`/`---` where that is the project's style), ordered desc → params → returns, ≤ 250 chars, English preferred, no em dashes or double-hyphen punctuation, no emoji; tags in Moonwave syntax (`@param <name> <type> -- <description>`) and only where they add what the signature cannot show
-- [ ] **Every comment** — documentation block and in-line note alike — passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names); where a detail was unavoidable it was stated at the most general level that stays true after the body changes
-- [ ] In-line notes explain *why*, not what; none restates the code; no pre-existing comment was deleted
-- [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
-- [ ] All connections have an owner and a teardown path; no leaked Instances
-- [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven
-- [ ] Nothing was hand-written that the project, the Luau standard library, or an engine API already provides; no wrapper or abstraction added without a caller
-- [ ] **Everything the user asked for was delivered in full** — brevity trimmed ceremony, never capability, and no requested behavior was silently dropped as "not needed"
-- [ ] Brevity cost no readability: one statement per line, descriptive names kept, blank lines and section headers intact, no compressed one-liners a reader must decode
-- [ ] Frame-critical or bulk work is budgeted in time and spread across frames rather than stalling one; the design still runs on a low-end device
-- [ ] The finishing pass was run: nil assumptions, zero/negative/NaN, empty collections, staleness after each yield, double-fire in one frame, and the player leaving mid-operation
-- [ ] All remote handlers validate arguments; all yielding external calls wrapped in `pcall` with retry
-- [ ] Handlers that yield between a check and its use re-validate state after resuming (player still present, instance alive, session unchanged)
-- [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering
-- [ ] Works regardless of the project's framework — no assumptions about folder layout beyond standard Roblox services
+It is a **finishing gate**: read it at the end of the task, not at the start.

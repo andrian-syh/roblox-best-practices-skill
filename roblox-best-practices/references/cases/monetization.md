@@ -19,7 +19,7 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 **Never:** return `PurchaseGranted` before the grant is saved · grant from the client · assume the player is online during a retry.
 **Failure modes:** a server crash between granting and saving. Ordering the grant, the save, and the acknowledgement in that exact sequence is what makes the retry safe.
 **Verify:** grant a product, then force a shutdown before the autosave; rejoin and confirm exactly one grant exists.
-**Deeper:** [security-monetization.md](../security-monetization.md#processreceipt-developer-products--correctness-rules)
+**Deeper:** [security.md](../monetization-policy.md#processreceipt-developer-products--correctness-rules)
 
 ## Pass and subscription gating
 
@@ -35,7 +35,7 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 **Never:** accept a client-sent "I own this" · gate only in the UI · re-query the API on every perk use.
 **Failure modes:** an API failure on join silently treated as "does not own", stripping a paying player's perks. Distinguish "confirmed not owned" from "check failed"; on failure retry rather than downgrading.
 **Verify:** buy the pass mid-session and confirm the perk applies without a rejoin.
-**Deeper:** [security-monetization.md](../security-monetization.md#choosing-the-product-type)
+**Deeper:** [security.md](../monetization-policy.md#choosing-the-product-type)
 
 ## Randomized rewards (gacha, loot boxes, crates)
 
@@ -51,4 +51,4 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 **Never:** roll on the client · replicate the loot table · retrofit the policy branch after monetization ships · let the animation determine the outcome.
 **Failure modes:** the client learning the result early and disconnecting to reroll. Persist the outcome before the reveal, so a disconnect cannot undo it.
 **Verify:** disconnect mid-animation and confirm the reward is already committed on rejoin.
-**Deeper:** [security-monetization.md](../security-monetization.md#policy-compliance-policyservice) · [genres.md](../genres.md#simulator--tycoon--idle)
+**Deeper:** [security.md](../monetization-policy.md#policy-compliance-policyservice) · [genres.md](../genres.md#simulator--tycoon--idle)
