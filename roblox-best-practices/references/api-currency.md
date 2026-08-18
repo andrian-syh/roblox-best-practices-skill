@@ -2,7 +2,7 @@
 
 The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm a newer API exists in the target environment before relying on it, and never flag an API as nonexistent from memory. This file is the **baseline that rule reads against** — a dated list of what is already confirmed, so the agent stops re-litigating shipped APIs while still verifying the genuinely bleeding-edge.
 
-**Snapshot basis: 29 July 2026.** Sources: Luau releases through **0.731** (24 July 2026), the Luau 2025 runtime recap (19 December 2025), the Luau RFC repository, and Roblox engine release notes through **731** (24 July 2026).
+**Snapshot basis: 18 August 2026.** Sources: Luau releases through **0.734** (14 August 2026), the Luau 2025 runtime recap (19 December 2025), the Luau RFC repository, and Roblox engine release notes through **734** (10 August 2026).
 
 **Maturity tags:** **[GA]** generally available, safe as a default · **[Beta]** opt-in and may change, document as an option but never make it the default · **[Verify]** confirm in the target place before relying on it · **[UNVERIFIED]** this skill could not confirm it; treat with suspicion.
 
@@ -33,6 +33,7 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | Modern syntax (interpolation, generalized iteration, `continue`, compound assignment, `//`, if-expressions, `table.freeze`) | **[GA]** | |
 | `task` library (`spawn`/`defer`/`delay`/`wait`/`cancel`) | **[GA]** | The bare `wait`/`spawn`/`delay` globals remain deprecated |
 | Inlining of immediately invoked lambdas; refinements preserved across loops | **[GA]** | Luau 0.730–0.731, July 2026 |
+| `pcall`/`xpcall` inside user-defined `type function` | **[Verify]** | Upstream Luau 0.734, August 2026. Requires the new solver |
 | New type solver | **[GA]** default for `nocheck`/`nonstrict`; **opt-in** for `strict` | General release 20 November 2025. Configure via `UseNewLuauTypeSolver` and `LuauTypeCheckMode`; old solver available through 2026 ([luau-language.md](luau-language.md#the-new-type-solver--what-is-on-by-default)) |
 | **Read-only members `{ read x: T }`, `{ read [K]: V }`** (and the `write` mirror) | **[Verify]** | Upstream Luau 0.721, May 2026. Full enforcement needs the new solver |
 | **Yielding inside custom iterators** | **[Verify]** | Upstream Luau 0.722, May 2026 |
@@ -60,6 +61,14 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`, `ListKeysAsync`) | **[GA]** | |
 | Unified DataStore limits and raised storage | **[Verify]** — effective **29 July 2026** | Numbers in [limits-budgets.md](limits-budgets.md#data-stores) |
 | Streaming (`Model.ModelStreamingMode`, `Player:RequestStreamAroundAsync`) | **[GA]** | |
+| `Player.FrustumStreaming` + `FrustumStreamingMode` enum | **[Verify]** | Release notes 734, August 2026. Streams by view frustum rather than radius alone; test the camera-turn case before adopting ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
+| `MemoryStoreService:GetDistributedCounter` (`MemoryStoreDistributedCounter`) | **[Verify]** | Release notes 733, August 2026. A counter primitive for cross-server totals, replacing hand-rolled sorted-map arithmetic ([patterns.md](patterns.md#cross-server-communication)) |
+| CollectionService tag signal methods | **[Verify]** | Release notes 732, July 2026. Additions alongside `GetInstanceAddedSignal`/`GetInstanceRemovedSignal`; confirm the exact names against the API reference before using them |
+| `WorldRoot` collision groups (`RegisterCollisionGroup`, `UnregisterCollisionGroup`, ...) | **[Verify]** | Release notes 732–734. Brings `WorldModel` raycasts to parity with `Workspace` |
+| `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier`, `UserGameSettings.UIScaleMultiplierHundredths` | **[Verify]** | Release notes 734, August 2026. A player-facing UI scale factor; read it rather than inferring scale from viewport size ([ui-ux-testing.md](ui-ux-testing.md)) |
+| `ViewportCamera`, `Logger` classes | **[Verify]** | Release notes 734, August 2026. `Logger` may overlap structured `LogService`; confirm which one the target environment expects |
+| `UIShadow` (`ApplyShadowMode`, `Inset`, `ShowBehindParent`, `Mode`) | **[Verify]** | Release notes 732–733 |
+| EditableMesh methods promoted from Unsafe to Safe (thread safety) | **[Verify]** | Release notes 733, August 2026 |
 | `Players:BanAsync`/`UnbanAsync` (`ExcludeAltAccounts`, `ApplyDeviceBlock`, `ApplyToUniverse`) | **[GA]** | |
 | `game.ServerRestartScheduled` | **[GA]** | Now also fires on delayed restarts |
 | Analytics: Client CPU Time Breakdown | **[GA]** | Scripts / Networking / Physics / Animation / Misc |
@@ -69,7 +78,7 @@ The lag is real and variable: `const` took roughly two months from merged RFC (F
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
 | Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |
 | Acoustic simulation with Occlusion/Reverb subcategories | **[UNVERIFIED]** | Engine release notes indicate it shipped; the 2026 roadmap lists acoustic simulation as later-2026 work. Confirm before relying on it |
-| Current engine release-notes version | **731**, 24 July 2026 | The latest published release notes at this snapshot. The docs pages render client-side, so read the DevForum Release Notes category instead when checking for newer ones. A number here is a floor, never a ceiling |
+| Current engine release-notes version | **734**, 10 August 2026 | The latest published release notes at this snapshot. The docs pages render client-side, so read the DevForum Release Notes category instead when checking for newer ones. A number here is a floor, never a ceiling |
 
 ## Studio MCP tooling
 
@@ -82,6 +91,7 @@ Tool names, limits, and variants are recorded in [studio-mcp.md](studio-mcp.md) 
 - `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame`, `Camera.CoordinateFrame`
 - `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`
 - InputContext/InputAction camera replication → `Player:GetCameraState()`
+- `AdGui.OnAdEvent` (deprecated in release notes 734, August 2026)
 
 Discouraged-but-functional APIs are **not** in this list; the split is in [false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
 

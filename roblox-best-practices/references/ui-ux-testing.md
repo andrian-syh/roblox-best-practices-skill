@@ -3,6 +3,7 @@
 ## UI Construction
 
 - **Scale over Offset** for anything that must fit every screen; Offset only for fixed-size elements (icons, borders). Combine with `UIAspectRatioConstraint` to stop Scale from distorting, and `UITextSizeConstraint`/`TextScaled` for legible text at all sizes.
+- **The player has their own UI scale.** `GuiService:GetUIScaleMultiplier()` reports it (with a setter and `UserGameSettings.UIScaleMultiplierHundredths` behind it) — read that rather than inferring an intended scale from viewport size, and let it multiply your layout instead of fighting it. **[Verify]** ([api-currency.md](api-currency.md#engine)); fall back to viewport-relative sizing where it is absent.
 - Respect device insets: `ScreenGui.ScreenInsets` (CoreUISafeInsets/DeviceSafeInsets) for notches and rounded corners; never pin critical buttons into unsafe corners.
 - Prefer native styling over image assets: `UICorner` (per-corner rounding), `UIStroke`, `UIGradient`, `UIShadow`, and the Styling system/StyleQueries where available — lighter than 9-slice images and theme-able. Verify availability per [SKILL.md](../SKILL.md#environment--scale).
 - Layouts via `UIListLayout`/`UIGridLayout`/`UIFlexLayout` + `AutomaticSize`, not hand-positioned children — they reflow across resolutions for free.

@@ -2,6 +2,19 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.13.1] - 2026-08-18
+
+**API currency refreshed to Luau 0.734 and engine 734.** A maintenance pass over `api-currency.md` plus the three references the new APIs touch.
+
+### Changed
+- **Snapshot moved from 29 July to 18 August 2026**: Luau releases through **0.734** (14 August), Roblox engine release notes through **734** (10 August).
+- **No new Luau language features in 0.732–0.734.** The three releases carry type-solver fixes, `table.move` performance, `export` keyword optimizations, and cyclic-module infrastructure. One row added: `pcall`/`xpcall` are now allowed inside user-defined `type function` (0.734, **[Verify]**, new solver only). `class` syntax and the 64-bit integer type remain **RFC merged only** — re-confirmed, not assumed.
+- **Eight engine rows added, all [Verify]** — released too recently for this skill to confirm in Studio: `Player.FrustumStreaming` + `FrustumStreamingMode`, `MemoryStoreService:GetDistributedCounter`, CollectionService tag signal methods, `WorldRoot` collision groups, `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier`, `ViewportCamera`/`Logger`, `UIShadow` properties, and the EditableMesh Unsafe→Safe promotions.
+- `AdGui.OnAdEvent` added to the deprecated list (734).
+- `patterns.md` → Cross-Server Communication: the distributed counter is named as the primitive for cross-server totals, with the read-modify-write race it avoids and the sorted-map fallback.
+- `device-performance.md` → Engine levers: frustum streaming documented with its trade-off (content behind a fast-turning camera) and the low-end test it requires.
+- `ui-ux-testing.md`: read the player's UI scale from `GuiService` rather than inferring it from viewport size.
+
 ## [1.13.0] - 2026-08-11
 
 **Documentation Comments: official terminology, Moonwave tag syntax, and style flexibility restored.** The comment rules are re-grounded in what Roblox and the Luau ecosystem actually document, and they go back to adapting to the project instead of overriding it.
