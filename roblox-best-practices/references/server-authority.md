@@ -42,6 +42,7 @@ The client predicts its own inputs instantly so play feels responsive, the serve
 
 - **Prediction is cosmetic until the server confirms it.** Never let a predicted outcome grant currency, damage, or items on the client.
 - **Mispredictions are normal, not errors.** Reconcile them quietly; do not surface them to players as glitches or rollback messages.
+- **Debug the loop, don't guess at it.** `RunService.Misprediction` reports per-instance predicted-vs-authoritative values, `RunService.Rollback` lets non-replicated custom state rewind before resimulation, and `Instance.PredictionMode` controls per-instance participation ([api-currency.md](api-currency.md#engine)).
 
 ## Writing code: with SA vs without SA
 

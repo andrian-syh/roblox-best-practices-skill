@@ -59,7 +59,7 @@ local function onPurchaseRequest(player: Player, itemId: unknown)
 end
 
 --[[
-	Prepares everything a newly joined player needs.
+	Prepares everything a newly joined player needs, including players already present when this script starts.
 ]]
 local function onPlayerAdded(player: Player)
 	playerConnections[player] = {}
@@ -90,7 +90,7 @@ end
 -- | Player Events | --
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
-for _, player in Players:GetPlayers() do -- players who joined before this script ran
+for _, player in Players:GetPlayers() do
 	task.spawn(onPlayerAdded, player)
 end
 
@@ -243,5 +243,5 @@ updateCoinDisplay()
   - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to — that is why they would all still be true after a rewrite.
   - **No volatile content.** No thresholds, no Configuration constant names, no system names. `updateCoinDisplay` is documented as synchronizing a display, not as "reads the Coins attribute and writes CoinLabel.Text".
   - **Moonwave tag syntax.** `@param <name> <type> -- <description>` and `@return <type> -- <description>`, present only where they say something the signature does not. The blocks with no tags are correct: their signatures already speak for themselves.
-- **In-line notes are allowed** and the templates use one (`-- players who joined before this script ran`, in INITIALIZATION). Note its shape: it explains *why* the loop exists, names no API, and would still be true after the body changes. Most bodies here carry no commentary because nothing in them needs explaining, which is the usual case rather than a prohibition.
+- **No in-body comments.** The templates carry zero prose comments inside any body — the "players already present" case lives in `onPlayerAdded`'s description and the loop's own shape (`GetPlayers` sweep through the same join path), not in a note beside it. That is the standard everywhere: when a statement seems to need a note, rename or restructure until it does not, and put contract-level reasoning in the block above ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - The `--!strict` header shown is illustrative. Per SKILL.md it is opt-in — match the project's strictness and never add it unbidden.

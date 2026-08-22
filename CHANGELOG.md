@@ -2,6 +2,49 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.17.0] - 2026-08-22
+
+**Comments move out of function bodies, and every engine fact now has to name its source.** Two changes with one cause: a note beside a statement and an API recalled from memory go stale the same way, and neither carried a check. The verification discipline added here immediately falsified ten claims the previous release stated as fact.
+
+### Changed
+- **In-body comments are banned in delivered code.** `section-layout.md` reverses the previous allowance: self-documenting code is the primary standard (rename, extract a named helper, hoist a magic value to an `UPPER_SNAKE_CASE` constant, return early), and contract-level *why* moves into the Documentation Comment above the function. Propagated through SKILL.md, `style-rules.md`, `review-checklist.md`, `templates.md`, `adaptive-mode.md`, `luau-language.md`, and the `patterns/` files, whose examples lost their step-label comments.
+  - **Existing comments in code the skill did not write stay put** — removal is proposed once, as Advisory, never performed. A project whose established style documents inside bodies keeps doing so; the ban binds this skill's default output, not someone else's convention.
+- **Descriptions are capped at 3 lines as well as 250 characters.** Both are ceilings, not targets; a contract that does not fit means the function is doing too much.
+- **Every engine fact stated to the user must name its basis** — an `api-currency.md` tag, a live docs check, an API dump, or an in-Studio probe. Absent one of those, the claim is labeled unverified and names the check that would settle it. Added to SKILL.md and to the review checklist, alongside a new Invariant Card row requiring `SignalBehavior`, `StreamingEnabled`, rig type, and the file's strictness header to be read once per session rather than assumed.
+- `verification.md` documents the Studio CLI properly: `--runScriptFile`, `--placeId`/`--universeId`/`--localPlaceFile`, `--outputFile`, `--quitAfterExecution`, and the `--api`/`--fullApi`/`--apiV2` dumps.
+- `studio-mcp.md` matches the shipped tool set — `script_search`/`script_grep`, `get_studio_state`, `start_stop_play`, `run_as_job`, `store_image`/`upload_image`, and `set_active_studio` marked as build-dependent rather than assumed.
+- `community-libraries.md` states maintenance status: Knit is **archived** and must not be recommended for new projects, BridgeNet is unmaintained, Roact is superseded by React-lua.
+
+### Added
+- **`api-currency.md` gained "How to verify (the toolbox)"** — six procedures, cheapest first, the second of which does most of the work: appending `.md` to any Engine API Reference URL serves raw markdown, so grepping the class page settles whether a member exists without Studio running. A five-step refresh workflow closes the file, requiring release-note evidence to be reconfirmed against the reference before any row is promoted.
+- **`style-rules.md` gained a misremembered-API table** — `Humanoid:LoadAnimation`, `Part.Velocity`, `player:GetMouse()` as an input plan, invented members, wrong service names, made-up enum members, and `BindToRenderStep` in server code. Binding in both directions: verify before writing one, never flag the correct form.
+- **`false-positives.md` gained severity calibration** — six near-miss pairs whose severity follows context rather than shape (attribute state, `SetAsync`, per-spawn connections, deprecated APIs, missing validation, `task.wait` loops) — plus carve-outs for cold paths (`PlayerAdded`, purchase handlers, round setup are never hot), `pcall` demanded around calls that cannot yield or throw, the explicitly permitted `workspace` global, deliberate legacy choices, and enterprise ceremony retrofitted onto small projects.
+
+### Added
+- **Invocation argument for the supervision level.** `argument-hint: "[ask|bal|go]"` in the frontmatter makes the `/` menu show `/roblox-best-practices [ask|bal|go]`, and `workflow.md` defines how the argument resolves: it outranks an inline `!ask`/`!bal`/`!go` token, accepts the bare word or the token form, is case-insensitive, and takes the long names too. An empty or unrecognized argument is **Balanced** — never an error, and never a reason to ask the user which level they want.
+
+### Restructured
+**SKILL.md brought under the 5k-token Level 2 budget without dropping a rule.** It sat at ~7,170 tokens; it is now ~4,984. Nothing was deleted — process content moved behind two new reference files, and the passages that restated the Invariant Card were cut back to the card.
+
+- **`workflow.md` (new)** — how to resolve the five session-setup decisions, the two modes, the supervision levels and their confirmation matrix, advisory invocation, the review severity gate, and the System Design Preflight. SKILL.md keeps every decision's **safe default**, so a compacted context still behaves correctly without the file.
+- **`runtime-rules.md` (new)** — the seven Non-Negotiable Runtime Rules in full, each with the scope that keeps it from being over-applied and a link to its domain file. The rules themselves stay in SKILL.md as Invariant Card items 3-8, which is the copy required to survive compaction.
+- **Card duplication removed.** The Script Section Layout section no longer restates the three-section block or the Documentation Comment rule; both are Card items already in context. The five-level header hierarchy lives only in `section-layout.md`, where it always had a copy.
+- **Reference Routing became a list.** Same thirty-odd destinations and the same trigger keywords, without the two-column table repeating each path twice.
+
+### Fixed
+Verified against the Engine API Reference; each of these was wrong in 1.16.1.
+- **`GuiService:GetUIScaleMultiplier()` never shipped.** `ui-crossplatform.md` now reads `GuiService.PreferredTextSize` and `GuiService.ViewportDisplaySize`, both confirmed present.
+- **`UIShadow.ApplyShadowMode`/`Mode` and the `UIScaleMultiplier` setters** were release-note names absent from the reference; recorded as such rather than as API.
+- **StyleQueries downgraded to [UNVERIFIED]** and withdrawn from the recommendations in `performance.md` and `ui-crossplatform.md`.
+- **`InstanceHandle:Wait()` is unconfirmed** — `patterns/world.md` re-reads `Get()` at the point of use or tracks the instance with a tag signal instead.
+- **`GroundController.MoveSpeedFactor` is inherited from `ControllerBase`**, not defined on `GroundController`; `GroundOffset` is.
+- **`math.phi`, `sqrt2`, `e`, `nan`, `tau` are [GA]**, not RFC-only; only the 64-bit integer type remains unimplemented.
+- **The `vector` library includes `floor`, `ceil`, `abs`, `sign`, `clamp`, `lerp`, `max`, `min`** beyond the previously listed set.
+- **Require-by-string is not universally inapplicable** — `require("@rbx/PlayerModule")` exists for experiences opted into the Input Action System path; only the standalone `@self` alias never arrives.
+- **The Input Action System is [GA]** and mandatory under Server Authority, no longer "verify availability".
+- **`BanAsync`'s 24-hour device block is [Verify]** — the duration is not stated in the API reference.
+- Snapshot basis moved to 21 August 2026, engine release notes 735; added `PlayerControlState` [Verify], the prediction-introspection members (`RunService.Misprediction`, `Rollback`, `GetPredictionStatus`, `SetPredictionMode`, `Instance.PredictionMode`) as [GA], and acoustic Occlusion/Reverb subcategories as [Verify].
+
 ## [1.16.1] - 2026-08-18
 
 **Dates now live in one file, enforced by the validator.** The last open item from the Agent Skills audit: guidance that carries a date goes stale silently, and a date copied into eight files is eight things to remember when a status changes.

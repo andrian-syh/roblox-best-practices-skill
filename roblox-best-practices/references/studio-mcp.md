@@ -30,7 +30,7 @@ Read the available tools and classify. Cache the result for the session, the sam
 
 | Variant | Signature tools | Treatment |
 |---|---|---|
-| **Official built-in Studio MCP** (assume this by default) | `execute_luau`, `multi_edit`, `script_read`, `script_grep`, `search_game_tree`, `inspect_instance`, `list_roblox_studios`, `set_active_studio`, `subagent` | Full guidance below applies |
+| **Official built-in Studio MCP** (assume this by default) | `execute_luau`, `multi_edit`, `script_read`, `script_search`/`script_grep`, `search_game_tree`, `inspect_instance`, `list_roblox_studios`, `get_studio_state`, `start_stop_play`, `run_as_job`, `store_image`/`upload_image`, `subagent` — the exact set varies by build (`set_active_studio` appears on some) | Full guidance below applies |
 | **Standalone Rust server** (`Roblox/studio-rust-mcp-server`, the older separate lineage) | `run_code`, `insert_model`, `run_script_in_play_mode`, `get_studio_mode` | Narrower capability set; map through the capability table |
 | **Community, custom, or fork** | A mix, or names outside both sets | Rely entirely on each tool's own schema |
 
@@ -63,10 +63,11 @@ Attach the rules to the capability. Blank cells mean no dedicated tool is known 
 | Read console output | `get_console_output` | `get_console_output` | — | Capture around the action, not the whole session |
 | Capture the viewport | `screen_capture` | — | — | Images are costly. Use only when visual confirmation is genuinely required |
 | Insert an asset | `insert_asset`, `search_asset` | `insert_model` | **Free models can carry backdoor scripts** | — |
-| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished` | — | — | Each generation is a billed job. Iterate the prompt, do not spam generate |
+| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `run_as_job` | — | — | Each generation is a billed job. Iterate the prompt, do not spam generate; `run_as_job` runs one asynchronously and returns a job id |
+| Convert local images to asset URIs | `store_image`, `upload_image` | — | Uploads leave the local machine | Only when a tool demands an `IMAGEID_<id>` argument |
 | Simulate input | `character_navigation`, `user_keyboard_input`, `user_mouse_input` | — | Drives the real session | — |
-| Fetch documentation | `http_get`, `skill` | — | — | Prefer a targeted lookup over broad crawling |
-| Manage sessions | `list_roblox_studios`, `set_active_studio` | — | **Wrong instance means the wrong place** | — |
+| Fetch documentation | `http_get`, `skill` | — | — | To answer "does X exist": fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member name — pages serve raw markdown without Studio running, and absence from the page settles nonexistence ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) |
+| Manage sessions | `list_roblox_studios` (+ `set_active_studio` where the build has it) | — | **Wrong instance means the wrong place** | — |
 
 ## MCP preflight
 

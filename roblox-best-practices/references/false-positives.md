@@ -7,6 +7,7 @@ Read this **before reporting any finding**. A rule in this skill says what good 
 ## Contents
 
 - [Severity taxonomy (use these three words everywhere)](#severity-taxonomy-use-these-three-words-everywhere)
+- [Severity calibration: near-miss pairs](#severity-calibration-near-miss-pairs)
 - [Confidence gate (all four must pass before reporting)](#confidence-gate-all-four-must-pass-before-reporting)
 - [Guardrails by category](#guardrails-by-category)
   - [Performance / hot loops — define "hot" first](#performance--hot-loops--define-hot-first)
@@ -38,6 +39,19 @@ Every finding carries exactly one severity. This is the shared vocabulary for SK
 
 If a finding cannot be placed above **Advisory**, it is a suggestion the user is free to decline, not a defect. When in doubt about severity, it is Advisory.
 
+### Severity calibration: near-miss pairs
+
+Severity follows the *context*, not the pattern. These pairs decide most mis-severed findings:
+
+| Shape | This context | That context |
+|---|---|---|
+| Attribute holding player state | Public display state (nameplate, round timer) → not a finding | Private state an exploiter can use (balance, cooldowns, damage multiplier) → **Blocker** |
+| `SetAsync` on a key | Hot key with concurrent server writers → **Blocker/Correctness** (lost updates) | Per-player key written from one code path → Advisory at most (prefer `UpdateAsync` going forward) |
+| Connection created per spawn/event | Cleared in `CharacterRemoving`/`PlayerRemoving`/a bag → fine | Owner outlives the object with no teardown anywhere → **Blocker** if unbounded per join |
+| Deprecated API in touched code | On the path this task modifies → **Correctness**, propose replacement | Untouched legacy far from the change → Advisory mention at most; never refactor unasked |
+| Missing validation | Client-reachable remote or teleport data → **Blocker** | Server-to-server bindable or module call → not a finding |
+| Loop with `task.wait(N)` | Scheduled periodic work (autosave, AI cadence) → fine | Polling a condition a signal already reports (`while not ready do task.wait() end`) → **Correctness** |
+
 ## Confidence gate (all four must pass before reporting)
 
 The four-step filter lives in [verification.md](verification.md#review-verification-discipline-trace-before-flag); do not duplicate it, apply it:
@@ -63,6 +77,8 @@ Non-Negotiable #3 forbids avoidable per-frame garbage. It only bites on a **hot 
 | A `BindToSimulation` callback | Module-load / `Init()` / bootstrap |
 
 Two conditions must **both** hold to flag: (a) the code is on a hot path, **and** (b) the allocation or lookup can actually be hoisted or reused. If the value genuinely differs every iteration and cannot be reused, it is not a violation. Where reuse is possible, suggest `table.clear` on a hoisted table rather than reporting a leak. A single unavoidable allocation per frame (e.g. one payload table for one batched remote per network tick) is not garbage.
+
+Cold paths are exempt entirely: a `GetChildren()` scan, a table build, or a deep Instance lookup inside `PlayerAdded`, a purchase handler, or round setup runs once per event, not per frame — never flag it.
 
 ### Cleanup / leaks — what does NOT leak
 
@@ -93,6 +109,7 @@ A remote handler that type-checks its arguments and **early-returns on bad input
 - Do not demand it also log every rejection. Silent rejection is often deliberate (an error reply helps fuzzing); logging is Advisory, and only where the team wants telemetry.
 - Do not demand a reply — many actions are fire-and-forget by design.
 - The skeleton in [patterns/network.md](patterns/network.md#remote-communication) is the *maximum* shape; a handler that needs only type + execute (no rate/ownership because the action is harmless and idempotent) is not missing layers.
+- Do not demand `pcall` around calls that cannot yield or throw in practice — attribute reads, pure math, `table` operations. The guard rule scopes to *external/yielding* calls; guarding non-failing code is ceremony.
 
 ### Streaming — bare `WaitForChild` is often correct
 
@@ -101,7 +118,7 @@ A remote handler that type-checks its arguments and **early-returns on bad input
 
 ### Newer APIs — do not flag what simply postdates your memory
 
-Every engine release creates a fresh crop of "that API does not exist" false positives. Check [api-currency.md](api-currency.md) before doubting any of these:
+Every engine release creates a fresh crop of "that API does not exist" false positives — and its mirror image, confidently naming members that never shipped. Check [api-currency.md](api-currency.md) before doubting any of these, and the misremembered-API catalog in [style-rules.md](style-rules.md#commonly-misremembered-apis-check-before-writing-before-flagging) before asserting in either direction:
 
 - **`InstanceHandle` attributes** — an attribute *can* hold an Instance reference [Beta]. `GetAttribute` returning a handle rather than the Instance is the design, not a bug.
 - **CCL instances and properties** (`ControllerManager`, `GroundController`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`) — all real. Equally, a project still using `Humanoid` is correct; `Humanoid` is not deprecated.
@@ -119,6 +136,7 @@ The reuse ladder ([minimal-code.md](minimal-code.md)), the frame and device budg
 - Do **not** flag a hand-written helper as a violation because an engine API exists. Propose the replacement as **Advisory**; the team may have had a reason, and a deliberate, justified reimplementation is not a defect.
 - Do **not** report a missing edge-case guard on suspicion. It is a finding only with a concrete failure scenario, exactly like every other finding — the catalog is a prompt for your own writing, not a list of things to demand.
 - Do **not** flag code for being longer than you would have written it. Length alone is Advisory at most, and rewriting for brevity is an unrequested refactor.
+- Do **not** demand enterprise ceremony at toy scale: pooling below roughly once-per-second spawn rates, telemetry scaffolding, degradation ladders, lock tables in a one-script experience. Those authoring catalogs bind what you write fresh; they are not retrofit mandates against a small finished project.
 
 ### State ownership, failure policy, and locks — design decisions, not defects
 
@@ -169,6 +187,11 @@ Only the **deprecated** column is a Correctness (or Blocker) finding. The **disc
 
 Section-header deviations, subsection ordering, naming casing, module require ordering, and missing doc comments on trivial private helpers are **Advisory**. Propose them; do not report them as violations and do not silently rewrite. Consistency within the file outranks consistency with this skill. In Adaptive mode, the confirmed project convention wins outright.
 
+Two more shapes that look like violations:
+
+- The `workspace` global is explicitly allowed ([SKILL.md](../SKILL.md#language--style-rules)) — flagging it as service-indexing is simply wrong.
+- A deliberate legacy choice (classic chat where `TextChatService` would fit, `ContextActionService` in a project that never adopted the Input Action System) is a design decision. Mention the modern alternative once as Advisory if genuinely useful, then drop it — never as a violation.
+
 ### Documentation Comments — one real finding, the rest Advisory
 
 The Documentation Comment style ([section-layout.md](section-layout.md#documentation-comments-the-default-style-and-how-it-flexes)) is a **default for code you author**, not a standard you hold other people's code to. Style is adaptable by design; judging an existing codebase against this skill's default would produce a flood of noise findings.
@@ -181,10 +204,11 @@ In review the rules collapse to a single distinction:
 | A description naming the mechanism, or carrying a number/tunable/collaborator that has since drifted | **Advisory** — propose the contract-level rewrite |
 | An over-length comment, a missing doc block, an em dash, formatting deviations | **Advisory** |
 | A comment written in the project's own established house style, in any block form (`--[[ ]]`, `--[=[ ]=]`, `---`) | **Not a finding at all** |
-| An in-line note that explains why a statement is there | **Not a finding at all** |
+| An in-body note inside code you did not write | **Not a finding at all** — never delete it; propose migrating its content into self-documenting code or the block above, once, as Advisory |
+| An in-body comment in new code **this skill delivered** | **Delivery defect** against the documentation standard — fix before handing over, no proposal needed |
 | Existing in-body comments in code you did not write | **Not a finding at all** |
 
-Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. Never delete an existing comment to satisfy a length cap — shorten it, or leave it and propose. Do not report a project for its comment style: style adapts, and a Moonwave-documented codebase is doing it right. In-line notes are permitted, so their mere presence is never a finding — only a note that is wrong, or that restates the code it sits beside, is worth proposing.
+Do not open a review by rewriting comments. Do not count characters across a file and report the total as a violation. Never delete an existing comment to satisfy a length cap — shorten it, or leave it and propose. Do not report a project for its comment style: style adapts, and a Moonwave-documented codebase is doing it right. In-body notes in code you did not write are never a finding; in code this skill delivered they are a defect to fix before handover, per [section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead).
 
 ## Regression set — these must pass a review clean
 
@@ -208,11 +232,11 @@ end)
 ```
 
 ```lua
---[[ Applies a server-computed buff. Server-internal signal, not client input. ]]
+--[[ Grants a combat buff to a player when an internal server system reports one. ]]
 local function onBuffApplied(player: Player, buffId: string)
 	Buffs.Grant(player, buffId)
 end
-buffAppliedBindable.Event:Connect(onBuffApplied) -- BindableEvent: no client-style validation needed
+buffAppliedBindable.Event:Connect(onBuffApplied)
 ```
 
 ```lua
@@ -241,10 +265,35 @@ end
 ```
 
 ```lua
--- Intentionally ignorable failure, documented: not a swallowed error.
+--[[ Preloads a purely cosmetic sound; skipping it on failure costs polish, never gameplay. ]]
 pcall(function()
-	ContentProvider:PreloadAsync({ decorativeSound }) -- cosmetic; safe to skip on failure
+	ContentProvider:PreloadAsync({ decorativeSound })
 end)
+```
+
+```lua
+-- const binding: a real keyword, [GA] in Studio — and equally NOT demanded of files using local.
+const MAX_RETRIES = 3
+```
+
+```lua
+-- vector library helpers: shipped Luau, not hand-roll bait.
+local dir = vector.normalize(target - origin)
+local clamped = vector.clamp(dir, minVec, maxVec)
+```
+
+```lua
+-- InstanceHandle [Beta] attribute: GetAttribute returning a handle whose Get() is
+-- nil while the target streams in is the design, not a bug to flag.
+local target = marker:GetAttribute("Target")
+local resolved = target and target:Get()
+```
+
+```lua
+-- Verified accessibility reads: PreferredTextSize/ViewportDisplaySize are real members;
+-- the UIScaleMultiplier names never shipped. Reading them is correctness, not ceremony.
+applyScale(GuiService.PreferredTextSize)
+GuiService:GetPropertyChangedSignal("PreferredTextSize"):Connect(applyScale)
 ```
 
 ## Review mode: what happens to a finding once it is real

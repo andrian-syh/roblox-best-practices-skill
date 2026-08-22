@@ -47,7 +47,7 @@ Three classes cover almost everything:
 
 **Fail loud is the one that gets written wrong,** and it is the most expensive. When a load fails after its retries, falling through to defaults produces a player with an empty profile whose next autosave **overwrites their real history**. The retry loop looked correct; the data is gone anyway. The rule: a session whose load failed is flagged unsaveable, the player is told plainly, and every save path checks that flag before writing ([cases/data-economy.md](../cases/data-economy.md#player-data-persistence)).
 
-- **Say which class you chose.** One line at the call site is enough, and it is exactly the kind of non-obvious external constraint an in-line note is for ([section-layout.md](../section-layout.md#in-line-notes-inside-the-body)).
+- **Say which class you chose.** Name it where the reader needs it: in the function's Documentation Comment (the block above carries non-obvious external constraints) or in a well-named helper such as `loadWithOrderedDataStore` — the body itself carries no note ([section-layout.md](../section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - **Never swallow silently.** A `pcall` whose failure branch does nothing hides the outage that caused it. Log with context even when the policy is to continue ([luau-language.md](../luau-language.md#error-handling)).
 - **Bound the retries.** Retrying forever converts a transient outage into a hung session and burns the request budget everyone else needs ([limits-budgets.md](../limits-budgets.md)).
 - **A degraded session should be visible.** The player being told "your progress could not be loaded, changes will not be saved" is vastly better than discovering it after an hour of play.

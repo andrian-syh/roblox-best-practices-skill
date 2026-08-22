@@ -19,13 +19,9 @@ Server-side handler skeleton — every remote handler follows this shape:
 	@param itemId unknown -- Untrusted client argument; validated before use
 ]]
 local function onEquipRequest(player: Player, itemId: unknown)
-	-- 1. Type validation
 	if typeof(itemId) ~= "string" then return end
-	-- 2. Rate limit
 	if not RateLimiter.Allow(player, "Equip", 5) then return end
-	-- 3. Authorization / ownership
 	if not Inventory.Owns(player, itemId) then return end
-	-- 4. Execute server-side
 	Inventory.Equip(player, itemId)
 end
 ```

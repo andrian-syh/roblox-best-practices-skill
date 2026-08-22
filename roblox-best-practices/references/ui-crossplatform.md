@@ -5,13 +5,13 @@ Building interfaces that survive every screen and every input device. Proving th
 ## UI Construction
 
 - **Scale over Offset** for anything that must fit every screen; Offset only for fixed-size elements (icons, borders). Combine with `UIAspectRatioConstraint` to stop Scale from distorting, and `UITextSizeConstraint`/`TextScaled` for legible text at all sizes.
-- **The player has their own UI scale.** `GuiService:GetUIScaleMultiplier()` reports it (with a setter and `UserGameSettings.UIScaleMultiplierHundredths` behind it) — read that rather than inferring an intended scale from viewport size, and let it multiply your layout instead of fighting it. **[Verify]** ([api-currency.md](api-currency.md#engine)); fall back to viewport-relative sizing where it is absent.
+- **Respect the player's display and text-size settings.** Read `GuiService.PreferredTextSize` (their text-size setting) and `GuiService.ViewportDisplaySize` (Small/Medium/Large display class) instead of inferring intent from raw viewport pixels, reacting through their change signals. Multiplier-style scale APIs appeared in release notes but are absent from the Engine API Reference (**[Verify]**, [api-currency.md](api-currency.md#engine)) — until one ships, adapt layouts with these members plus `UIAspectRatioConstraint`.
 - Respect device insets: `ScreenGui.ScreenInsets` (CoreUISafeInsets/DeviceSafeInsets) for notches and rounded corners; never pin critical buttons into unsafe corners.
-- Prefer native styling over image assets: `UICorner` (per-corner rounding), `UIStroke`, `UIGradient`, `UIShadow`, and the Styling system/StyleQueries where available — lighter than 9-slice images and theme-able. Verify availability per [SKILL.md](../SKILL.md#environment--scale).
+- Prefer native styling over image assets: `UICorner` (per-corner rounding), `UIStroke`, `UIGradient`, and `UIShadow` — lighter than 9-slice images and theme-able. StyleQueries are announced but not yet confirmed live (**[UNVERIFIED]**, [api-currency.md](api-currency.md#engine)); verify before building on them.
 - Layouts via `UIListLayout`/`UIGridLayout`/`UIFlexLayout` + `AutomaticSize`, not hand-positioned children — they reflow across resolutions for free.
 - If the project uses Fusion/React-lua, component idioms win — see [community-libraries.md](community-libraries.md#ui-fusion--react-lua--roact).
 
-Rotated GuiObjects and `Path2D` instances now clip cleanly without a performance penalty, so a rotated element no longer forces a redesign to avoid overflow.
+Rotated GuiObjects and `Path2D` instances clip cleanly without a performance penalty, so a rotated element does not force a redesign to avoid overflow.
 
 **UI performance:** UI updated every frame (health bars, timers) must not trigger layout recalculation of large trees — isolate hot elements in their own container. Tween properties, don't re-create elements. Set `Visible = false` on hidden panels (invisible ≠ free if still being laid out); destroy screens you won't reopen.
 

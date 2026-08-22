@@ -114,7 +114,7 @@ Rendering cost is paid by the **client**; physics simulation of the same parts i
 - Minimize part count: union/mesh static decoration, but beware overly complex collision — set `CollisionFidelity` to `Box`/`Hull` for decoration.
 - `CanCollide = false`, `CanQuery = false`, `CanTouch = false` on parts that don't need them — each flag off removes work from physics/raycast broadphase.
 - Use `Model.StreamingMode`/persistence deliberately; keep gameplay-critical anchors persistent.
-- UI: avoid `UIGradient`/heavy effects on elements updated every frame; prefer native styling (UICorner, UIShadow, Styling/StyleQueries) over image assets.
+- UI: avoid `UIGradient`/heavy effects on elements updated every frame; prefer native styling (UICorner, UIShadow) over image assets. StyleQueries remain unconfirmed — verify before relying on them ([api-currency.md](api-currency.md#engine)).
 
 ## Measurement (never optimize blind)
 

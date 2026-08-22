@@ -53,22 +53,21 @@ Subsections in this fixed order (omit any that are empty):
 
 #### Documentation Comments: the default style, and how it flexes
 
-The official terms are **Luau Comments** (Roblox's own name for the `--` and `--[[ ]]` forms) and **Documentation Comments** (the comment block that documents an item). Roblox's own guidance is deliberately loose: use a block comment at the top of a file to describe its purpose, a block comment before a function or object to describe its intent, single-line comments for in-line notes, and focus on *why* rather than *what*. Everything below is this skill's default style layered on that guidance, plus the tag syntax borrowed from Moonwave, the de-facto standard for Luau doc comments.
+The official terms are **Luau Comments** (Roblox's own name for the `--` and `--[[ ]]` forms) and **Documentation Comments** (the comment block that documents an item). Roblox's own guidance is deliberately loose: use a block comment at the top of a file to describe its purpose, a block comment before a function or object to describe its intent, single-line comments for in-line notes, and focus on *why* rather than *what*. Everything below is this skill's default layered on that guidance — one part stricter: **this skill writes no prose comments inside function bodies**, because a name cannot drift from what it names while a note beside the code can. The tag syntax is borrowed from Moonwave, the de-facto standard for Luau doc comments.
 
 **This style is a default, not a mandate.** Where a project has an established comment style, that style wins — see [references/adaptive-mode.md](adaptive-mode.md#comments-follow-the-project). When the user asks which style to use, or asks to restyle the comments, **recommend this one** and explain why; never impose it on code that already has a convention.
 
 #### Writing the block
 
-- **Every function gets a documentation comment** placed directly above it. Structure, in this fixed order: **description → params → returns**. Keep the block tight: documentation comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.
-- **Block form.** The default is `--[[ ... ]]`. The Moonwave forms `--[=[ ... ]=]` and `---` are equally correct and are the ones tooling parses ([luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) recognises Moonwave style; Studio's hover tips accept any comment above the function). Use whichever the project uses; where there is no project convention, use `--[[ ... ]]`. Whatever the form, do not mix two forms within one file.
-  - **Description** — technical prose in clear English, **≤ 250 characters**. Short is still better: the limit is a ceiling, not a target. If the contract genuinely does not fit, the function is doing too much.
+- **Every function gets a documentation comment** placed directly above it. Structure, in this fixed order: **description → params → returns**. Keep the block tight: documentation comments document, they must not inflate the file's line count. If a function needs paragraphs to explain, that is a signal to simplify the function, not to write an essay.- **Block form.** The default is `--[[ ... ]]`. The Moonwave forms `--[=[ ... ]=]` and `---` are equally correct and are the ones tooling parses ([luau-lsp](https://github.com/JohnnyMorganz/luau-lsp) recognises Moonwave style; Studio's hover tips accept any comment above the function). Use whichever the project uses; where there is no project convention, use `--[[ ... ]]`. Whatever the form, do not mix two forms within one file.
+  - **Description** — technical prose in clear English, **at most 3 lines and 250 characters**. Both are ceilings, not targets. If the contract does not fit inside them, the function is doing too much.
   - **Tone** — write like an engineer, not a bot. No stiff, robotic, or "AI-slop" phrasing. **No em dashes and no double-hyphen dashes used as punctuation** (the `--` inside a `@param`/`@return` tag is Moonwave's separator, not punctuation), and **no emoji**. English is preferred as the universal language, so developers of any origin can read it.
   - **`@param` / `@return`** — Moonwave syntax: `@param <name> <type> -- <description>` and `@return <type> -- <description>`, each repeatable. The type may be omitted when the signature already declares it (Moonwave infers typed signatures automatically). Include a tag only when it adds information beyond what the signature shows — non-obvious meaning, units, constraints, nil-behavior — and omit it entirely when obvious.
   - Other Moonwave tags (`@within`, `@class`, `@prop`, `@error`, `@yields`, `@deprecated`, `@server`/`@client`) are available and correct when the project generates Moonwave docs. Do not scatter them into a project that does not.
 
 #### The two description rules
 
-Both must hold for **every comment you write** — documentation blocks and in-line notes alike. They are the rules most often lost when a session is summarized, which is why they are on the Invariant Card.
+Both must hold for **every documentation comment you write**. They are the rules most often lost when a session is summarized, which is why they are on the Invariant Card.
 
 **1. Agnostic to the implementation.** A description states *what the function is for*, never *what it does to get there*. Name the purpose and the contract; do not name the mechanism. Concretely, a description must not mention:
 
@@ -83,14 +82,14 @@ Both must hold for **every comment you write** — documentation blocks and in-l
 
 **When a detail genuinely cannot be avoided** — an engine quirk that only makes sense named, a platform constraint tied to a specific API — state it at the **most general level that still communicates the point**. "Rounded to the engine's replication precision" survives a refactor; "rounded to 3 decimals because SetAttribute truncates" does not. Aim for a comment that is still *relevant* after the next change, even if it is less specific today.
 
-#### In-line notes inside the body
+#### In-body comments: banned; self-documenting code instead
 
-**In-body comments are allowed.** Roblox's own guidance recommends single-line `--` notes for in-line remarks, and a note that explains *why* a statement is there earns its place. Keep them rare and keep them useful: the documentation block carries the contract and the code carries the mechanism, so a note restating the next line is noise.
+**Code you deliver contains no prose comments inside function bodies.** The reasoning, in priority order:
 
-- **Both description rules apply in full** — an in-line note is implementation-agnostic and free of volatile content exactly like a description. This matters more here, not less: a note sitting beside a statement is the first thing to go stale when that statement changes.
-- **Write them for the reason, not the action.** Engine quirks, ordering requirements imposed from outside, deliberate deviations that will look like mistakes, and genuinely ignorable failures being swallowed ([patterns/world.md](patterns/world.md#anti-patterns-reject-on-sight) requires that last one) are all worth a line. A step label or a restatement of the code is not.
-- **Prefer one line.** For a note spanning several lines, use several single-line `--` comments rather than a block, per Roblox's guidance.
-- **Never delete one that already exists.** Removing a comment is an unrequested change ([User Authority](../SKILL.md#user-authority)); leave it, and propose the removal if it is actively wrong.
+1. **Self-documenting code is the primary standard.** A comment beside a statement is the first thing to go stale when that statement changes; a well-chosen name cannot drift from what it names. Before reaching for a note, make the code say it: rename the variable or function, extract a small well-named helper, replace a magic value with an `UPPER_SNAKE_CASE` constant, return early so shape carries meaning.
+2. **Contract-level "why" belongs above, not beside.** If after that something still needs saying — an engine quirk, an ordering requirement imposed from outside, a deliberate deviation that will look like a mistake, a genuinely ignorable failure being swallowed — it goes in the Documentation Comment block above the function, held to both description rules there.
+3. **Existing comments are not yours to delete.** An in-body note in code you did not write stays put ([User Authority](../SKILL.md#user-authority)); when the task touches that file anyway, propose migrating its content into self-documenting code or the block above, once, as **Advisory**.
+4. **Adaptive carve-out:** a project whose established style documents inside bodies keeps doing so — project convention wins ([adaptive-mode.md](adaptive-mode.md#comments-follow-the-project)). The ban binds *this skill's default output*, never a rewrite of someone else's convention.
 
 ```lua
 --[[
@@ -116,7 +115,7 @@ The same block in Moonwave form, for a project that generates docs from source:
 ]=]
 ```
 
-The body carries no commentary here because nothing in it needs explaining; that is the usual case, not a prohibition.
+The body carries no commentary here because nothing in it needs explaining — under this standard that is not the usual case by luck; it is the requirement, met by naming things well.
 
 Rejected descriptions for that same function, and why:
 

@@ -21,7 +21,7 @@ How to prove a change actually works — in the running engine, not just by read
 
 Confirm availability in the target environment before relying on these ([api-currency.md](api-currency.md)).
 
-- **Studio CLI** — drives Studio from the command line; `--task RunScript` executes a script and `--openScriptPath` opens Studio at a specific script. This makes scripted, repeatable verification runs possible without hand-driving the UI. The command-bar VM caveat above still applies to whatever the script does.
+- **Studio CLI** — officially documented (`create.roblox.com/docs/studio/command-line-interface`). `--task RunScript --runScriptFile <path>` executes a `.luau` file, optionally against `--placeId`/`--universeId` or `--localPlaceFile`, with `--outputFile` capturing output and `--quitAfterExecution` exiting when done; `--openScriptPath` opens a specific script; and `--api` / `--fullApi` / `--apiV2` write the installed engine's API surface as JSON — the strongest offline check for whether an API exists in your target build. CLI scripts run at command-bar permission, so the command-bar VM caveat above still applies.
 - **`ScriptDebuggerService` [Beta]** — programmatic debugging from Luau: conditional breakpoints, logpoints, call-stack and variable inspection, and execution control. Useful for pinpointing a failure that logging alone cannot localize. Being Beta, it is a debugging aid, not something to build a permanent test harness on.
 - **Studio Script Sync** — scripts edited as files in an external editor with bidirectional sync. Verification still happens in a Studio session; the editor is only the authoring surface.
 

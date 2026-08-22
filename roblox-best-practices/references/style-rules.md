@@ -14,6 +14,21 @@ Luau-level conventions that apply to every script this skill writes. SKILL.md ke
 - One responsibility per ModuleScript. No circular `require`s — if two modules need each other, extract the shared part into a third module or pass dependencies at init time.
 - Prefer `CollectionService` tags + `Attributes` to bind behavior to Instances — this is the most framework-agnostic wiring mechanism and survives any folder structure.
 - **Stay framework-agnostic by construction.** Core logic relies only on standard Roblox services and engine features; a community library's way of doing something is an overlay ([references/community-libraries.md](community-libraries.md)), never the baseline. Never assume a folder layout or framework beyond standard services — bind by tags/attributes, discover by service, and let the community-library check (not a hard-coded path) decide which idioms apply.
-- **Documentation Comments follow the project; this skill's style is the recommendation.** Default block: `--[[ ... ]]` above the function, ordered desc → params → returns; Moonwave `--[=[ ... ]=]` or `---` when that is the project's style. Descriptions are ≤ 250 characters, implementation-agnostic and free of volatile detail, English preferred, no em dashes or double-hyphen dashes as punctuation, no emoji. Tags use Moonwave syntax (`@param <name> <type> -- <description>`). **In-line notes are allowed** and are held to the same two description rules. Full rules: the FUNCTIONS section above.
+- **Documentation Comments follow the project; this skill's style is the recommendation.** Default block: `--[[ ... ]]` above the function, ordered desc params returns; Moonwave `--[=[ ... ]=]` or `---` when that is the project's style. Descriptions are at most 3 lines and 250 characters, implementation-agnostic and free of volatile detail, English preferred, no em dashes or double-hyphen dashes as punctuation, no emoji. Tags use Moonwave syntax (`@param <name> <type> -- <description>`). **In-body comments are banned in delivered code** — write self-documenting names and structure instead; existing notes in others' code stay untouched ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - **`const` for bindings that must not be rebound** [GA in Studio]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](luau-language.md#const-bindings).
 - Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](luau-language.md).
+
+## Commonly misremembered APIs (check before writing, before flagging)
+
+These are repeatedly invented or misremembered. As author, verify against the class's `.md` reference page ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) before naming any member you are not certain of; as reviewer, never flag the correct form of any row below.
+
+| Often written or claimed | Reality |
+|---|---|
+| `Humanoid:LoadAnimation(track)` | Deprecated — load through an `Animator`: `humanoid:FindFirstChildOfClass("Animator"):LoadAnimation(anim)` |
+| `Part.Velocity = v` / `.RotVelocity` | Deprecated — use `AssemblyLinearVelocity` / `AssemblyAngularVelocity` |
+| `player:GetMouse()` as the input plan | Legacy mouse object; prefer the Input Action System, else `UserInputService`/`ContextActionService` |
+| Invented members (`Script.Running`, `Player.IsPlaying`, ...) | Not real. Any property/method name not in the class's reference page does not exist — no exceptions |
+| `UIShadow.ApplyShadowMode`/`Mode`, `GuiService:GetUIScaleMultiplier` | Release-note names that never shipped under those spellings — documented sets live in [api-currency.md](api-currency.md#engine) |
+| `workspace.Players`, `game.CoreScriptService` | Wrong names; services come only from `game:GetService("...")` |
+| Made-up enum members (`Enum.Material.Whatever`) | Enums are closed sets — grep the enum's `.md` page instead of guessing |
+| `RunService:BindToRenderStep(...)` in server code | Client-only; server frame work belongs on `Heartbeat` |

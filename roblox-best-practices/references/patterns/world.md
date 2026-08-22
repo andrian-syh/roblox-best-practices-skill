@@ -34,19 +34,18 @@ CollectionService:GetInstanceAddedSignal("Lava"):Connect(bindLava)
 ```lua
 part:SetAttribute("Target", workspace.TargetPart)
 
-local handle = part:GetAttribute("Target") -- an InstanceHandle, not the Instance
-local target = handle:Get()                -- the Instance, or nil if unavailable
-local resolved = handle:Wait(5)            -- streaming-aware, optional timeout
+local targetHandle = part:GetAttribute("Target")
+local targetInstance = targetHandle:Get()
 ```
 
   - `GetAttribute` returns a **handle**, never the Instance directly. A missing attribute returns `nil`; an attribute pointing at an instance that has not replicated returns a handle whose `Get()` is `nil` — that distinction is the point of the design under StreamingEnabled.
-  - **`GetAttributeChangedSignal` fires only when the attribute itself changes**, not when the referenced instance streams in or out. Do not use it to track availability; use `Wait` or a tag signal.
+  - **`GetAttributeChangedSignal` fires only when the attribute itself changes**, not when the referenced instance streams in or out. Do not use it to track availability; re-read `Get()` at the point of use, or track the instance with a tag signal (`handle:Wait` appears in announcements but not the Engine API Reference — treat it as unconfirmed).
   - Handles are weak references and are garbage-collected automatically.
   - It is **[Beta]**: document it as an option, keep `ObjectValue` or a module-side registry as the default for production code until it reaches GA.
 
 ## Input (client)
 
-- New projects: use the **Input Action System** (`InputAction`/`InputBinding`) rather than raw `UserInputService` — it handles rebinding and cross-device out of the box. Verify availability in the target environment first (SKILL.md → Environment & Scale); fall back to `ContextActionService` if absent.
+- New projects: use the **Input Action System** (`InputAction`/`InputBinding`) rather than raw `UserInputService` — it is **[GA]** ([api-currency.md](../api-currency.md#engine)) and mandatory under Server Authority; it handles rebinding and cross-device out of the box. Fall back to `ContextActionService` where a legacy environment predates it.
 - Legacy projects: `ContextActionService` over raw `UserInputService.InputBegan` for gameplay actions — it stacks/unbinds cleanly with UI and tools.
 - Never read input on the server; the client sends validated *intents*.
 
@@ -64,5 +63,5 @@ local resolved = handle:Wait(5)            -- streaming-aware, optional timeout
 | `Instance.new("Part", parent)` (parent arg) | Create, set properties, parent last |
 | Storing player data only in leaderstats | Session cache table; leaderstats is display-only |
 | `getfenv`/`setfenv`/`loadstring` | Never — kills Luau optimization and is a security hole |
-| `pcall` whose failure branch is silently ignored | Log the error with context or recover; a genuinely ignorable failure earns a one-line in-line note saying why ([luau-language.md](../luau-language.md#error-handling)) |
+| `pcall` whose failure branch is silently ignored | Log the error with context or recover; a genuinely ignorable failure says why it is safe to skip in the function's Documentation Comment ([luau-language.md](../luau-language.md#error-handling)) |
 | Per-character state (connections, buffs) never cleared on respawn | Key by character, clear in `CharacterRemoving`/`Destroying` (see Character Lifecycle) |

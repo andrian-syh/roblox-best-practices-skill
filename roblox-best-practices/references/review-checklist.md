@@ -15,9 +15,9 @@ Before finishing any Luau code, verify:
 - [ ] Three top-level sections present and correctly ordered (except exempt pure data/type modules); correct header syntax at each level (or the confirmed adapted equivalent); ceremony scaled to script size, no empty headers
 - [ ] In review mode: each finding triaged as Blocker/Correctness/Advisory and run through the false-positives gate; Advisory items proposed not forced; unrelated code untouched
 - [ ] Services/Modules/Objects/Configuration/State ordered per spec; module requires ordered SSS → SS → RS → Workspace → script-relative (only reachable locations count)
-- [ ] Every function authored carries a Documentation Comment in the project's block form (`--[[ ]]` by default, Moonwave `--[=[ ]=]`/`---` where that is the project's style), ordered desc → params → returns, ≤ 250 chars, English preferred, no em dashes or double-hyphen punctuation, no emoji; tags in Moonwave syntax (`@param <name> <type> -- <description>`) and only where they add what the signature cannot show
-- [ ] **Every comment** — documentation block and in-line note alike — passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names); where a detail was unavoidable it was stated at the most general level that stays true after the body changes
-- [ ] In-line notes explain *why*, not what; none restates the code; no pre-existing comment was deleted
+- [ ] Every function authored carries a Documentation Comment in the project's block form (`--[[ ]]` by default, Moonwave `--[=[ ]=]`/`---` where that is the project's style), ordered desc → params → returns, ≤ 3 lines and ≤ 250 chars, English preferred, no em dashes or double-hyphen punctuation, no emoji; tags in Moonwave syntax (`@param <name> <type> -- <description>`) and only where they add what the signature cannot show
+- [ ] **Every Documentation Comment** passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names); where a detail was unavoidable it was stated at the most general level that stays true after the body changes
+- [ ] No prose comments inside any delivered body (self-documenting names instead; contract-level why lives in the block above); every description ≤ 3 lines and ≤ 250 characters; no pre-existing comment was deleted
 - [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
 - [ ] All connections have an owner and a teardown path; no leaked Instances
 - [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven
@@ -34,3 +34,5 @@ Before finishing any Luau code, verify:
 - [ ] Handlers that yield between a check and its use re-validate state after resuming (player still present, instance alive, session unchanged)
 - [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering
 - [ ] Works regardless of the project's framework — no assumptions about folder layout beyond standard Roblox services
+- [ ] Every engine fact stated to the user names its basis (api-currency tag, live docs check, API dump, or in-Studio probe); anything unverifiable is labeled unverified with the check that would settle it
+- [ ] The closing summary states what was verified and how, open uncertainties, and every assumption made

@@ -20,6 +20,8 @@ Skill rules become:
 
 ## Networking: Packet / ByteNet / Zap / BridgeNet
 
+**Maintenance status:** BridgeNet is unmaintained. The adaptation below applies to any of these in an existing project; check repository activity before picking one for new work.
+
 Replaces raw RemoteEvent/RemoteFunction hygiene in [patterns.md](patterns.md): batching, buffer serialization, and remote creation are the library's job.
 
 Skill rules become:
@@ -44,6 +46,8 @@ Replaces the manual cleanup-bag pattern in [patterns.md](patterns.md).
 
 ## Frameworks: Knit / Flamework
 
+**Maintenance status:** Knit is **archived** — its author states it will receive no further updates. Existing projects keep working and the adaptation below still applies, but never recommend Knit for a *new* project; prefer plain modules with a bootstrap script, or Flamework on roblox-ts.
+
 The section layout applies *inside* each Service/Controller file:
 
 - VARIABLES: services, requires, the `local MyService = Knit.CreateService{...}` declaration (its `Client = {}` table counts as structure, not state).
@@ -52,6 +56,8 @@ The section layout applies *inside* each Service/Controller file:
 - Knit's Client remotes replace raw remote creation, but server handlers still validate every argument.
 
 ## UI: Fusion / React-lua / Roact
+
+**Maintenance status:** Roact is deprecated upstream in favor of React-lua; treat a Roact codebase as legacy — adapt it, don't extend it.
 
 Declarative UI component bodies have their own internal structure (state → derived values → render tree) — **do not force section headers inside a component function**. The section layout applies to the *file*: VARIABLES (requires, tokens/constants), FUNCTIONS (the component(s) + helpers, each with a doc comment), INITIALIZATION (mount/`New`-tree creation, story export).
 

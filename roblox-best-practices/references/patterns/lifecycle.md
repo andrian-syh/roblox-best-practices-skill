@@ -59,7 +59,7 @@ The **Character Controller Library (CCL)** reached **[GA]** ([api-currency.md](.
 
 - Select the implementation with `StarterPlayer.LuaCharacterController`, which takes a `CharacterControlMode`: `Default`, `Legacy`, `NoCharacterController`, or `LuaCharacterController`.
 - Movement is composed from **AvatarAbilities** (Walk, Run, Jump, Swim, Climb, Sit) driven by physics controllers (`GroundController`, `AirController`) under a `ControllerManager`.
-- Tune per-controller rather than fighting the defaults. `GroundController` exposes `MoveSpeedFactor`, `TurnSpeedFactor`, `AccelerationTime`, `DecelerationTime`, `Friction`, `FrictionWeight`, `BalanceMaxTorque`, and `BalanceSpeed`.
+- Tune per-controller rather than fighting the defaults. `GroundController` exposes `AccelerationTime`, `DecelerationTime`, `TurnSpeedFactor`, `GroundOffset`, `Friction`, `FrictionWeight`, `BalanceMaxTorque`, and `BalanceSpeed` — `MoveSpeedFactor` is inherited from `ControllerBase`, not defined here.
 - Configure it the same way as any other per-character state: resolve the `ControllerManager` on `CharacterAdded` (handling the already-spawned character too) and apply settings there. Per-life teardown rules above apply unchanged.
 - **Choosing:** prefer CCL for new projects that need custom movement feel or plan to extend abilities; keep `Humanoid` when the default feel is fine or the project depends on Humanoid-specific APIs and states. Never migrate an existing project on this skill's initiative.
 - Do not flag a project for using either one ([false-positives.md](../false-positives.md)).
