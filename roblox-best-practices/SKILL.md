@@ -1,7 +1,7 @@
 ---
 name: roblox-best-practices
 argument-hint: "[ask|bal|go]"
-description: Framework-agnostic Roblox/Luau coding standards. Use when writing, reviewing, or refactoring any Luau code (Script, LocalScript, ModuleScript) in a Roblox project, or when the user asks to keep best practices in mind as standing guidance — enforces the VARIABLES/FUNCTIONS/INITIALIZATION layout, naming, performance, memory, networking, and security rules regardless of framework, folder structure, or genre. Two modes: Default (apply these conventions as-is) and Adaptive (study the project's existing style first, confirm, then apply). Adapts to community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) and honors supervision levels (!ask / !bal / !go). Not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or game design discussion with no Luau to write or review.
+description: "Framework-agnostic Roblox/Luau coding standards. Use when writing, reviewing, or refactoring any Luau code (Script, LocalScript, ModuleScript) in a Roblox project, or when the user asks to keep best practices in mind as standing guidance — enforces the VARIABLES/FUNCTIONS/INITIALIZATION layout, naming, performance, memory, networking, and security rules regardless of framework, folder structure, or genre. Two modes: Default (apply these conventions as-is) and Adaptive (study the project's existing style first, confirm, then apply). Adapts to community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) and honors supervision levels (!ask / !bal / !go). Not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or game design discussion with no Luau to write or review."
 ---
 
 # Roblox Game Development Best Practices
