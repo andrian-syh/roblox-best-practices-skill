@@ -10,7 +10,7 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.17.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 1.17.1. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -151,8 +151,8 @@ One severity per finding (**Blocker / Correctness / Advisory**), after the confi
 ## Environment & Scale
 
 - **Detect the project environment first:** **Studio-native** (Studio/MCP tools, Instance paths), **Rojo/filesystem** (files; path aliases, `src/` maps to services), or **Studio Script Sync** (files with bidirectional sync, but the DataModel stays the source of truth and there is no Rojo project file). Match how you read, write, and reference scripts. On an MCP connection, [references/studio-mcp.md](references/studio-mcp.md) applies before any write.
-- **Verify newer APIs, and state the basis for every engine fact.** Absence from your training knowledge is not evidence an API doesn't exist, and memory is never presented as fact. The **Engine API Reference on create.roblox.com is the primary authority**; an API dump or an in-Studio probe settles what it hasn't caught up to. Cite which one backs a claim, or say "unverified" and name the check that would settle it. Settled APIs and the verification toolbox: [references/api-currency.md](references/api-currency.md#how-to-verify-the-toolbox).
-- **Maturity tags:** **[GA]** safe as a default · **[Beta]** opt-in, may change · **[Verify]** confirm in the target place · **[UNVERIFIED]** unconfirmed by this skill. **Never make a [Beta] feature a production default** — offer it as an option, state its status, keep the stable path as the recommendation.
+- **Verify newer APIs, and state the basis for every engine fact.** Memory is never presented as fact. Two authorities, two questions: **does it exist** — the versioned API dump or an in-Studio probe; **what does it do** — the Engine API Reference. The docs site **lags the engine**, so a member missing from a reference page is undocumented, not unshipped; never call an API nonexistent on that basis. Cite the check, or say "unverified" and name the one that would settle it: [references/api-currency.md](references/api-currency.md#how-to-verify-the-toolbox).
+- **Maturity tags:** **[GA]** safe as a default · **[Beta]** opt-in, may change · **[Undocumented]** shipped, but no reference page — probe its semantics · **[Verify]** confirm in the target place · **[UNVERIFIED]** unconfirmed by this skill. **Never make a [Beta] feature a production default** — offer it, state its status, recommend the stable path.
 - **Scale the ceremony to the script.** Tiny scripts (< ~40 lines) may use the three top-level headers with no subsections; add deeper headers only when a section needs them, never empty placeholders. **Pure data/type modules** (config tables, item catalogs, shared types) are exempt from the three-section layout.
 
 ## Script Section Layout (MANDATORY)

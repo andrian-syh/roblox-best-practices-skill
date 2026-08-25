@@ -290,10 +290,18 @@ local resolved = target and target:Get()
 ```
 
 ```lua
--- Verified accessibility reads: PreferredTextSize/ViewportDisplaySize are real members;
--- the UIScaleMultiplier names never shipped. Reading them is correctness, not ceremony.
+-- Verified accessibility reads: PreferredTextSize/ViewportDisplaySize are real members.
+-- Reading them is correctness, not ceremony.
 applyScale(GuiService.PreferredTextSize)
 GuiService:GetPropertyChangedSignal("PreferredTextSize"):Connect(applyScale)
+```
+
+```lua
+-- Shipped but undocumented: present in the API dump, absent from create.roblox.com.
+-- Not a fabrication, not a finding. Confirm against the dump before ever calling a
+-- member nonexistent -- the docs site trails the engine by weeks.
+local multiplier = GuiService:GetUIScaleMultiplier()
+shadow.Inset = true
 ```
 
 ## Review mode: what happens to a finding once it is real

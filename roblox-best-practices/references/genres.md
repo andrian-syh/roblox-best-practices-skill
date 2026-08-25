@@ -104,7 +104,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - Avatars dominate memory/CPU: cap simultaneous loaded accessories where possible, and profile with 30+ avatars in one place — not with 2 testers.
 - Chat: `TextChatService` (never the legacy chat), channel setup server-side, filtering is automatic but *any* custom text display must go through `TextService:FilterStringAsync`.
 - Voice/large servers: design POIs so 50–100 players spread out; density hotspots are the perf killer.
-- Matchmaking/instances: reserved servers (`TeleportService:ReserveServer`) for private rooms; `MemoryStoreService` for cross-server presence/queues; MessagingService for announcements.
+- Matchmaking/instances: reserved servers (`TeleportAsync` with `TeleportOptions.ShouldReserveServer`; `ReserveServer` is deprecated) for private rooms; `MemoryStoreService` for cross-server presence/queues; MessagingService for announcements.
 - Emotes/animations: pooled and event-driven; never a loop per player scanning state.
 
 ## Using this playbook

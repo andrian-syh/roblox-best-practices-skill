@@ -20,15 +20,19 @@ Luau-level conventions that apply to every script this skill writes. SKILL.md ke
 
 ## Commonly misremembered APIs (check before writing, before flagging)
 
-These are repeatedly invented or misremembered. As author, verify against the class's `.md` reference page ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) before naming any member you are not certain of; as reviewer, never flag the correct form of any row below.
+These are repeatedly invented or misremembered. As author, verify a member you are not certain of against the **versioned API dump** ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) — the reference page tells you what a member does, the dump tells you whether it exists; as reviewer, never flag the correct form of any row below.
+
+**A member missing from create.roblox.com is not an invented member.** The documentation site trails the engine, so a name you cannot find there may simply be new. Confirm against the dump before calling anything nonexistent — this skill has previously flagged three shipped members as fabrications on exactly that mistake.
 
 | Often written or claimed | Reality |
 |---|---|
 | `Humanoid:LoadAnimation(track)` | Deprecated — load through an `Animator`: `humanoid:FindFirstChildOfClass("Animator"):LoadAnimation(anim)` |
 | `Part.Velocity = v` / `.RotVelocity` | Deprecated — use `AssemblyLinearVelocity` / `AssemblyAngularVelocity` |
 | `player:GetMouse()` as the input plan | Legacy mouse object; prefer the Input Action System, else `UserInputService`/`ContextActionService` |
-| Invented members (`Script.Running`, `Player.IsPlaying`, ...) | Not real. Any property/method name not in the class's reference page does not exist — no exceptions |
-| `UIShadow.ApplyShadowMode`/`Mode`, `GuiService:GetUIScaleMultiplier` | Release-note names that never shipped under those spellings — documented sets live in [api-currency.md](api-currency.md#engine) |
+| Invented members (`Script.Running`, `Player.IsPlaying`, ...) | Not real. A name absent from **the API dump** does not exist; absence from the reference page only means it is undocumented |
+| `UIShadow.ApplyShadowMode` | Never shipped under that spelling. `UIShadow.Mode` **is** real and is not a misremembering — see [api-currency.md](api-currency.md#engine) |
+| `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier` | **Real and shipped.** Undocumented, not fabricated. Never flag these |
+| `TeleportService:ReserveServer` | Deprecated — use `ReserveServerAsync`, or `TeleportOptions.ShouldReserveServer` with `TeleportAsync` |
 | `workspace.Players`, `game.CoreScriptService` | Wrong names; services come only from `game:GetService("...")` |
 | Made-up enum members (`Enum.Material.Whatever`) | Enums are closed sets — grep the enum's `.md` page instead of guessing |
 | `RunService:BindToRenderStep(...)` in server code | Client-only; server frame work belongs on `Heartbeat` |

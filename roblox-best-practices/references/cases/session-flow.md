@@ -26,7 +26,7 @@ Blueprints for the systems that move players through time and across servers. Th
 **Dominant risk:** trusting teleport data, and losing players to failed teleports.
 **Server/client:** the server reserves, validates, and teleports; the client only requests.
 **Assembly:**
-1. Reserve with `TeleportService:ReserveServer` and teleport the party together.
+1. Teleport the party together with `TeleportService:TeleportAsync`, reserving in the same call via `TeleportOptions.ShouldReserveServer = true` (or `ReserveServerAsync` when the code is needed up front). `ReserveServer`, `TeleportToPrivateServer`, `TeleportToPlaceInstance`, and `TeleportPartyAsync` are all deprecated ([style-rules.md](../style-rules.md)).
 2. **Teleport data travels through the client and is tamperable.** Treat it as a hint; re-validate anything security-relevant on arrival, or pass a server-generated token and look the real payload up in MemoryStore.
 3. Wrap teleports in `pcall` with retry, and handle failure by returning the player to a known-good place rather than leaving them stuck.
 4. Save player data **before** teleporting; a teleport is a session end for persistence purposes.
