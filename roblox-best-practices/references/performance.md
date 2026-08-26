@@ -63,8 +63,21 @@ When two correct designs compete, pick by order of magnitude rather than instinc
 - **Throttle naturally-slow work.** AI targeting, proximity scans, leaderboard sorts don't need 60 Hz. Accumulate `deltaTime` and run at 5–10 Hz, or stagger entities across frames (process `i % N == frame % N`).
 - **Use the right primitives:** `vector`/`Vector3` math over per-component arithmetic; `buffer` for binary data and large numeric arrays; `table.create(n)` when the final size is known; `table.clear()` to reuse tables instead of reallocating.
 - **String building:** collect into a table and `table.concat`, or use interpolation backticks; never `..` in a loop.
-- **Native codegen:** for genuinely compute-heavy ModuleScripts (procedural generation, pathfinding math), add `--!native`. Don't scatter it everywhere — it costs memory.
-- **Parallel Luau:** only for embarrassingly-parallel heavy work (raycast batches, terrain edits, procedural generation) via Actors. **The script must be a descendant of an `Actor` for any of this to apply** — `task.desynchronize()` in an ordinary script does nothing useful, which is the most common way this feature is written wrong. Each Actor runs its scripts in its own VM; call `task.desynchronize()` to enter the parallel phase and `task.synchronize()` to return before touching the DataModel (most write APIs are unsafe in parallel and error if called there). Share data across Actors with **`SharedTable`** (a thread-safe table visible to every VM) rather than passing Luau tables directly. Don't parallelize chatty logic — cross-VM synchronization overhead outweighs the gain; parallelize only when per-item compute dwarfs the coordination cost.
+- **Native codegen & compiler optimization:** for genuinely compute-heavy ModuleScripts (procedural generation, pathfinding math, raycast batches), add `--!native` and `--!optimize 2` (or the `@native` function attribute for specific hot functions). Don't scatter `--!native` everywhere — native code generation increases code size and memory footprint.
+- **Parallel Luau & Actor Model:** reserved for compute-heavy, embarrassingly-parallel workloads (raycast batches, noise generation, procedural terrain/chunk calculations, heavy spatial AI).
+  - **Hierarchy prerequisite:** the running script **must be a descendant of an `Actor`** instance (or bind via `Actor:BindToMessageParallel`) for multi-threading to take effect; calling `task.desynchronize()` in a regular script outside an Actor does nothing useful.
+  - **Thread-safety split:**
+    - **ReadParallel / Safe:** `workspace:Raycast`, spatial bounds reads, instance property reads, pure math/geometry, `buffer` operations, and `SharedTable` reads/writes are safe to execute concurrently in the parallel phase (`task.desynchronize()`).
+    - **Unsafe (Serial only):** DataModel mutation (changing `CFrame`, `Parent`, creating/destroying Instances, `workspace:BulkMoveTo`) is unsafe in parallel and throws errors or creates race conditions.
+  - **Execution pattern (Parallel Compute → Batch Serial Write):**
+    1. Call `task.desynchronize()` to enter parallel execution.
+    2. Perform heavy calculations, spatial reads, or raycasts.
+    3. Store computed results in a local buffer or `SharedTable`.
+    4. Call `task.synchronize()` to return to the serial main thread.
+    5. Batch-apply mutations to the DataModel (e.g. `workspace:BulkMoveTo` for moving multiple parts in one go).
+  - **Anti-patterns to avoid:**
+    - *Chatty sync/desync:* repeatedly switching between parallel and serial phases inside small loops introduces context-switching overhead that negates multi-core gains.
+    - *Thread contention:* do not let hundreds of individual entity scripts independently call `task.synchronize()` in the same frame to update their own parts. Instead, aggregate work into a central coordinator or batch mover.
 
 ## Physics queries and contact detection
 

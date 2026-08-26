@@ -2,6 +2,20 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.17.2] - 2026-08-26
+
+**Adds the System Health & Architecture Evaluation Matrix, strengthens Server-Authoritative Combat security, and formalizes Parallel Luau concurrency patterns.**
+
+### Added
+- **System Health & Architecture Evaluation Matrix (`references/evaluation-matrix.md`):** An objective 1–5 scoring rubric across six core pillars (Security & Server Authority, Memory & Lifecycle, CPU & Performance Budget, Network & Replication, Data Safety & Persistence, Code Structure & Maintainability) designed for developers and AI to audit systems under development in Roblox Studio.
+- **Parallel Luau & Actor Model Architecture (`references/performance.md`):** Comprehensive concurrency guide detailing thread safety classifications (`ReadParallel` vs `Unsafe`), the 5-step Parallel Compute $\rightarrow$ Batch Serial Write execution pattern (`workspace:BulkMoveTo` in serial phase), and anti-pattern mitigations against *chatty sync/desync* and *thread contention*.
+- **Muzzle / Raycast Origin Verification (`references/cases/combat.md` & `references/security.md`):** Added explicit validation of shot origins against attacker server character positions (`(origin - rootPart.Position).Magnitude <= MAX_MUZZLE_DISCREPANCY`) to prevent ghost shooting and shoot-through-walls exploits.
+- **Compiler Directives & Subtyping Guidance (`references/luau-language.md`):** Added `--!optimize 2` alongside `--!native` / `@native` for compute-heavy math/simulation, and reinforced precise optional dictionary typing (`{ [K]: V? }`).
+
+### Changed
+- **NPC & AI at Scale (`references/cases/combat.md`):** Updated assembly recipes to distinguish single staggered loops from Parallel Luau Actor coordinators, and clarified batch transforms in the serial phase.
+- **Evaluations Migration:** Standardized all test fixtures and scenarios in `evaluations/` from `.lua` to modern `.luau`.
+
 ## [1.17.1] - 2026-08-26
 
 **The verification procedure this skill added last release was itself wrong, and it was telling the agent to flag correct code.** 1.17.0 required every engine fact to name its source and made the Engine API Reference the authority. The rule was right; the procedure built on it was not. It instructed the agent to read absence from a reference page as proof a member does not exist — and create.roblox.com trails the engine by weeks. Nine rows were wrong as a result. This release fixes the procedure, then fixes everything downstream of it.

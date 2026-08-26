@@ -111,6 +111,7 @@ Everything below expands these; nothing below overrides them.
 - [studio-mcp.md](references/studio-mcp.md) — Studio MCP connection: which tool, what is irreversible, how not to burn tokens
 - [false-positives.md](references/false-positives.md) — reviewing code: whether a finding is real, how severe, what NOT to flag
 - [review-checklist.md](references/review-checklist.md) — **finishing any task**: the completion gate before calling work done
+- [evaluation-matrix.md](references/evaluation-matrix.md) — 1–5 scoring rubric for auditing system health, security, lifecycle, and performance in active Studio projects
 - [api-currency.md](references/api-currency.md) — whether a newer engine/Luau API is confirmed before relying on it or flagging it missing
 - [limits-budgets.md](references/limits-budgets.md) — platform ceilings: DataStore size/requests, MemoryStore, messaging, attributes, animation tracks
 

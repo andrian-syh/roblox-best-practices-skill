@@ -30,10 +30,10 @@ faster one, and content that a stronger model finds redundant is worth trimming.
 
 `fixtures/` holds the inputs the scenarios reference:
 
-- `review-target.lua` — four real defects (unvalidated remote argument, per-player table with
+- `review-target.luau` — four real defects (unvalidated remote argument, per-player table with
   no removal path, `wait()`, private balance published through an attribute) alongside style
   deviations that must come back Advisory rather than as violations.
-- `correct-but-odd.lua` — code that is correct as written and looks wrong: a scheduled autosave
+- `correct-but-odd.luau` — code that is correct as written and looks wrong: a scheduled autosave
   loop, an allocation inside a `Touched` callback, a server-side bindable, a bare `WaitForChild`
   on `ReplicatedStorage`, `pairs`. Every construct is carved out in `false-positives.md`.
 - `existing-project/` — a small project with its own conventions (`--== SECTION ==--` headers,

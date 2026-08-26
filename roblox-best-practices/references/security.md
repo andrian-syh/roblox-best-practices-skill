@@ -56,15 +56,16 @@ end
 Clear `buckets[player]` in `PlayerRemoving`. Escalate repeat offenders (log → soft-fail → kick) instead of kicking on the first violation — mobile lag spikes cause honest bursts.
 
 3. **Ownership/authorization** — does this player own the item / have the role / stand in the right place?
-4. **Game-state plausibility** — is the action possible *right now*? (Alive? In range? Cooldown elapsed? Enough currency — checked server-side?)
+4. **Game-state plausibility & state machines** — is the action allowed right now? (Alive? Not stunned/recovering in the combat state machine? Cooldown elapsed via `os.clock()`? Enough currency — checked server-side?)
 
 ## Movement & physics sanity checks
 
 Character physics is client-owned; validate *outcomes*, not inputs:
 
 - **Teleport/speed:** on a slow loop (1–2 Hz, staggered), compare position delta vs `WalkSpeed * elapsed * tolerance` (tolerance ≥ 1.5 — physics, lag, and legitimate mechanics overshoot). On violation: rubber-band back, log; kick only on sustained patterns.
+- **Raycast origin & muzzle verification:** for combat/hitscan remotes, verify that the shot's starting origin is within a tight proximity window of the player's server-recorded character position (`(origin - characterRoot.Position).Magnitude <= MAX_MUZZLE_DISCREPANCY`). Never cast rays directly from an unvalidated client-supplied origin.
 - Account for legitimate causes before punishing: server teleports, vehicle exits, knockback, streaming pauses. Maintain an "expected displacement" allowlist window after such events.
-- Hit/interaction range: re-verify distance server-side at execution time, with a lag allowance (~10–15 studs beyond nominal range, tuned per game).
+- **Hit/interaction range:** re-verify distance server-side at execution time, with a bounded lag allowance (~10–15 studs beyond nominal range, and a temporal rewind cap of ~300–500 ms).
 - Don't build honeypots that punish automatically (invisible parts that kick on touch) without long observation first — false positives destroy trust.
 
 ## Server Authority (engine-level)

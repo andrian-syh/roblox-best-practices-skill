@@ -40,12 +40,12 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 
 **Dominant risk: latency & cheating.** Fairness perception decides retention.
 
-- Server-authoritative hits with *lag tolerance*: validate the shot server-side (distance, line-of-sight, fire-rate, ammo) but accept small client-side discrepancy windows; a pure server raycast feels terrible at 150 ms ping.
+- Server-authoritative hits with *bounded lag tolerance*: validate the shot server-side (muzzle origin proximity, distance, line-of-sight, fire-rate via `os.clock()`, ammo) with a bounded lag allowance (e.g. rewind capped at 300–500 ms); a pure server raycast feels broken at 150 ms ping, but unbounded rewind enables artificial lag switches.
 - Client predicts (muzzle flash, tracer, hit-marker immediately), server confirms (damage, kill). Reconcile visibly wrong predictions quietly.
 - `UnreliableRemoteEvent` for tracers/VFX/footsteps; reliable remotes for damage events.
 - Anti-cheat sanity checks ([security.md](security.md)): speed/teleport deltas, fire-rate caps, ammo accounting — all server-side.
 - **Confirm the authority mode before designing the netcode.** Server Authority is [GA] but **off unless the place enables it**; under it, movement validation is engine-side and inputs flow through the Input Action System, while without it the manual checks above are the correct baseline. Both paths: [server-authority.md](server-authority.md). This genre is the strongest candidate for adopting it.
-- Character physics is client-owned by design; never trust reported positions for hit *validation*, only for display.
+- Character physics is client-owned by design; never trust client-reported hit positions or raycast origins without server proximity checks.
 - Fixed-rate combat logic (`RunService` Heartbeat with accumulated dt; `BindToSimulation` only for synchronized physics/prediction code under `Workspace.UseFixedSimulation` — see [performance.md](performance.md)) so higher-FPS clients gain no advantage.
 
 ## Battlegrounds / Fighting / Melee PvP

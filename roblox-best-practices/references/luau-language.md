@@ -17,6 +17,7 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 
 - `--!strict` per SKILL.md; annotate public signatures, Configuration constants, and State tables.
 - **Share types through a dedicated types module:** `export type Loadout = { ... }` in one ModuleScript, consumed as `Types.Loadout` on both server and client — one definition, zero drift.
+- **Precise table & dictionary typing:** prefer explicit optionality `{ [string]: ItemData? }` when indexing an arbitrary key can return `nil`, rather than assuming `{ [string]: ItemData }`.
 - **The cast operator `::` silences the checker — treat every cast as a claim you must have already proven.** Cast to *narrow* after a runtime check (`value :: string` after `typeof(value) == "string"`), never to force incompatible shapes through. An unchecked cast is a suppressed error, not a fix.
 - Generics (`local function first<T>(list: {T}): T?`) and type packs (`T...`) beat `any` in reusable utilities.
 - **Read-only table members** — prefix a property or indexer with `read` to forbid writes through that type: `{ read x: number }` and `{ read [string]: Part }`. Use it on types handed to consumers that should only observe (config snapshots, replicated state views); it documents the contract and the checker enforces it, which is cheaper than a runtime guard. `write` exists as the mirror modifier. Landed in Luau 0.721; requires the new solver for full enforcement, so treat it as **[Verify]** in old-solver projects.
@@ -135,6 +136,7 @@ Two are documented today:
 ### `@native` and native codegen
 
 - `--!native` for whole compute-heavy ModuleScripts, per [performance.md](performance.md#cpu) — don't scatter it; it costs memory.
+- `--!optimize 2` instructs the compiler to apply maximum bytecode optimizations (inlining, constant folding, register allocation). Pair `--!native` with `--!optimize 2` in modules dedicated to heavy mathematical simulation, custom pathfinding, or batch raycast calculations.
 - The `@native` **function attribute** compiles just one function natively — finer-grained than the whole-script directive; prefer it when a single hot function qualifies. Because it is not recursive, a hot closure defined *inside* an `@native` function is not itself native; hoist it or annotate it separately.
 
 ### `@deprecated`

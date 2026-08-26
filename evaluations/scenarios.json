@@ -32,7 +32,7 @@
     "id": "review-triage",
     "skills": ["roblox-best-practices"],
     "query": "Review script ini.",
-    "input_files": ["fixtures/review-target.lua"],
+    "input_files": ["fixtures/review-target.luau"],
     "gap_it_covers": "Agents either miss real defects or bury them under style noise.",
     "expected_behavior": [
       "Reports the unvalidated RemoteEvent argument as Blocker severity",
@@ -47,7 +47,7 @@
     "id": "false-positive-resistance",
     "skills": ["roblox-best-practices"],
     "query": "Review script ini, apakah ada masalah?",
-    "input_files": ["fixtures/correct-but-odd.lua"],
+    "input_files": ["fixtures/correct-but-odd.luau"],
     "gap_it_covers": "Over-firing reviews erode trust faster than missed findings.",
     "expected_behavior": [
       "Does NOT flag the periodic `while task.wait(N)` autosave loop as polling",

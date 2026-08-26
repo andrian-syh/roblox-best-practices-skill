@@ -10,13 +10,19 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 **Dominant risk:** cheating, and latency making honest hits feel wrong.
 **Server/client:** the client shows feedback immediately; the server decides whether damage happened.
 **Assembly:**
-1. Client sends an **intent** (fired, swung, with a timestamp and target hint), never a damage number.
-2. Server validates in cheap-to-expensive order: type and shape → fire-rate and cooldown → alive and in-state → range and line of sight → ammo.
-3. Apply a **lag allowance** on the spatial check rather than an exact server raycast; an exact check feels broken at 150 ms ping.
+1. Client sends an **intent** (fired, swung, with a timestamp, target hint, and alleged muzzle origin), never a damage number or confirmed hit.
+2. Server validates in cheap-to-expensive order:
+   - Type and shape of remote arguments.
+   - Fire-rate and cooldown check via `os.clock()`.
+   - Character state via server-authoritative state machine (alive, not stunned, not in recovery).
+   - **Muzzle/origin proximity check:** verify that the claimed shot origin is close to the attacker's server-recorded position (`(origin - rootPart.Position).Magnitude <= MAX_MUZZLE_DISCREPANCY`) to prevent ghost shooting or shooting through walls.
+   - Spatial range and line of sight from the verified origin, with a bounded lag allowance.
+   - Ammo and resource consumption.
+3. Apply a **bounded lag allowance** (e.g. rewind window capped at 300–500 ms) on the spatial check rather than an exact server raycast; an exact check feels broken at 150 ms ping, while an unbounded rewind invites lag-switch exploits.
 4. Server computes damage from server-side stats, applies it, and replicates the result.
 5. Kill credit and rewards are computed once, server-side.
-**Never:** accept a client-sent damage value · trust client-reported positions for validation (only for display) · run the damage formula on the client.
-**Failure modes:** validating against the attacker's *current* position when the shot was fired hundreds of milliseconds ago. Either rewind to the fire timestamp or widen the tolerance deliberately. Pick one, and give the tolerance a named Configuration constant rather than a literal, so the value documents itself and stays out of comments.
+**Never:** accept a client-sent damage value · trust client-reported positions or raycast origins without server proximity checks · run the damage formula on the client · allow unbounded rewinds for high-ping clients.
+**Failure modes:** validating against the attacker's *current* position when the shot was fired hundreds of milliseconds ago. Either rewind to the fire timestamp (capped) or widen the tolerance deliberately. Pick one, and give the tolerance a named Configuration constant rather than a literal, so the value documents itself and stays out of comments.
 **Under Server Authority:** movement is engine-validated, so the position inputs are trustworthy and tolerances can shrink. Without it, the manual plausibility checks in [security.md](../security.md#movement--physics-sanity-checks) remain the baseline.
 **Verify:** test at 100–200 ms simulated latency with multiple clients; confirm honest hits register and impossible ones do not.
 **Deeper:** [genres.md](../genres.md#combat--fps--pvp)
@@ -27,8 +33,8 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 **Dominant risk:** client-side cooldowns being the only enforcement.
 **Server/client:** the client predicts the animation and VFX; the server owns the cooldown clock and the effect.
 **Assembly:**
-1. Keep per-player, per-ability cooldown state **server-side**, keyed by player and cleared in `PlayerRemoving`.
-2. Client sends a cast intent; the server checks the cooldown, resource cost, and state (alive, not stunned) before applying anything.
+1. Model combat state as a **server-authoritative state machine** (`Idle`, `Attacking`, `Stunned`, `Blocking`, `Recovery`) and keep per-player, per-ability cooldown state **server-side**, keyed by player and cleared in `PlayerRemoving`.
+2. Client sends a cast intent; the server checks the cooldown, resource cost, and state machine (alive, not stunned, not in recovery) before applying anything.
 3. Start the client-side visual immediately for feel; reconcile quietly if the server rejects it.
 4. Buffer at most **one** queued input. Deeper queues become macro exploits.
 5. Store cooldown timestamps with `os.clock()` for in-session durations; persist only what must survive a rejoin, using `os.time()`.
@@ -59,13 +65,13 @@ Blueprints for systems where fairness and server CPU collide. Every recipe here 
 **Dominant risk:** server CPU. This is the most common cause of a server that degrades as the round progresses.
 **Server/client:** the server owns AI decisions; clients interpolate movement from minimal replicated state.
 **Assembly:**
-1. **One** staggered update system iterates all entities. Never a script per NPC.
+1. **One** staggered update system iterates all entities (or a central Parallel Luau Actor coordinator for heavy batch raycasting/spatial AI). Never an uncoordinated script per NPC.
 2. Throttle deliberately: AI targeting and proximity scans run at 5–10 Hz, not 60. Stagger work across frames (`i % N == frame % N`).
 3. Pool NPC models and any projectiles they spawn.
 4. Compute paths on a **path-change event**, share the waypoint list across every unit following it, and never recompute per unit per frame.
 5. Downgrade or disable AI beyond a player radius; despawn entities nobody can see.
-6. Replicate path id plus a progress scalar rather than per-frame CFrames.
+6. Replicate path id plus a progress scalar rather than per-frame CFrames; when applying server-side kinematic transforms in bulk, batch in the serial phase (e.g. `workspace:BulkMoveTo`) rather than setting individual CFrames.
 **Never:** a `while true` loop per entity · a pathfinding request per entity per tick · unbounded spawning with no live cap.
 **Failure modes:** entity count growing until the server stalls. Enforce a hard concurrent cap and make the spawner refuse rather than queue indefinitely.
 **Verify:** run at the maximum intended entity count and check server frame time and the Physics/Scripts split in the CPU breakdown ([performance.md](../performance.md#measurement-never-optimize-blind)).
-**Deeper:** [genres.md](../genres.md#tower-defense--wave-defense)
+**Deeper:** [performance.md](../performance.md#cpu) · [genres.md](../genres.md#tower-defense--wave-defense)

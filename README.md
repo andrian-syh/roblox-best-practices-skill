@@ -228,6 +228,7 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [runtime-rules.md](roblox-best-practices/references/runtime-rules.md) | The seven runtime rules in full, each with its scope |
 | [false-positives.md](roblox-best-practices/references/false-positives.md) | Severity taxonomy and the catalog of what not to flag |
 | [review-checklist.md](roblox-best-practices/references/review-checklist.md) | The completion gate before any task is called done |
+| [evaluation-matrix.md](roblox-best-practices/references/evaluation-matrix.md) | 1–5 scoring rubric for system health and architectural maturity audits |
 | [api-currency.md](roblox-best-practices/references/api-currency.md) | Dated baseline of confirmed engine and Luau APIs, and how to verify one |
 | [verification.md](roblox-best-practices/references/verification.md) | Proving a change works, and the command-bar VM pitfall |
 | [studio-mcp.md](roblox-best-practices/references/studio-mcp.md) | Operating a Studio MCP connection safely and without wasting tokens |
