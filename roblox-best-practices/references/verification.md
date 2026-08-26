@@ -27,7 +27,7 @@ Confirm availability in the target environment before relying on these ([api-cur
 
 ## Rojo / filesystem environments
 
-- Pure-logic modules (no Instances, no services — see [ui-crossplatform.md](verification.md#unit-testable-architecture-framework-agnostic)) run under the Luau CLI or lune in CI; match the project's runner (TestEZ, Jest-Lua, plain asserts) if one exists.
+- Pure-logic modules (no Instances, no services — see [unit-testable architecture](#unit-testable-architecture-framework-agnostic)) run under the Luau CLI or lune in CI; match the project's runner (TestEZ, Jest-Lua, plain asserts) if one exists.
 - CI passing does not exempt engine-touching paths from an in-Studio session — sync the change in and drive the flow there too.
 
 ## Review verification discipline (trace before flag)
@@ -49,6 +49,25 @@ Once a finding passes all four steps, assign it a severity — **Blocker**, **Co
 - **Network conditions:** Advanced Network Simulation (Studio Settings → Network) — test remotes and prediction at 100–200 ms latency with loss *before* shipping; it always works on localhost.
 - **Profiling:** MicroProfiler/ScriptProfiler workflow and memory-leak watching per [performance.md](performance.md#measurement-never-optimize-blind).
 - **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall below.
+
+## Performance & memory verification (proof of performance)
+
+Before closing any performance-sensitive system or optimization pass, validate against four concrete test gates:
+
+1. **Respawn Memory Leak Audit (20x Respawn Test):**
+   - Playtest in Studio and record baseline `LuaGarbageCollector`, `Signals`, and `Instances` in Developer Console (`F9`).
+   - Force character respawn / re-entry 20 times consecutively.
+   - Inspect **Scene Analysis → Unparented Instances** and **Animation Memory**: active signal counts and Lua heap must return to baseline after garbage collection, with zero unparented model references leaking.
+2. **Replication & Data Ping Saturation Test:**
+   - Run a simulated combat / interaction scene with maximum players and entities under Studio Network Simulation (100–150 ms latency).
+   - Check `Shift + F3` (Debug Stats) and Developer Console Server Stats: **Data Ping must not blow out significantly beyond Network Ping**. If Data Ping spikes, throttle remote firing rates or compress payloads into binary buffers.
+3. **Full-Load Baseline Frame Test (Device Emulator):**
+   - Test with maximum realistic entity counts (100+ entities/projectiles).
+   - In Script Profiler, record 10 seconds under full load: no single function may exceed **`Self Time > 5%`**.
+   - In Viewport Render Stats (`Shift + F2`), verify **Draw Calls <= 1,000** and **Triangles <= 1,000,000**.
+4. **Thermal & Sustained Play Test:**
+   - Execute a 10–15 minute continuous active session on a physical test device (or observe frame time stability window).
+   - Verify that frame pacing remains stable at 60 FPS without sustained degradation over time.
 
 ## Unit-testable architecture (framework-agnostic)
 

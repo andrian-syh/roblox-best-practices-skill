@@ -69,15 +69,16 @@ end
 
 Assume a wide spread of hardware and design for the bottom of it.
 
-| Tier | Reality |
-|---|---|
-| **Low** | Older phones and tablets. Thermal-throttles under sustained load, tight memory, weak fill rate. **This is the baseline.** |
-| **Mid** | Recent phones, low-end laptops, older consoles. |
-| **High** | Desktops and current consoles. |
+| Tier | Reality & Demographic | Hard Budgets & Ceilings |
+|---|---|---|
+| **Low** | **~65% of players are on Android** (~60% have 2–4 GB RAM, ~35% have 4–8 GB). 50%+ player base scores 10,000–20,000 on Passmark. Susceptible to **Error 292 (OOM)**. Thermal-throttles under sustained load. **This is the baseline.** | Draw calls <= 1,000; Triangles <= 1,000,000; Client RAM <= 400–500 MB |
+| **Mid** | Recent phones, low-end laptops, older consoles. | Draw calls <= 2,000; Triangles <= 2,500,000 |
+| **High** | Desktops and current consoles. | Scaling headroom for post-fx & uncapped FPS |
 
 - **Pick a named baseline device and test on it throughout development**, watching frame rate and memory. This is Roblox's own recommendation, not a nicety.
 - **Published budgets for a baseline device: under 1,000 draw calls and under 1,000,000 triangles.** Use `Shift+F2` debug stats to see where a scene stands.
 - **Build for low and scale up.** Adding effects for strong devices is easy; discovering the game is unplayable on a phone after launch is not.
+- **Thermal throttling testing:** run a continuous 10–15 minute active gameplay session on hardware. A steady decline in FPS over time indicates CPU/GPU downclocking due to heat; isolate sustained hot paths in the MicroProfiler.
 - **Never infer power from input type.** `UserInputService.TouchEnabled` says a touchscreen exists, not that the device is weak, and the reverse is equally wrong. The existing rule against branching on it for input ([ui-crossplatform.md](ui-crossplatform.md#cross-platform-ux)) applies here for the same reason.
 - Infer capability from **observed frame time**, which is the only honest signal available at runtime, and let the player override it.
 - Test with a full server at the maximum realistic entity and player count, not with two testers in an empty place.
@@ -96,7 +97,7 @@ Roblox ships settings that buy more headroom than most script optimization, and 
 | `StreamingIntegrityMode` | `PauseOutsideLoadedArea` | Balanced integrity |
 | `StreamingMinRadius` | `64` (default) | Maximizes scaling headroom for low-end devices |
 | `StreamingTargetRadius` | `1024` (default) | Balances visibility against memory |
-| `StreamOutBehavior` | `Opportunistic` | Aggressive client-side collection, lower memory |
+| `StreamOutBehavior` | `Opportunistic` / `LowMemory` | Aggressive client-side collection, lower memory |
 
 **Frustum streaming** (`Player.FrustumStreaming`, with the `FrustumStreamingMode` enum) streams by what the camera can see rather than by radius alone, which cuts loaded content sharply in experiences with a mostly forward-facing camera. It is **[Undocumented]** ([api-currency.md](api-currency.md#engine)) — shipped, with no reference page to read, so its exact enum values come from a probe rather than from docs — and it trades against fast camera turns: content behind the player may need to stream in when they spin. Test that case on a low-end device before enabling it, and keep gameplay-critical anchors persistent regardless.
 
@@ -104,9 +105,12 @@ Roblox ships settings that buy more headroom than most script optimization, and 
 
 **Asset and rendering choices that cost nothing at runtime:**
 
-- **Avoid partial transparency.** Use `0` or `1`, never a value in between, since partial transparency forces overdraw.
+- **GPU Texture Memory is Pixel-Bound, not Disk-Bound:** Roblox transcodes all images to internal GPU formats; disk compression and color profiles do **not** reduce GPU memory usage. A 1024x1024 texture consumes **4x the GPU memory** of a 512x512 texture. Cap environmental textures at <= 512x512, small props at <= 256x256, and bundle 2D UI into *Sprite Sheets* (`ImageRectOffset` / `ImageRectSize`).
+- **GPU Draw Call Instancing:** the engine batches identical meshes into 1 draw call **only when they share the same Asset ID**, identical `SurfaceAppearance`, or identical material/texture. Importing an entire scene as one piece creates unique asset IDs and destroys instancing; import assets once as Packages and duplicate them in Studio.
+- **Avoid Layered Transparency Overdraw:** placing multiple semi-transparent parts (glass, foliage alpha masks, layered particle emitters) in front of each other forces the GPU to redraw overlapping pixels repeatedly (hundreds of thousands of overdrawn pixels). Use transparency `0` or `1` where possible, and disable `BasePart.CastShadow` on decorative foliage.
 - **Prefer built-in materials to custom textures**, which conserves memory directly.
 - **Reuse meshes and textures** by resizing and rotating rather than importing near-duplicates, and use packages so the same asset does not enter the place under several IDs.
+- **Restrain `ContentProvider:PreloadAsync()`:** only preload opening UI, menu backgrounds, and the initial spawn area. Preloading the entire `Workspace` inflates join times and drives away mobile players. Enable **"Print Join Size Breakdown"** in Network Studio Settings to audit large replicated assets.
 - **Keep client-unnecessary assets in `ServerStorage`, not `ReplicatedStorage`** — anything in ReplicatedStorage is downloaded and held by every client.
 
 ## The degradation ladder
@@ -137,7 +141,11 @@ Measuring and adjusting at runtime beats a fixed setting, provided it is done wi
 
 Server cost is shared, but bandwidth is paid per client, and weak devices usually sit on weak connections.
 
-- Budget replication per player, not per server: fifty players each receiving a per-frame position stream is fifty streams.
+- Budget replication per player, not per server: fifty players each receiving a per-frame position stream is fifty streams. Target <= 30–50 KB/s per client.
+- **Diagnose Network Ping vs Data Ping (`Shift+F3` / Dev Console):**
+  - *Network Ping:* physical transmission round-trip time (geography).
+  - *Data Ping:* round-trip time through the replication system, queues, and TCP-like retransmissions.
+  - If **Data Ping is significantly higher than Network Ping**, the replication queues are congested; throttle remote invocations or compress payloads.
 - Prefer free replication (attributes, tags, property replication) over custom remotes for state clients merely display ([performance.md](performance.md#network)).
 - Send deltas rather than whole states, batch into one payload per tick, and use `UnreliableRemoteEvent` for loss-tolerant high-frequency data.
 - For bulk or high-frequency numeric data, `buffer` serialization is dramatically smaller than tables of numbers.
@@ -146,13 +154,13 @@ Server cost is shared, but bandwidth is paid per client, and weak devices usuall
 
 ## Memory on low-end devices
 
-Memory is the most common cause of a mobile crash, and it fails hard rather than degrading. Low-end devices have severe limits and are genuinely susceptible to out-of-memory exits, so memory is monitored alongside frame rate from the start rather than investigated after reports arrive.
+Memory is the most common cause of a mobile crash, and it fails hard rather than degrading (Error 292). Low-end devices have severe limits and are genuinely susceptible to out-of-memory exits, so memory is monitored alongside frame rate from the start rather than investigated after reports arrive.
 
 Ordered by how quickly each pushes a low-end device over:
 
-1. **Textures** — resolution and count. Reuse asset IDs, since identical IDs share memory, and prefer built-in materials.
+1. **Textures** — resolution and count. Pixel count dictates GPU RAM. Reuse asset IDs, since identical IDs share memory, and prefer built-in materials.
 2. **Avatar accessories and layered clothing** — dominant in social and hangout experiences. SLIM avatars are the engine's answer here; cap simultaneously loaded avatars where SLIM does not apply.
-3. **Instance count** — every part carries overhead even when idle and anchored. Streaming with `StreamOutBehavior = Opportunistic` reclaims aggressively.
+3. **Instance count** — every part carries overhead even when idle and anchored. Streaming with `StreamOutBehavior = LowMemory` or `Opportunistic` reclaims aggressively.
 4. **Luau heap** — module-level tables keyed by player or instance are the usual leak ([performance.md](performance.md#memory)).
 
 Watch the trend over a long session rather than a snapshot, and on real hardware rather than the emulator: the Developer Console memory view, `debug.setmemorycategory` for per-system attribution, and `gcinfo()` logged periodically for a leak trend line.

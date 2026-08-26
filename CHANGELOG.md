@@ -2,13 +2,25 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.18.0] - 2026-08-26
+
+**Adds official Roblox Studio diagnostic scopes, Scene Analysis suite, low-end hardware baseline hardening (anti-OOM Error 292), and structured proof-of-performance verification protocols.**
+
+### Added
+- **Official MicroProfiler Engine Scopes (`references/performance.md`):** Complete diagnostic mapping for 6 core engine scopes (`updateInvalidatedFastClusters`, `stepHumanoid`, `stepAnimation`, `ProcessPackets`, `ShadowMapSystem`, `physicsStepped`) with warning thresholds and concrete architectural mitigations.
+- **Studio Scene Analysis & Leak Detection (`references/performance.md`):** Comprehensive procedures for using the Studio Scene Analysis tool (`Window` > `Performance Summary` > `Scene Analysis`) and `SceneAnalysisService` to detect unparented instance leaks, animation memory churn, and render pass triangle breakdowns.
+- **Hardware Baseline Hardening for Low-End Devices (`references/device-performance.md`):** Defined concrete budgets for the ~65% Android demographic (Draw calls <= 1,000, Triangles <= 1,000,000, Client RAM <= 400–500 MB) to prevent out-of-memory crashes (Error 292), along with 10–15 min continuous thermal throttling tests.
+- **GPU Texture Memory Physics & Draw Call Instancing (`references/device-performance.md`):** Codified that texture GPU RAM is strictly pixel-bound (1024x1024 = 4x the RAM of 512x512, independent of disk compression) and established single-package asset deduplication for automatic 1-draw-call GPU instancing.
+- **Client-Side Tweening Mandate (`references/performance.md` & `references/review-checklist.md`):** Explicitly banned server-side `TweenService` for part movements (which causes 60 Hz per-client replication floods) in favor of client-side tween execution and server target replication.
+- **Proof-of-Performance Verification Protocols (`references/verification.md`):** Added 4-step test gates (20x Respawn Memory Leak Audit, Data Ping Saturation Check, Full-Load Baseline Frame Test, and Sustained Thermal Test).
+
 ## [1.17.2] - 2026-08-26
 
 **Adds the System Health & Architecture Evaluation Matrix, strengthens Server-Authoritative Combat security, and formalizes Parallel Luau concurrency patterns.**
 
 ### Added
 - **System Health & Architecture Evaluation Matrix (`references/evaluation-matrix.md`):** An objective 1–5 scoring rubric across six core pillars (Security & Server Authority, Memory & Lifecycle, CPU & Performance Budget, Network & Replication, Data Safety & Persistence, Code Structure & Maintainability) designed for developers and AI to audit systems under development in Roblox Studio.
-- **Parallel Luau & Actor Model Architecture (`references/performance.md`):** Comprehensive concurrency guide detailing thread safety classifications (`ReadParallel` vs `Unsafe`), the 5-step Parallel Compute $\rightarrow$ Batch Serial Write execution pattern (`workspace:BulkMoveTo` in serial phase), and anti-pattern mitigations against *chatty sync/desync* and *thread contention*.
+- **Parallel Luau & Actor Model Architecture (`references/performance.md`):** Comprehensive concurrency guide detailing thread safety classifications (`ReadParallel` vs `Unsafe`), the 5-step Parallel Compute → Batch Serial Write execution pattern (`workspace:BulkMoveTo` in serial phase), and anti-pattern mitigations against *chatty sync/desync* and *thread contention*.
 - **Muzzle / Raycast Origin Verification (`references/cases/combat.md` & `references/security.md`):** Added explicit validation of shot origins against attacker server character positions (`(origin - rootPart.Position).Magnitude <= MAX_MUZZLE_DISCREPANCY`) to prevent ghost shooting and shoot-through-walls exploits.
 - **Compiler Directives & Subtyping Guidance (`references/luau-language.md`):** Added `--!optimize 2` alongside `--!native` / `@native` for compute-heavy math/simulation, and reinforced precise optional dictionary typing (`{ [K]: V? }`).
 

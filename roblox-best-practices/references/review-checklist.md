@@ -19,10 +19,11 @@ Before finishing any Luau code, verify:
 - [ ] **Every Documentation Comment** passes **both** tests: implementation-agnostic (names no API, algorithm, collaborator, or internal structure) and free of volatile content (no numbers, tunable names, or renameable feature/system names); where a detail was unavoidable it was stated at the most general level that stays true after the body changes
 - [ ] No prose comments inside any delivered body (self-documenting names instead; contract-level why lives in the block above); every description ≤ 3 lines and ≤ 250 characters; no pre-existing comment was deleted
 - [ ] `--!strict` present only where the user asked or the project already uses it (never added unbidden); no deprecated APIs (discouraged-but-functional APIs are not violations)
-- [ ] All connections have an owner and a teardown path; no leaked Instances
+- [ ] All connections have an owner and a teardown path; no leaked Instances or unparented model references (passes the 20x respawn leak audit)
 - [ ] No allocation or Instance-tree lookup inside hot loops; nothing polled that could be event-driven
+- [ ] Visual animations and part motions use client-side `TweenService` or `Motor6D.Transform`; no server-side tweening of moving parts
 - [ ] Per-player state that others should not see went to its owner through a targeted remote, not an attribute or replicated property (attributes reach every client)
-- [ ] Any performance claim rests on a measurement, not an assumption: the cheaper guard runs before the expensive one, and nothing was called "optimized" without a before/after number
+- [ ] Any performance claim rests on a measurement, not an assumption: the cheaper guard runs before the expensive one, and nothing was called "optimized" without a before/after number; scene fits inside baseline device budgets (Draw calls <= 1,000, Triangles <= 1,000,000)
 - [ ] Nothing was hand-written that the project, the Luau standard library, or an engine API already provides; no wrapper or abstraction added without a caller
 - [ ] **Everything the user asked for was delivered in full** — brevity trimmed ceremony, never capability, and no requested behavior was silently dropped as "not needed"
 - [ ] Brevity cost no readability: one statement per line, descriptive names kept, blank lines and section headers intact, no compressed one-liners a reader must decode

@@ -64,6 +64,11 @@ When two correct designs compete, pick by order of magnitude rather than instinc
 - **Use the right primitives:** `vector`/`Vector3` math over per-component arithmetic; `buffer` for binary data and large numeric arrays; `table.create(n)` when the final size is known; `table.clear()` to reuse tables instead of reallocating.
 - **String building:** collect into a table and `table.concat`, or use interpolation backticks; never `..` in a loop.
 - **Native codegen & compiler optimization:** for genuinely compute-heavy ModuleScripts (procedural generation, pathfinding math, raycast batches), add `--!native` and `--!optimize 2` (or the `@native` function attribute for specific hot functions). Don't scatter `--!native` everywhere — native code generation increases code size and memory footprint.
+- **Client-side tweening mandate:** **never run `TweenService` on the server to animate part positions or visuals.** Server-side tweening replicates the interpolated property to every client at 60 Hz, creating massive network traffic and jittery movement under latency. The server sets or replicates the target state; the client executes the tween locally.
+- **FastCluster & Avatar Hierarchy Stability:**
+  - For procedural animations, update `Motor6D.Transform` instead of `JointInstance.C0` or `JointInstance.C1` to avoid triggering full FastCluster rebuilds every frame.
+  - Skinned MeshParts in a Model without a Humanoid use spatial FastClusters, which rebuild whenever the parts move; embedding a `Humanoid` overrides this behavior and forces a single, unified FastCluster for the Model.
+  - Avoid adding, removing, or re-scaling parts inside avatar hierarchies at runtime during gameplay.
 - **Parallel Luau & Actor Model:** reserved for compute-heavy, embarrassingly-parallel workloads (raycast batches, noise generation, procedural terrain/chunk calculations, heavy spatial AI).
   - **Hierarchy prerequisite:** the running script **must be a descendant of an `Actor`** instance (or bind via `Actor:BindToMessageParallel`) for multi-threading to take effect; calling `task.desynchronize()` in a regular script outside an Actor does nothing useful.
   - **Thread-safety split:**
@@ -95,6 +100,8 @@ Contact detection is where a working feature turns into a lagging server, and th
 ## Memory
 
 - **Instances:** `Destroy()` everything you spawn when done. Destroying an Instance disconnects its connections and unparents descendants — it is the cheapest cleanup primitive. Never just `.Parent = nil` something you mean to discard.
+- **Player & Character Lifecycle:** the engine **does not** automatically destroy `Player` and character models when a user disconnects if active connections still reference them. Configure `Workspace.PlayerCharacterDestroyBehavior` or clean them up explicitly with `task.defer(character.Destroy, character)` on `PlayerRemoving`.
+- **Server Memory Ceiling:** total server memory scales as `6.25 GiB + (100 MiB * max_connected_players)`. Servers allocate memory when players join but **do not deallocate it when players leave**. Keep total server memory consumption **below 50%** of capacity to prevent server crashes.
 - **Connections:** every `:Connect()` whose owner outlives the connected object leaks. Patterns:
   - Per-player tables of connections, disconnected in `PlayerRemoving`.
   - Connections on an Instance you own → let `Destroy()` handle them.
@@ -131,9 +138,37 @@ Rendering cost is paid by the **client**; physics simulation of the same parts i
 
 ## Measurement (never optimize blind)
 
-- **MicroProfiler** (`Ctrl+F6`) for frame-time hotspots; wrap suspect code in `debug.profilebegin/profileend`.
-- **ScriptProfiler** and **Developer Console → Memory** for scripts and leaks (watch `Instances` and `LuaHeap` trend over a long session).
-- **Memory attribution:** `debug.setmemorycategory("SystemName")` at the top of a system's thread tags its subsequent allocations as a distinct category in the Developer Console memory view (`debug.resetmemorycategory()` restores the default) — it turns "LuaHeap is growing" into "the pet system is growing". `gcinfo()` (current heap in KB) logged periodically gives leak trend lines in telemetry.
+- **Script Profiler (Studio & In-Game Dev Console):**
+  - Run sampling for 10 seconds under realistic entity/player load.
+  - Analyze the **Call Tree** and **Flame Graph** views.
+  - Sort by **Self Time %** (the time spent exclusively in that function, excluding child calls). Any function with **`Self Time > 5%`** or **`Total Time > 15%`** is a primary optimization candidate.
+  - Inspect **Rate (Hz)** / Call Count: functions running at 60 Hz that could be event-driven or throttled to 5–10 Hz should be rescheduled.
+- **MicroProfiler Official Engine Scopes (`Ctrl+F6` / HTML Dump):**
+  - Identify frames exceeding the 16.67 ms (60 FPS) bar and match engine scope labels:
+
+  | Engine Scope / Tag | Computation Source | Warning Threshold | Optimal Mitigation |
+  |---|---|---|---|
+  | `updateInvalidatedFastClusters` | Avatar / Model hierarchy mutation | > 4 ms per frame | Use `Motor6D.Transform`, embed `Humanoid` in moving skinned models |
+  | `stepHumanoid` | Humanoid physics & state machine | > 2–3 ms per frame | Disable unused states via `SetStateEnabled`, use `AnimationController` for static NPCs |
+  | `stepAnimation` | Animator evaluation & playback | > 2 ms per frame | Play NPC animations on the client; server only replicates trigger states |
+  | `ProcessPackets` / `Allocate Bandwidth` | Inbound/outbound replication packets | > 3 ms per frame | Throttle network payload, switch cosmetic effects to `UnreliableRemoteEvent` |
+  | `ShadowMapSystem` / `LightGridCPU` | Lighting voxel updates & shadow map | > 5 ms per frame | Disable `CastShadow` on non-essential parts, reduce light radius/angles |
+  | `physicsStepped` / `worldStep` | Physics contact resolution & steps | > 4–6 ms per frame | Anchor static parts, use `Adaptive` physics stepping instead of `Fixed` |
+
+- **Scene Analysis Tool (`Window` > `Performance Summary` > `Scene Analysis`):**
+  - Use the treemap views and programmatic `SceneAnalysisService` during playtest sessions:
+    - **`Unparented Instances`:** detects instances referenced by Luau closures/tables that are no longer parented to the DataModel (identifies memory leaks).
+    - **`Animation Memory`:** displays loaded animation clip allocations (the top leak source in production).
+    - **`Script Memory`:** per-script Luau VM heap allocations.
+    - **`Triangle Composition`:** breakdown of triangles and draw calls by render pass (Shadows, Opaque, Transparent, UI).
+- **Developer Console (`F9`) & Memory Tags:**
+  - Monitor `LuaGarbageCollector` / `LuaHeap` (Luau allocations), `Signals` (active event listeners), `Instances`, and `PhysicsParts`.
+  - Use `debug.setmemorycategory("SystemName")` at the root of a subsystem to isolate memory growth in Developer Console.
+- **Debug Stats Overlays (`Shift + Ctrl + F1` to `F5`):**
+  - `Shift + Ctrl + F1`: Summary (FPS, Ping, GPU frame time).
+  - `Shift + Ctrl + F2`: Render Stats (Draw scene calls, triangle counts).
+  - `Shift + Ctrl + F3`: Physics Stats (`MovingPrimitivesCount`, Data Ping).
+  - `Shift + Ctrl + F5`: Memory Breakdown.
 - **Analytics → Client CPU Time Breakdown** attributes client frame cost across **Scripts, Networking, Physics, Animation, and Miscellaneous** from live sessions. Use it to decide *where* to optimize before touching code: a physics-bound experience is not fixed by micro-optimizing Luau.
 - **Studio's Advanced Network Simulation** to test under packet loss/latency before shipping netcode.
 - Structured logging (`LogService` `Info`/`Warn`/`Error` methods where available) with contextual data instead of bare `print` spam.
