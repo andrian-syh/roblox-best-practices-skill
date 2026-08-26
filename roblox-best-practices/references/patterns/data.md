@@ -8,6 +8,7 @@ Who owns each fact, how it is persisted, and what happens when a call finally fa
 - [Data Persistence](#data-persistence)
 - [Failure Policy (what happens after the last retry)](#failure-policy-what-happens-after-the-last-retry)
 - [Serialized Operations (per-owner locks)](#serialized-operations-per-owner-locks)
+- [Deleting data on request (RTBF)](#deleting-data-on-request-rtbf)
 
 ## One Owner Per Fact
 
@@ -23,10 +24,13 @@ The test: **if these two copies disagreed right now, which one is right?** If th
 
 ## Data Persistence
 
-- **`UpdateAsync` over `SetAsync`** — atomic read-modify-write prevents lost updates from multiple servers.
+- **`UpdateAsync` over `SetAsync`** — atomic read-modify-write prevents lost updates from multiple servers. **Its transform callback may not yield**: no `task.wait`, no nested async call, nothing that could suspend. Compute the new value from what you were handed and return it; anything that needs a yield happens before the call.
+- **A read is cached for four seconds.** `GetAsync` serves that cache, so a read taken right after a write can show the old value and a "did my save land?" check can be answered by the very cache that makes it wrong. Pass `DataStoreGetOptions.UseCache = false` when the answer is authoritative — verifying a failed write, deciding a refund, or reconciling a duplicate grant ([limits-budgets.md](../limits-budgets.md#data-stores)).
 - **Retry with exponential backoff** around every DataStore call (`pcall` + `2^attempt` delay, 3–5 attempts).
 - **Save triggers:** `PlayerRemoving` (always), periodic autosave (2–5 min), `game:BindToClose` (iterate remaining players synchronously — you get 30 s), and `game.ServerRestartScheduled` where available (fires before scheduled restarts; flush early).
 - **Versioned store names** (`PlayerData_v2`) + a migration function on load, so schema changes never corrupt old data.
+- **Fewer stores, bigger objects.** One key holding a player's whole profile beats several stores holding pieces of it: the 4 MB ceiling is generous, one write keeps the pieces consistent, and versioning restores a coherent snapshot rather than a mix of eras. Organize with **key prefixes** and `ListKeysAsync` rather than legacy scopes.
+- **Read several keys in one call** with `DataStore:BatchGetAsync` where a flow genuinely needs multiple keys, instead of a loop of `GetAsync` calls that each pay their own round trip and budget.
 - **Version history is a built-in backup.** DataStore retains prior versions of each key: `DataStore:ListVersionsAsync` enumerates them and `DataStore:GetVersionAsync` reads a specific one, so a corruption or dupe report can be investigated and rolled back without a bespoke backup system. `ListKeysAsync` enumerates keys for migration/audit sweeps; the `DataStoreKeyInfo` returned alongside `GetAsync`/`UpdateAsync` carries version ids and metadata. These are diagnostic/read tools — the live save path stays `UpdateAsync`.
 - **Session cache:** load once on join into a server-side table; all gameplay reads/writes hit the cache; DataStore only on save triggers. Never read DataStores during gameplay.
 - **Session locking** (write a lock key with server id + timestamp, or use MemoryStore) if item duplication via server-hopping matters for your economy.
@@ -50,8 +54,18 @@ Three classes cover almost everything:
 - **Say which class you chose.** Name it where the reader needs it: in the function's Documentation Comment (the block above carries non-obvious external constraints) or in a well-named helper such as `loadWithOrderedDataStore` — the body itself carries no note ([section-layout.md](../section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - **Never swallow silently.** A `pcall` whose failure branch does nothing hides the outage that caused it. Log with context even when the policy is to continue ([luau-language.md](../luau-language.md#error-handling)).
 - **Fire independent calls concurrently.** The engine batches web calls that start within a short window into far fewer HTTP requests on its own, so twenty product lookups started together can cost one or two requests instead of twenty. Start them with `task.spawn` and collect the results rather than awaiting each in turn; each still carries its own `pcall`. Sequential awaits defeat the batching entirely, and nothing here is opted into or configured.
+- **Ask the budget instead of guessing.** `DataStoreService:GetRequestBudgetForRequestType()` returns the remaining allowance for a request type, which turns self-throttling into arithmetic rather than superstition. Two ceilings apply at once, per experience and per server, and the per-server one usually bites first ([limits-budgets.md](../limits-budgets.md#data-stores)).
+- **Watch it in production.** The Creator Hub observability dashboard charts storage against the limit, requests by API and status, and quota usage per request category over 30 days. Throttling shows up there as status codes before it shows up as a support thread.
 - **Bound the retries.** Retrying forever converts a transient outage into a hung session and burns the request budget everyone else needs ([limits-budgets.md](../limits-budgets.md)).
 - **A degraded session should be visible.** The player being told "your progress could not be loaded, changes will not be saved" is vastly better than discovering it after an hour of play.
+
+## Deleting data on request (RTBF)
+
+A player can ask for their data to be deleted, and the request arrives as a Roblox message with a **30-day window** to comply. This is an obligation, not a feature, and it is designed for in advance rather than answered by hand.
+
+- **Configure deletion templates before the first request arrives**, in the Data Stores Manager or through the Open Cloud Configs API. A template is a key pattern containing a `{UserId}` token; Roblox substitutes the requesting user's id and deletes what matches.
+- **The key schema is what makes this possible.** A player's data stored under a key containing their `UserId` is trivially matchable; the same data buried inside a shared blob keyed by something else is not, and no template will find it. This is a reason to key per player even when a shared structure looks tidier.
+- **Verify on a test place with a dummy account**, and confirm on the live game that the data is actually gone before the window closes.
 
 ## Serialized Operations (per-owner locks)
 
@@ -91,4 +105,3 @@ end
 - **Rejecting is a valid outcome.** The second call returning `false` and doing nothing is correct behavior for a double-click; it does not need to be queued and replayed.
 - **This does not replace re-validation.** The lock stops two *operations* from interleaving; state can still change during a yield **inside** one operation, so post-yield checks still apply ([SKILL.md](../../SKILL.md#non-negotiable-runtime-rules) rule 7).
 - **Only where a real interleaving exists.** An operation with no yield between its check and its effect cannot interleave and needs no lock — adding one there is ceremony ([minimal-code.md](../minimal-code.md)).
-

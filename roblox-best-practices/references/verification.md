@@ -48,6 +48,7 @@ Once a finding passes all four steps, assign it a severity — **Blocker**, **Co
 - **Multi-client testing:** Studio's multi-client Team Test / Start Server+Players for anything involving replication — single-Play sessions hide every networking bug. Server-script breakpoints during Team Test where available.
 - **Network conditions:** Advanced Network Simulation (Studio Settings → Network) — test remotes and prediction at 100–200 ms latency with loss *before* shipping; it always works on localhost.
 - **Profiling:** MicroProfiler/ScriptProfiler workflow and memory-leak watching per [performance.md](performance.md#measurement-never-optimize-blind).
+- **Cloud paths need the right session.** DataStore access is off in Studio until enabled, and **secrets resolve only in live servers and Team Test** — a local playtest silently takes the failure branch of any code that reads one. Drive save, load, and purchase flows in a session where those calls actually reach the backend, and force a shutdown mid-session to test the flush path.
 - **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall below.
 
 ## Performance & memory verification (proof of performance)

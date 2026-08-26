@@ -52,5 +52,6 @@ These are repeatedly invented or misremembered. As author, verify a member you a
 | `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier` | **Real and shipped.** Undocumented, not fabricated. Never flag these |
 | `TeleportService:ReserveServer` | Deprecated — use `ReserveServerAsync`, or `TeleportOptions.ShouldReserveServer` with `TeleportAsync` |
 | `workspace.Players`, `game.CoreScriptService` | Wrong names; services come only from `game:GetService("...")` |
+| `UIFlexLayout` | **Not a class.** Flex lives on `UIListLayout` (`HorizontalFlex`/`VerticalFlex`/`ItemLineAlignment`) plus a `UIFlexItem` parented to the child that should flex ([ui-crossplatform.md](ui-crossplatform.md#layouts)) |
 | Made-up enum members (`Enum.Material.Whatever`) | Enums are closed sets — grep the enum's `.md` page instead of guessing |
 | `RunService:BindToRenderStep(...)` in server code | Client-only; server frame work belongs on `Heartbeat` |

@@ -18,7 +18,8 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 **Never:** read a DataStore during gameplay · accept a client-reported balance or progress value · return success before the write is durable.
 **Failure modes:** a failed load silently falling through to defaults, which then overwrites real data on save. Guard it: if the load failed, mark the session unsaveable and tell the player, rather than saving defaults over their history — the fail-loud class in [patterns/data.md](../patterns/data.md#failure-policy-what-happens-after-the-last-retry).
 **Budget:** 4 MB per key, 50-character keys, shared in-game/Open Cloud request budget ([limits-budgets.md](../limits-budgets.md#data-stores)).
-**Verify:** rejoin after a change, then force a shutdown mid-session; assert values survive both.
+**Verify:** rejoin after a change, then force a shutdown mid-session; assert values survive both. When checking whether a failed write landed, read with `DataStoreGetOptions.UseCache = false` — the default four-second cache will happily confirm the value you just failed to save.
+**Also design for deletion:** key player data by `UserId` so a right-to-be-forgotten template can match it ([patterns/data.md](../patterns/data.md#deleting-data-on-request-rtbf)).
 **Deeper:** [patterns/data.md](../patterns/data.md#data-persistence) · ProfileStore/ProfileService overlay: [community-libraries.md](../community-libraries.md#data-profilestore--profileservice)
 
 ## Currency and transactions

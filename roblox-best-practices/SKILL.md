@@ -10,7 +10,7 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.18.1. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 1.18.2. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -111,7 +111,7 @@ Everything below expands these; nothing below overrides them.
 - [studio-mcp.md](references/studio-mcp.md) — Studio MCP connection: which tool, what is irreversible, how not to burn tokens
 - [false-positives.md](references/false-positives.md) — reviewing code: whether a finding is real, how severe, what NOT to flag
 - [review-checklist.md](references/review-checklist.md) — **finishing any task**: the completion gate before calling work done
-- [evaluation-matrix.md](references/evaluation-matrix.md) — 1–5 scoring rubric for auditing system health, security, lifecycle, and performance in active Studio projects
+- [evaluation-matrix.md](references/evaluation-matrix.md) — auditing a live project on request: how to scope it, gather the evidence, score 1–5 across security, lifecycle, and performance, and report it honestly
 - [api-currency.md](references/api-currency.md) — whether a newer engine/Luau API is confirmed before relying on it or flagging it missing
 - [limits-budgets.md](references/limits-budgets.md) — platform ceilings: DataStore size/requests, MemoryStore, messaging, attributes, animation tracks
 

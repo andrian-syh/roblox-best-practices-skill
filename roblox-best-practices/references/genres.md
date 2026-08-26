@@ -23,7 +23,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - All currency/progress math on the server; the client only *displays*. Rebirth/prestige multipliers recomputed server-side from source data, never accepted from the client.
 - Offline/AFK progress: compute from timestamps (`os.time()` delta) on load — never from a client-reported duration.
 - Big numbers: past ~2^53 doubles lose integer precision — use a big-number representation (mantissa+exponent) for display *and* storage before you get there.
-- Autosave every 2–5 min; these games have long sessions and crashes must not erase an hour.
+- Autosave every 2–5 min; these games have long sessions and crashes must not erase an hour. Do not go tighter than hourly *thinking* it buys backups — repeated writes to one key inside a UTC hour overwrite each other permanently, so version history keeps only the last of them ([limits-budgets.md](limits-budgets.md#data-stores)).
 - Update loops for hundreds of pets/generators: one staggered Heartbeat system iterating a table ([performance.md](performance.md) throttling), never a script or `while` loop per entity.
 
 ## Tower Defense / Wave Defense
@@ -102,7 +102,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 **Dominant risk: player density & platform features.**
 
 - Avatars dominate memory/CPU: cap simultaneous loaded accessories where possible, and profile with 30+ avatars in one place — not with 2 testers.
-- Chat: `TextChatService` (never the legacy chat), channel setup server-side, filtering is automatic but *any* custom text display must go through `TextService:FilterStringAsync`.
+- Chat: `TextChatService` (never the legacy chat), channel setup server-side, filtering is automatic but *any* custom text display must go through `TextService:FilterStringAsync` — on the server, after submission, never per keystroke as the player types ([ui-crossplatform.md](ui-crossplatform.md#text-input-and-filtering)).
 - Voice/large servers: design POIs so 50–100 players spread out; density hotspots are the perf killer.
 - Matchmaking/instances: reserved servers (`TeleportAsync` with `TeleportOptions.ShouldReserveServer`; `ReserveServer` is deprecated) for private rooms; `MemoryStoreService` for cross-server presence/queues; MessagingService for announcements.
 - Emotes/animations: pooled and event-driven; never a loop per player scanning state.

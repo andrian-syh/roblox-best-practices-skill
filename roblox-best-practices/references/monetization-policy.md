@@ -47,4 +47,3 @@ Some features are legal for one player and prohibited for another (region, age).
 | `IsSubjectToChinaPolicies` | Additional China-specific compliance requirements |
 
 Genre note: gacha/lootbox-heavy designs (simulators, RPGs) must build the `ArePaidRandomItemsRestricted` branch from day one — retrofitting it after monetization ships is far more expensive.
-

@@ -30,7 +30,7 @@ Blueprints for the systems that move players through time and across servers. Th
 2. **Teleport data travels through the client and is tamperable.** Treat it as a hint; re-validate anything security-relevant on arrival, or pass a server-generated token and look the real payload up in MemoryStore.
 3. Wrap teleports in `pcall` with retry, and handle failure by returning the player to a known-good place rather than leaving them stuck.
 4. Save player data **before** teleporting; a teleport is a session end for persistence purposes.
-5. Use MemoryStore queues for cross-server matchmaking state, with the expiry and quota limits in mind.
+5. Use MemoryStore queues for cross-server matchmaking state, with the expiry and quota limits in mind. `ReadAsync` hides an item for its invisibility timeout (30 seconds by default) and `RemoveAsync` completes the handoff, so the whole match-and-remove step must fit inside that window — and must tolerate running twice if it does not ([patterns/network.md](../patterns/network.md#cross-server-communication)).
 **Never:** grant rewards or permissions based on unvalidated teleport data · teleport without a failure path · assume the destination server exists when the player arrives.
 **Failure modes:** data saved on the origin server after the teleport begins, racing the load on the destination. Save, confirm, then teleport.
 **Verify:** teleport with a forced failure injected and confirm the player lands somewhere valid with data intact.

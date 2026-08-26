@@ -17,6 +17,7 @@ Skill rules become:
 - Mutate `Profile.Data` directly as the session cache — do **not** build a second cache layer on top, and do **not** call DataStore APIs directly alongside it.
 - `Profile:Reconcile()` on load replaces manual default-filling; still version your schema for migrations.
 - `BindToClose` flushing is handled by the library — don't duplicate it.
+- **What the library does not take over:** the request budget is still the experience's, the four-second `GetAsync` cache still applies to any raw read you take alongside it, and the **right-to-be-forgotten obligation is still yours** — the profile key still has to contain the `UserId` a deletion template can match ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)).
 
 ## Networking: Packet / ByteNet / Zap / BridgeNet
 
@@ -29,6 +30,7 @@ Skill rules become:
 - **Server-side validation is still mandatory.** Type-safe deserialization ≠ trusted input: still check range, ownership, rate, and game-state in every server handler.
 - Use the library's unreliable variant for loss-tolerant high-frequency data, mirroring the `UnreliableRemoteEvent` rule.
 - Don't mix raw remotes and the library in the same feature; pick one transport per project.
+- **These libraries serialize for you**, so the raw-remote marshalling rules ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)) describe what the *engine* does, not what the library does. Read its own documentation for which types it packs; do not assume either that it fixes the mixed-table problem or that it inherits it.
 
 ## Cleanup: Trove / Maid / Janitor
 

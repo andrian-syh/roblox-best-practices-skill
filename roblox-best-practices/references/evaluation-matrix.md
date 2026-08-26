@@ -5,6 +5,8 @@ An objective 1–5 scoring rubric for developers, tech leads, and AI to audit ga
 ## Contents
 
 - [How to use this matrix](#how-to-use-this-matrix)
+- [Scoping the audit](#scoping-the-audit)
+- [Gathering evidence](#gathering-evidence)
 - [Scorecard dimensions](#scorecard-dimensions)
   - [1. Security & Server Authority](#1-security--server-authority)
   - [2. Memory & Lifecycle Management](#2-memory--lifecycle-management)
@@ -12,6 +14,7 @@ An objective 1–5 scoring rubric for developers, tech leads, and AI to audit ga
   - [4. Network & Replication Efficiency](#4-network--replication-efficiency)
   - [5. Data Safety & Persistence](#5-data-safety--persistence)
   - [6. Code Structure & Maintainability](#6-code-structure--maintainability)
+- [Turning scores into a verdict](#turning-scores-into-a-verdict)
 - [Audit report template](#audit-report-template)
 
 ## How to use this matrix
@@ -25,6 +28,39 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 - **3 — Functional Baseline (Passing):** Core invariants met; safe against honest players, event-driven cleanup, runs without runtime errors.
 - **4 — Production Ready (Robust):** Structured state machines, bounded exponential backoffs, tight payload budgets, and clean module contracts.
 - **5 — Studio Elite (Highly Optimized):** Full server-authoritative state reconciliation, parallel computation where beneficial, zero per-frame allocations, and multi-device scaling.
+
+## Scoping the audit
+
+**Score a system, not a place.** "This game is a 3" is not actionable and is usually wrong in both directions at once: the combat code can be exploitable while the data layer is excellent. One scorecard covers one system with one owner — the data layer, the combat loop, the shop, the round lifecycle.
+
+- **Ask what to audit, or state what you chose.** If the user named a system, score that. If they asked for "the project", pick the systems that carry the risk (anything touching money, saved data, or remotes first) and say which ones you covered and which you did not.
+- **Bound it before starting.** A place with two hundred scripts is not one audit. Three systems audited with evidence beat ten scored by impression.
+- **Audit what runs, not what is left over.** Disabled scripts, unused modules, and abandoned prototypes are noted in passing, never scored as if they were live.
+
+## Gathering evidence
+
+**Every score names the check behind it.** A rubric read against a hunch produces a number with the authority of a measurement and the accuracy of a guess, which is worse than no audit. Work cheapest-first: static reads answer four of the six dimensions, and only two genuinely need a session.
+
+**Static pass (no playtest needed).** In a Studio-native or MCP setup use script search and grep rather than reading whole files ([studio-mcp.md](studio-mcp.md#token-discipline)); on a filesystem project, grep the tree.
+
+| Dimension | What to look for | Where |
+|---|---|---|
+| **1. Security** | `OnServerEvent`/`OnServerInvoke` handlers and what each does before acting; `typeof` checks; a shared rate limiter or none; whether damage, currency, and cooldowns are computed server-side; secrets or loot tables in `ReplicatedStorage` | Remote handler call sites, `ServerScriptService`, `ReplicatedStorage` |
+| **2. Lifecycle** | `:Connect(` counts against teardown paths; `PlayerRemoving`/`CharacterRemoving`/`Destroying` handlers; per-player tables and whether each has a clear; a trove/maid or a bare bag | Every script that connects anything |
+| **5. Data safety** | `SetAsync` versus `UpdateAsync`; `pcall` and backoff around every store call; `BindToClose`; what happens when a load fails after its retries | The data module and every store call site |
+| **6. Structure** | Section layout; deprecated APIs (`wait`, `spawn`, `tick`, Body movers); one writer per piece of state; magic numbers; module contracts | Sampled representative scripts, not all of them |
+
+**Session pass (dimensions 3 and 4 need a running place).** These cannot be read off source, and guessing them is how an audit loses credibility. The full tooling is in [performance.md](performance.md#measurement-never-optimize-blind); the minimum that supports a score:
+
+- **A playtest at realistic load**, not an empty place with one tester. Entity counts and player counts are what make the difference visible.
+- **Frame time against 16.67 ms**, from the MicroProfiler (`Ctrl+F6` in Studio), plus which tags dominate the frames that miss.
+- **Script Profiler for 10 seconds under load**, read from the top of the Self Time list.
+- **Scene Analysis** for Unparented Instances, Script Memory, and Animation Memory — the leak evidence dimension 2 needs when the static pass looks clean but memory climbs.
+- **The 20x respawn audit** ([verification.md](verification.md#performance--memory-verification-proof-of-performance)) when lifecycle is the concern.
+- **Data Ping against Network Ping** and the MicroProfiler network view for dimension 4.
+- **Where a live game exists, the Performance Dashboard** outranks everything above: real crash rates and real memory from real devices.
+
+**When a dimension cannot be measured, it is "Not assessed", never a number.** An unaudited dimension reported as 3 is a fabrication, and it is the one an owner will act on.
 
 ---
 
@@ -102,6 +138,14 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 
 ---
 
+## Turning scores into a verdict
+
+- **A mean across six dimensions hides the thing that matters.** A place scoring 5 everywhere and **1 on Data Safety** averages to 4.3, reads as "Production Ready", and will still delete a player's progress. **The overall verdict is capped by the lowest dimension** whenever any dimension sits at 1 or 2: report the average if it helps, but the verdict is the floor, and the floor is named.
+- **A 1 or a 2 is also a finding in its own right**, and it goes through the normal severity taxonomy with a concrete failure scenario attached ([false-positives.md](false-positives.md#severity-taxonomy-use-these-three-words-everywhere)). The score says how mature; the finding says what breaks and when.
+- **Rank action items by consequence, not by dimension order.** Data loss and exploitable economy first, frame time later. Two or three items an owner will actually do beat a list of twelve.
+- **Say what you did not audit.** The systems skipped, the dimensions not assessed, and the load you tested at. An audit's honesty is what makes the next one worth running.
+- **Re-scoring is the point.** A score is only useful against a previous one, so record the date-free baseline conditions (which systems, what load, which tools) so the same audit can be run again after the fixes.
+
 ## Audit report template
 
 When performing a system audit, format the evaluation summary using this structure:
@@ -109,17 +153,22 @@ When performing a system audit, format the evaluation summary using this structu
 ```markdown
 **System Health Audit: [System Name]**
 
-| Dimension | Score (1-5) | Status | Key Findings & Recommendations |
-|---|:---:|---|---|
-| 1. Security & Server Authority | 4/5 | Robust | Origin proximity check implemented; rate limiter present. |
-| 2. Memory & Lifecycle | 5/5 | Elite | Centralized Trove cleanup; zero lingering listeners. |
-| 3. CPU & Performance Budget | 4/5 | Robust | Zero per-frame allocations; AI staggered at 10 Hz. |
-| 4. Network & Replication | 3/5 | Passing | Consider switching cosmetic VFX remotes to UnreliableRemoteEvent. |
-| 5. Data Safety & Persistence | 5/5 | Elite | UpdateAsync with fail-loud lock; schema versioned. |
-| 6. Structure & Maintainability | 4/5 | Robust | Clean 3-section layout; contracts documented. |
+| Dimension | Score | Status | Evidence | Key Findings & Recommendations |
+|---|:---:|---|---|---|
+| 1. Security & Server Authority | 4/5 | Robust | Read all 7 remote handlers | Origin proximity check present; shared rate limiter called from every handler. |
+| 2. Memory & Lifecycle | 5/5 | Elite | 20x respawn, Scene Analysis | Centralized Trove cleanup; Unparented Instances empty after GC. |
+| 3. CPU & Performance Budget | 4/5 | Robust | Script Profiler, 10 s at 40 NPCs | No function above 5% Self Time; AI staggered at 10 Hz. |
+| 4. Network & Replication | 2/5 | Fragile | MicroProfiler network view | Full inventory table replicated on every pickup. Send deltas. |
+| 5. Data Safety & Persistence | 5/5 | Elite | Read data module + forced shutdown | UpdateAsync with fail-loud session flag; schema versioned. |
+| 6. Structure & Maintainability | — | Not assessed | — | Sampled 3 of ~60 scripts; too little to score. |
 
-**Overall System Maturity:** Production Ready (Average: 4.17 / 5.0)
+**Overall System Maturity:** **Fragile** — capped by Network & Replication (2/5), not the 4.0 mean.
+
 **Priority Action Items:**
-1. [Target item 1]
-2. [Target item 2]
+1. Replicate inventory changes as deltas; the full-table send is the frame-time and bandwidth cost behind the reported stutter.
+2. [Next item, ordered by consequence]
+
+**Not audited:** the shop and matchmaking systems; structure scored on too small a sample. Tested at 12 players / 40 NPCs in Studio, not on device.
 ```
+
+The example is shaped the way an honest audit usually comes out: strong in most places, one real problem, one dimension the evidence did not support scoring, and a verdict that refuses to average the problem away.

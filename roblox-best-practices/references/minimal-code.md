@@ -90,7 +90,10 @@ The concrete payload of this file. Each left-hand entry is something agents rout
 | `ObjectValue`/`StringValue`/`IntValue` config trees | Attributes |
 | Distance-check loops for "press E to interact" | `ProximityPrompt` |
 | Custom pathfinding | `PathfindingService` |
-| Hand-positioned UI children | `UIListLayout`, `UIGridLayout`, `UIFlexLayout` with `AutomaticSize` |
+| Hand-positioned UI children | `UIListLayout` (with `UIFlexItem` for flexible children), `UIGridLayout`, `UITableLayout`, plus `AutomaticSize` |
+| A Luau loop that applies colors, corners, or hover states across many UI instances | A `StyleSheet` with `StyleRule` selectors, and `StyleQuery` for responsive and accessibility conditions ([ui-crossplatform.md](ui-crossplatform.md#the-styling-system)) |
+| A scaling border built from nine frames or several images | One image with `ScaleType = Slice` and `SliceCenter` |
+| Hand-written drag handling for a slider or a draggable panel | `UIDragDetector`, or `DragDetector` for 3D parts |
 | A bespoke Signal class | `BindableEvent`, or the signal library the project already uses |
 | Manual delayed destruction | `Debris`, or `task.delay` with a handle you can cancel |
 | Hand-written ray, box, or overlap math | `workspace:Raycast`, `Blockcast`, `Shapecast`, `GetPartBoundsInBox`, `GetPartsInPart` |
@@ -101,6 +104,9 @@ The concrete payload of this file. Each left-hand entry is something agents rout
 | A deep-copy or merge helper written from scratch | Check the project first; these almost always already exist |
 | A rate limiter written per feature | One shared limiter, called from every handler ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
 | A cross-server queue built out of a sorted map | `MemoryStoreService` queues, which are a first-class structure ([patterns/network.md](patterns/network.md#cross-server-communication)) |
+| An API key pasted into a ModuleScript, or a "hidden" config store | The secrets store via `HttpService:GetSecret` ([security.md](security.md#threat-model-assume-all-of-these-exist)) |
+| A hand-built backup system for player data | DataStore version history (`ListVersionsAsync`, `GetVersionAsync`) ([patterns/data.md](patterns/data.md#data-persistence)) |
+| A hand-rolled guess at how much request budget is left | `DataStoreService:GetRequestBudgetForRequestType()` |
 
 Availability of the newer entries is recorded in [api-currency.md](api-currency.md). If an API is not available in the target environment, fall back to the stable equivalent rather than treating the gap as licence to build a framework.
 

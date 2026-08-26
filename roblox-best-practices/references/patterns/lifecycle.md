@@ -133,4 +133,3 @@ The `Trove`/`Janitor` shape fits pooling well: one cleanup object per checkout, 
 **Pool tables, not only Instances.** The same take/reset/return shape applies to per-entity state tables in a hot system; `table.clear` resets one without reallocating ([minimal-code.md](../minimal-code.md)).
 
 Two failures specific to pooling — returning the same object twice, and using it after returning it — are in [edge-cases.md](../edge-cases.md#pooled-and-reused-objects).
-

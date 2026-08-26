@@ -149,4 +149,3 @@ loadWorldState()
 ```
 
 Full annotated templates (Script, LocalScript, ModuleScript): see [references/templates.md](templates.md).
-

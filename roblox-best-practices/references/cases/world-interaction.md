@@ -14,8 +14,9 @@ Blueprints for things players touch, build, and bring along. All three are strea
 2. Handle both existing instances (`GetTagged`) and future ones (`GetInstanceAddedSignal`), and clean up on `GetInstanceRemovedSignal` — mandatory under streaming.
 3. Per-instance tuning through **attributes** (cooldown, damage, prompt text), not config child values.
 4. Use `ProximityPrompt` for hold-to-interact rather than a distance loop; if you must check distance, do it on a throttled loop, not per frame.
-5. On the server, re-verify distance and state when the interaction fires. The client can trigger a prompt from anywhere.
-6. Debounce `Touched` handlers with a table keyed by character plus a cooldown.
+5. On the server, re-verify distance and state when the interaction fires. **An exploiter fires a `ProximityPrompt`, `ClickDetector`, or `DragDetector` from any distance, ignoring `Enabled` and `MaxActivationDistance`** — those properties shape the honest player's experience, never the security boundary ([security.md](../security.md#threat-model-assume-all-of-these-exist)).
+6. Handle prompts centrally through `ProximityPromptService` rather than a script per prompt, which is also where their appearance is customized once ([ui-crossplatform.md](../ui-crossplatform.md#interaction-objects)).
+7. Debounce `Touched` handlers with a table keyed by character plus a cooldown.
 **Never:** a script parented to every door · a `while task.wait()` proximity scan · trust that a prompt firing means the player was actually in range.
 **Failure modes:** per-instance state accumulating for objects that streamed out. The removed-signal cleanup is what prevents the leak.
 **Verify:** stream the area out and back in, and confirm behavior rebinds exactly once with no duplicate connections.
@@ -27,7 +28,7 @@ Blueprints for things players touch, build, and bring along. All three are strea
 **Dominant risk:** client-authoritative placement, and unbounded instance growth.
 **Server/client:** the client renders a **cosmetic preview**; the server validates and creates the real object.
 **Assembly:**
-1. Client sends a placement intent (item id, position, rotation). The preview is never the object.
+1. Client sends a placement intent (item id, position, rotation). The preview is never the object. A `DragDetector` makes the preview feel right across every input device, but **`RunLocally = true` replicates nothing**, so its resulting position is a client claim that comes back through the same validated remote as any other ([ui-crossplatform.md](../ui-crossplatform.md#interaction-objects)).
 2. Server validates in order: ownership of the item → plot ownership → position within plot bounds → grid/rotation legality → collision with existing objects → per-plot object cap → cost.
 3. Server creates the instance and records it in the plot's data model. The instance is a *view* of that data, not the source of truth.
 4. Persist the plot as a compact list of `{itemId, relative position, rotation}` — **relative to the plot origin** so a plot can be rebuilt anywhere.

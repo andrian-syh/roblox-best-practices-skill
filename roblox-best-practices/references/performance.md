@@ -148,7 +148,7 @@ Rendering cost is paid by the **client**; physics simulation of the same parts i
 - Minimize part count: union/mesh static decoration, but beware overly complex collision — set `CollisionFidelity` to `Box`/`Hull` for decoration.
 - `CanCollide = false`, `CanQuery = false`, `CanTouch = false` on parts that don't need them — each flag off removes work from physics/raycast broadphase.
 - Use `Model.ModelStreamingMode`/persistence deliberately; keep gameplay-critical anchors persistent.
-- UI: avoid `UIGradient`/heavy effects on elements updated every frame; prefer native styling (UICorner, UIShadow) over image assets. Reach for `StyleQuery` **[GA]** before writing a Luau branch on screen size, input device, or an accessibility setting ([ui-crossplatform.md](ui-crossplatform.md#conditional-styling-with-stylequery)).
+- UI: avoid `UIGradient`/heavy effects on elements updated every frame; prefer native styling (UICorner, UIShadow) over image assets. Reach for `StyleQuery` **[GA]** before writing a Luau branch on screen size, input device, or an accessibility setting ([ui-crossplatform.md](ui-crossplatform.md#the-styling-system)).
 
 ## Measurement (never optimize blind)
 

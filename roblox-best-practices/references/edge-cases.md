@@ -17,6 +17,8 @@ A catalog of the states Roblox code actually meets in production, grouped by wha
 - [Timing and ordering](#timing-and-ordering)
 - [Network and client input](#network-and-client-input)
 - [Data and schema](#data-and-schema)
+- [Cloud calls](#cloud-calls)
+- [UI](#ui)
 - [The finishing pass](#the-finishing-pass)
 
 ## Player lifetime
@@ -74,6 +76,7 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 
 | State | What breaks | Guard |
 |---|---|---|
+| Zero, tested with `if value then` | **`0` is truthy in Luau**, so the guard passes and the "missing value" branch never runs | Compare explicitly: `if count > 0 then`, `if value ~= nil then` ([luau-language.md](luau-language.md#values-truth-and-coercion)) |
 | Zero | Division by zero yields `inf`, which then poisons everything downstream | Guard the divisor, not the result |
 | Negative where positive was assumed | Damage heals, currency is minted, sizes invert | Clamp or reject at the boundary |
 | `NaN` | Every comparison is false, so range checks silently pass | `math.isnan`; reject before it enters state |
@@ -88,7 +91,8 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | Empty | `#t == 0` paths: averages divide by zero, `table.remove` returns nil | Handle empty explicitly; it is the common case at startup |
 | Single element | Logic that assumes a pair, a next, or a previous | Check before indexing neighbours |
 | Mutated during iteration | Skipped entries or undefined behavior | Collect first, mutate after; or iterate a copy |
-| Sparse or mixed keys | Length is undefined; DataStore encoding fails outright | Keep arrays contiguous and dictionaries all-string |
+| Empty string, tested with `if text then` | **`""` is truthy**, so an empty name or message passes validation and reaches display or storage | `if text ~= "" then`, after the type check |
+| Sparse or mixed keys | Length is undefined; DataStore encoding fails outright, **and a remote mangles the table in transit** | Keep arrays contiguous and dictionaries all-string ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)) |
 | Grows without bound | Memory climbs until the server degrades | Cap it, and decide what gets evicted |
 
 ## Timing and ordering
@@ -111,6 +115,9 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([monetization-policy.md](monetization-policy.md#processreceipt-developer-products--correctness-rules)) |
 | Arguments of any type, at any rate | Type errors, or the handler acting on garbage | Validate type, range, ownership, rate ([patterns/network.md](patterns/network.md#remote-communication)) |
 | Flooding | The handler starves the server | One shared rate limiter ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
+| A table sent through a remote arrives changed | Functions become `nil`, metatables are stripped so an OOP object arrives as plain data, non-string keys become strings, a `nil` inside truncates it, and instances the receiver cannot see arrive `nil` | Send ids and plain data; rebuild behavior from a shared catalog on the far side ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)) |
+| Table identity used as a token across a remote | Every table is **copied**, so the two sides never share identity and an equality check always fails | Pass an explicit id |
+| A prompt, `ClickDetector`, or `DragDetector` "proves" the player was there | All of them fire from any distance regardless of `Enabled`, and a `DragDetector` with `RunLocally = true` replicates nothing | Re-verify distance and state server-side at execution time ([security.md](security.md#threat-model-assume-all-of-these-exist)) |
 | Client-reported position or time | Trivially forged | Treat as a hint; validate outcomes server-side |
 | Teleport data | Travels through the client and is tamperable | Re-validate on arrival, or pass a server-generated token |
 
@@ -124,6 +131,33 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | Value exceeded a ceiling | The save fails and the player silently loses progress | Design the payload against the limits ([limits-budgets.md](limits-budgets.md#data-stores)) |
 | Concurrent servers on one key | Lost updates from a read-modify-write race | `UpdateAsync`, plus session locking where duplication matters |
 
+## Cloud calls
+
+Every row here is a failure the call itself reports as success, which is what makes them expensive.
+
+| State | What breaks | Guard |
+|---|---|---|
+| A read taken right after a write | `GetAsync` serves a **four-second cache**, so the verification read can confirm a value that never saved | `DataStoreGetOptions.UseCache = false` for any authoritative read ([patterns/data.md](patterns/data.md#data-persistence)) |
+| A yield inside an `UpdateAsync` callback | The transform function **may not yield**; the call errors rather than waiting | Compute from what was passed in; do the yielding work before the call |
+| Autosaving several times within one UTC hour | Writes inside the same hour overwrite each other permanently, so version history has nothing to roll back to | Space saves out; treat version history as the backup it is ([limits-budgets.md](limits-budgets.md#data-stores)) |
+| One hot key under load | Per-key throughput (25 MB/min read, 4 MB/min write) and per-partition MemoryStore limits throttle while the experience-wide quota still looks healthy | Shard the key space; check `GetRequestBudgetForRequestType()` before assuming headroom |
+| A MemoryStore queue item processed slowly | The invisibility timeout expires mid-processing and another server reads the same item | Fit read-process-remove inside the timeout, and make the processing idempotent ([patterns/network.md](patterns/network.md#cross-server-communication)) |
+| Data keyed by something other than `UserId` | A right-to-be-forgotten template cannot match it, and the 30-day obligation cannot be met | Key player data by `UserId` from the start ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)) |
+| A secret needed during a local playtest | Secrets resolve only in live servers and Team Test, so the code path silently takes its failure branch in Studio | Test that path in Team Test; never fall back to a hardcoded key |
+| An Open Cloud job running against the live experience | Both draw from the same request budget, so a batch job starves gameplay | Self-throttle the job, or schedule it off-peak |
+
+## UI
+
+| State | What breaks | Guard |
+|---|---|---|
+| Character respawns | `ScreenGui.ResetOnSpawn` defaults to **true**, so the HUD is rebuilt and every reference and piece of state inside it is stale | Set it to `false` for persistent UI, or rebuild state on the new instance |
+| Code edits `StarterGui` at runtime | That is the template, not the live UI; nothing visible changes | Script the player's `PlayerGui` copy |
+| Position set on a child of a layout | `UIListLayout`/`UIGridLayout` own `Position` and `Size`; the assignment is silently discarded | Change `LayoutOrder`, padding, or the layout's properties ([ui-crossplatform.md](ui-crossplatform.md#position-size-and-who-wins)) |
+| A `SurfaceGui`/`BillboardGui` button that never responds | Buttons take input only when the GUI is under `PlayerGui` **and** the part has `CanQuery = true` | Check both before debugging the handler |
+| Rotated or rounded container expected to clip | `ClipsDescendants` ignores rotation without `StarterGui.ClipsDescendantsSupportsRotation`, and never clips to rounded corners | Use a `CanvasGroup` |
+| Localized text loses its formatting | Localization strips rich text tags | Reapply formatting to translated strings |
+| Text filtered as the player types | Filtering per keystroke burns the budget and is explicitly warned against | Filter on the server after submission ([ui-crossplatform.md](ui-crossplatform.md#text-input-and-filtering)) |
+
 ## The finishing pass
 
 Before calling a function done, ask in order:
@@ -134,6 +168,7 @@ Before calling a function done, ask in order:
 4. **What is stale after each yield in this function?**
 5. **What if this runs twice, or two clients trigger it in the same frame?**
 6. **What if the player leaves right now?**
-7. **If this object is reused rather than created, what does it still carry from its last use?**
+7. **If this reads back something it just wrote, is the read authoritative or cached?**
+8. **If this object is reused rather than created, what does it still carry from its last use?**
 
-Seven questions, most answered in seconds. They catch the failures that only appear in a live server with real players, which is precisely where they are most expensive to find.
+Eight questions, most answered in seconds. They catch the failures that only appear in a live server with real players, which is precisely where they are most expensive to find.

@@ -34,7 +34,9 @@ Before finishing any Luau code, verify:
 - [ ] Each piece of state has exactly one writing owner; mirrors and caches are updated after the authoritative change, never read back to decide anything
 - [ ] Where a yield sits between a check and its effect, concurrent operations for the same owner are serialized, and the lock releases on every path including errors
 - [ ] Handlers that yield between a check and its use re-validate state after resuming (player still present, instance alive, session unchanged)
-- [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering
+- [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering, **after submission rather than per keystroke**
+- [ ] No `UpdateAsync` transform callback yields; any read used to confirm a write took `UseCache = false`; player data is keyed by `UserId` so a deletion request can match it; no credential is hardcoded where the secrets store belongs
+- [ ] UI written against the player's `PlayerGui` copy, with `ResetOnSpawn` decided deliberately; nothing sets `Position`/`Size` on a child a layout owns; interactive elements sit inside the safe area
 - [ ] Works regardless of the project's framework — no assumptions about folder layout beyond standard Roblox services
 - [ ] Every engine fact stated to the user names its basis (api-currency tag, live docs check, API dump, or in-Studio probe); anything unverifiable is labeled unverified with the check that would settle it
 - [ ] The closing summary states what was verified and how, open uncertainties, and every assumption made

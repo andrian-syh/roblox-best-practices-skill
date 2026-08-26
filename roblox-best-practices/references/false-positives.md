@@ -18,6 +18,7 @@ Read this **before reporting any finding**. A rule in this skill says what good 
   - [Newer APIs — do not flag what simply postdates your memory](#newer-apis--do-not-flag-what-simply-postdates-your-memory)
   - [Code economy and device scalability — authoring goals, not review standards](#code-economy-and-device-scalability--authoring-goals-not-review-standards)
   - [State ownership, failure policy, and locks — design decisions, not defects](#state-ownership-failure-policy-and-locks--design-decisions-not-defects)
+  - [Tutorial-shaped code is not a defect](#tutorial-shaped-code-is-not-a-defect)
   - [MCP tooling — not the code under review](#mcp-tooling--not-the-code-under-review)
   - [Authority mode — establish it before judging movement, input, or camera code](#authority-mode--establish-it-before-judging-movement-input-or-camera-code)
   - [Typing — do not flag the project for tools it does not use](#typing--do-not-flag-the-project-for-tools-it-does-not-use)
@@ -51,6 +52,11 @@ Severity follows the *context*, not the pattern. These pairs decide most mis-sev
 | Deprecated API in touched code | On the path this task modifies → **Correctness**, propose replacement | Untouched legacy far from the change → Advisory mention at most; never refactor unasked |
 | Missing validation | Client-reachable remote or teleport data → **Blocker** | Server-to-server bindable or module call → not a finding |
 | Loop with `task.wait(N)` | Scheduled periodic work (autosave, AI cadence) → fine | Polling a condition a signal already reports (`while not ready do task.wait() end`) → **Correctness** |
+| `GetAsync` after a write | Reading current state in normal flow → fine, the four-second cache is harmless there | Verifying whether a **failed** write landed, or deciding a refund, without `UseCache = false` → **Correctness** (the cache can confirm a value that never saved) |
+| `DragDetector` moving a part | `RunLocally = false`, the default, with the server handling the result → fine | `RunLocally = true` with the resulting position trusted and no validating remote → **Blocker** |
+| Client-side interaction instance | `ProximityPrompt` firing a cosmetic or idempotent effect → fine | A prompt or `ClickDetector` granting currency, items, or progress with no server-side distance and state re-check → **Blocker** |
+| `if value then` on a number or string | Testing for presence where `0` and `""` are both impossible → fine | Guarding a count, a balance, or user text where zero or empty is a real case → **Correctness** ([luau-language.md](luau-language.md#values-truth-and-coercion)) |
+| Table sent through a remote | Plain arrays and string-keyed dictionaries → fine | A mixed table, a `nil` inside one, or an object whose metatable the receiver relies on → **Correctness**, it arrives changed |
 
 ## Confidence gate (all four must pass before reporting)
 
@@ -127,6 +133,10 @@ Every engine release creates a fresh crop of "that API does not exist" false pos
 - **`const` bindings** — a real keyword, **[GA]** in Studio ([api-currency.md](api-currency.md)). `const MAX = 100` is not a syntax error and not a typo for `local`. Equally, **do not demand `const`**: a file using `local` throughout is correct, and converting a codebase to `const` is a stylistic sweep only the user can request.
 - **`read` / `write` table members** (`{ read x: number }`), **yielding inside a custom iterator**, and **`declare extern type`** — all shipped upstream. Verify the solver before flagging the first, and never "correct" `declare extern type` back to `declare class`, which was removed.
 - **The `@deprecated` attribute** — real, with optional `use` and `reason`. A project marking its own function deprecated is doing the right thing, not leaving dead code.
+- **UI classes that postdate a lot of training data:** `UIFlexItem` with `FlexMode` (flex lives on `UIListLayout`, and **`UIFlexLayout` is the invented name**, not this one), `UIDragDetector` and 3D `DragDetector`, `CanvasGroup`, `Path2D`, `UIShadow`, and the whole styling system (`StyleSheet`, `StyleRule`, `StyleLink`, `StyleDerive`, `StyleQuery`). `GuiButton.SecondaryActivated` is real too.
+- **Cloud members:** `DataStore:BatchGetAsync`, `DataStoreGetOptions.UseCache`, `DataStoreService:GetRequestBudgetForRequestType`, `HttpService:GetSecret` and the `Secret` datatype, `MemoryStoreService:GetHashMap`/`GetSortedMap`/`GetQueue`.
+- **`table.clone`, `table.isfrozen`, `debug.dumpcodesize`** — all shipped.
+- **`Script` with `RunContext = Client`** living in `ReplicatedStorage` or `ReplicatedFirst` is a supported modern shape, not a LocalScript in the wrong place. Equally, a project built entirely on LocalScripts is correct — `LocalScript` is not deprecated ([style-rules.md](style-rules.md#where-code-lives-and-what-runs-it)).
 
 ### Code economy and device scalability — authoring goals, not review standards
 
@@ -137,6 +147,8 @@ The reuse ladder ([minimal-code.md](minimal-code.md)), the frame and device budg
 - Do **not** report a missing edge-case guard on suspicion. It is a finding only with a concrete failure scenario, exactly like every other finding — the catalog is a prompt for your own writing, not a list of things to demand.
 - Do **not** flag code for being longer than you would have written it. Length alone is Advisory at most, and rewriting for brevity is an unrequested refactor.
 - Do **not** turn a maturity score into findings. [evaluation-matrix.md](evaluation-matrix.md) is an audit rubric the user asks for; a dimension scoring 3 has *passed*, and the distance to 5 is headroom, not defects.
+- Do **not** flag a project for hand-setting UI properties instead of adopting the styling system, or for not using `UIFlexItem`, `StyleQuery`, or `CanvasGroup`. Those are authoring recommendations for new work ([ui-crossplatform.md](ui-crossplatform.md)); converting an existing interface is a project the user chooses.
+- Do **not** flag a project for lacking right-to-be-forgotten templates, observability dashboards, or Extended Services. The first is an obligation the *owner* fulfils on the Creator Hub, and the rest are operational choices — mention them once where relevant, never as defects found in code.
 - Do **not** demand enterprise ceremony at toy scale: pooling below roughly once-per-second spawn rates, telemetry scaffolding, degradation ladders, lock tables in a one-script experience. Those authoring catalogs bind what you write fresh; they are not retrofit mandates against a small finished project.
 
 ### State ownership, failure policy, and locks — design decisions, not defects
@@ -148,6 +160,13 @@ Three patterns added for authoring ([patterns/data.md](patterns/data.md#one-owne
 - **A missing lock is a finding only with a real interleaving.** Name the yield between the check and the effect, and the two callers that reach it in one frame. An operation with no yield in that window cannot interleave, and a lock added there would be ceremony. Equally, do **not** flag an existing lock as unnecessary without tracing the same path.
 - **Do not propose a global lock as a fix.** Serializing all players to remove one player's race is a performance regression dressed as a correctness fix.
 - Absent all three patterns, a small project is not defective. These matter at the scale where concurrency and data loss are real risks; a one-script experience does not need a lock table.
+
+### Tutorial-shaped code is not a defect
+
+Roblox's own *Coding Fundamentals* series teaches a script per button, `Touched` without a debounce, `CanTouch = false` as a cooldown, and `leaderstats` as where a value lives. A project written that way was following the official material, so it is not evidence of carelessness.
+
+- Judge it on **consequence, not shape**: an undebounced `Touched` that grants currency is a real finding with a real scenario; the same handler playing a sound is not.
+- When the user cites the tutorial, **explain the gap rather than disputing the source** — the mapping from taught shape to shipped shape is in [patterns/world.md](patterns/world.md#where-the-official-tutorials-differ-and-why).
 
 ### MCP tooling — not the code under review
 
@@ -275,6 +294,34 @@ end)
 ```lua
 -- const binding: a real keyword, [GA] in Studio — and equally NOT demanded of files using local.
 const MAX_RETRIES = 3
+```
+
+```lua
+-- Flex on the list layout plus a per-child item: the real API.
+-- There is no UIFlexLayout class, and this is not it.
+local layout = Instance.new("UIListLayout")
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.HorizontalFlex = Enum.UIFlexAlignment.SpaceBetween
+local flexItem = Instance.new("UIFlexItem")
+flexItem.FlexMode = Enum.UIFlexMode.Fill
+```
+
+```lua
+-- Authoritative read after a failed write: UseCache = false is the point,
+-- not defensive ceremony to strip.
+local options = Instance.new("DataStoreGetOptions")
+options.UseCache = false
+local ok, stored = pcall(store.GetAsync, store, key, options)
+```
+
+```lua
+-- Non-yielding UpdateAsync transform: the yield-free body is required,
+-- not an oversight to "improve" with a wait.
+store:UpdateAsync(key, function(old)
+	local profile = old or Defaults()
+	profile.coins += amount
+	return profile
+end)
 ```
 
 ```lua

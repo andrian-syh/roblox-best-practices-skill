@@ -18,6 +18,8 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 6. Wrap the whole handler body in `pcall` so a thrown error cannot silently drop the receipt.
 **Never:** return `PurchaseGranted` before the grant is saved · grant from the client · assume the player is online during a retry.
 **Failure modes:** a server crash between granting and saving. Ordering the grant, the save, and the acknowledgement in that exact sequence is what makes the retry safe.
+**Where the history lives:** inside the player's own profile, as a capped list of handled `PurchaseId`s saved in the same write as the grant. One object, one write, one consistent state — a separate "purchases" store can succeed while the grant fails. **Session locking is what removes the cross-server race**: it guarantees no other server read or wrote the profile between this server's load and save ([patterns/data.md](../patterns/data.md#data-persistence)).
+**Reading back after a failure:** if a save fails and the handler needs to know whether the grant actually landed before returning `NotProcessedYet`, take that read with `DataStoreGetOptions.UseCache = false`. The default four-second cache will otherwise answer from exactly the state you are trying to check.
 **Verify:** grant a product, then force a shutdown before the autosave; rejoin and confirm exactly one grant exists.
 **Deeper:** [monetization-policy.md](../monetization-policy.md#processreceipt-developer-products--correctness-rules)
 

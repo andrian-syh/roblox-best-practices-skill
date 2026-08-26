@@ -1,6 +1,6 @@
 {
   "name": "roblox-best-practices-skill",
-  "version": "1.18.1",
+  "version": "1.18.2",
   "description": "Framework-agnostic Roblox/Luau coding standards and best practices installer for various AI agents.",
   "main": "bin/cli.js",
   "bin": {

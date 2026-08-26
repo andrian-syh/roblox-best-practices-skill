@@ -5,6 +5,7 @@ How to drive a Studio MCP connection without destroying work, corrupting a place
 ## Contents
 
 - [Ground truth rules](#ground-truth-rules)
+- [When no MCP tools are present](#when-no-mcp-tools-are-present)
 - [Identify the variant once per session](#identify-the-variant-once-per-session)
 - [Capability map](#capability-map)
 - [MCP preflight](#mcp-preflight)
@@ -24,13 +25,23 @@ How to drive a Studio MCP connection without destroying work, corrupting a place
 
 **4. Never tell the user a tool does not exist** because it is missing from this file. Roblox ships continuously and the MCP ecosystem includes forks and custom servers. Absence here is not evidence of absence.
 
+**5. Check what you actually have, every session, before the first call.** Tool sets change between Studio builds and between servers, and a session inherits nothing from the last one. Enumerate the connected tools, classify them ([below](#identify-the-variant-once-per-session)), and cache that for the session — never assume the set from memory, from this file, or from a previous conversation.
+
+**6. The connection is a real permission grant.** Roblox states it plainly: an MCP client can read and modify content in the open place, so only trusted clients should be connected. That is the user's decision to make, not something to encourage; what it means for you is that every write lands in the user's actual working file ([Irreversible operations](#irreversible-operations)).
+
+## When no MCP tools are present
+
+If the user expects a Studio connection and no MCP tools are in your session, the server is probably off rather than broken. It ships **inside Studio**: **Assistant → … → Manage MCP Servers → Enable Studio as MCP server**. Quick connect covers Claude Code, Claude Desktop, Codex CLI, Cursor, Gemini CLI, VS Code, and Antigravity, and any client speaking `stdio` transport can attach.
+
+Say that once, then continue in whatever environment you actually have — a filesystem/Rojo project needs no MCP at all, and the file-based tools are usually the better path when one exists.
+
 ## Identify the variant once per session
 
 Read the available tools and classify. Cache the result for the session, the same way the community-library and Server Authority checks are cached ([SKILL.md](../SKILL.md#session-setup-decide-once-then-cache)).
 
 | Variant | Signature tools | Treatment |
 |---|---|---|
-| **Official built-in Studio MCP** (assume this by default) | `execute_luau`, `multi_edit`, `script_read`, `script_search`/`script_grep`, `search_game_tree`, `inspect_instance`, `list_roblox_studios`, `get_studio_state`, `start_stop_play`, `run_as_job`, `store_image`/`upload_image`, `subagent` — the exact set varies by build (`set_active_studio` appears on some) | Full guidance below applies |
+| **Official built-in Studio MCP** (assume this by default) | Scripts: `script_read`, `multi_edit`, `script_search`, `script_grep` · Exploration: `search_game_tree`, `inspect_instance`, `subagent` · Execution: `execute_luau` · Playtest: `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture` · Input: `character_navigation`, `user_keyboard_input`, `user_mouse_input` · Generation: `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image` · Reference: `http_get`, `skill` · Session: `list_roblox_studios`. The exact set varies by build — older ones lack some, newer ones add others | Full guidance below applies |
 | **Standalone Rust server** (`Roblox/studio-rust-mcp-server`, the older separate lineage) | `run_code`, `insert_model`, `run_script_in_play_mode`, `get_studio_mode` | Narrower capability set; map through the capability table |
 | **Community, custom, or fork** | A mix, or names outside both sets | Rely entirely on each tool's own schema |
 
@@ -66,14 +77,14 @@ Attach the rules to the capability. Blank cells mean no dedicated tool is known 
 | Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `run_as_job` | — | — | Each generation is a billed job. Iterate the prompt, do not spam generate; `run_as_job` runs one asynchronously and returns a job id |
 | Convert local images to asset URIs | `store_image`, `upload_image` | — | Uploads leave the local machine | Only when a tool demands an `IMAGEID_<id>` argument |
 | Simulate input | `character_navigation`, `user_keyboard_input`, `user_mouse_input` | — | Drives the real session | — |
-| Fetch documentation | `http_get`, `skill` | — | — | To answer "does X exist": fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member name — pages serve raw markdown without Studio running, and absence from the page settles nonexistence ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) |
-| Manage sessions | `list_roblox_studios` (+ `set_active_studio` where the build has it) | — | **Wrong instance means the wrong place** | — |
+| Fetch documentation | `http_get`, `skill` | — | — | Fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member for **semantics**. **Absence from a docs page never settles nonexistence** — the site trails the engine, so existence is settled by the API dump or an in-Studio probe ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)). `skill` returns Roblox's own guidance, which is a second opinion, not an override of the user's project conventions |
+| Manage sessions | `list_roblox_studios`, plus a **`studio_id` argument carried by the individual tools** | — | **Wrong instance means the wrong place** | One listing per session; pass the id rather than re-listing |
 
 ## MCP preflight
 
 Run these four before the **first write or execute** of a session. Each is one cheap call that prevents an expensive mistake.
 
-1. **Which Studio?** If a session-listing capability exists, enumerate connected instances and set the active one. Multiple Studio windows can be connected at once, and the default target may not be the place the user means.
+1. **Which Studio?** Enumerate connected instances with the listing tool. One client can hold several Studio windows at once, and the documented way to target one is the **`studio_id` argument on each call**, not a separate "set active" tool (some builds do expose one). The default target may not be the place the user means — confirm before the first write.
 2. **Which mode?** Query the Studio state. **Edit mode persists; play mode does not.** Never begin authoring work without knowing which one you are in.
 3. **Does the target exist?** Before an edit, confirm the script path by reading or searching for it. Do not let an edit call be the thing that discovers a typo.
 4. **Is this destructive?** If the operation deletes, overwrites broadly, publishes, or saves, confirm with the user first.
@@ -123,6 +134,12 @@ Each of these is a common way to spend the user's budget without gaining informa
 3. Apply the change as one batched edit.
 4. Verify with the cheapest sufficient signal: console output first, a screenshot only if the result is visual.
 
+**Auditing an existing place**
+1. Scope it to named systems, not the whole place ([evaluation-matrix.md](evaluation-matrix.md#scoping-the-audit)).
+2. Answer what static reads can answer first: grep the remote handlers, the connection sites, and the store calls. Four of the six dimensions need no session at all.
+3. Only then start a playtest, and only for the dimensions that require one.
+4. Report which systems were skipped and which dimensions the evidence could not support.
+
 **Playtest loop**
 1. Confirm the current mode before starting.
 2. Make all authoring changes in Edit mode first, since play-mode changes are lost.
@@ -131,4 +148,4 @@ Each of these is a common way to spend the user's budget without gaining informa
 
 ## Snapshot note
 
-Tool names and limits here reflect a **point-in-time snapshot** (dated in [api-currency.md](api-currency.md)) of the official built-in server plus the known standalone lineage. They are an aid to interpretation, never an authority: the connected tool list and each tool's own schema always take precedence ([api-currency.md](api-currency.md)).
+Tool names and limits here reflect a **point-in-time snapshot** (dated in [api-currency.md](api-currency.md)) of the official built-in server as documented at `create.roblox.com/docs/studio/mcp`, plus the known standalone lineage. They are an aid to interpretation, never an authority: the connected tool list and each tool's own schema always take precedence ([api-currency.md](api-currency.md)).

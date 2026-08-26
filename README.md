@@ -4,7 +4,7 @@
 
 **A working standard for Roblox and Luau, written for AI coding assistants.**
 
-[![Version](https://img.shields.io/badge/version-v1.18.1-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
+[![Version](https://img.shields.io/badge/version-v1.18.2-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
 [![Engine](https://img.shields.io/badge/engine-735-lightgrey)](roblox-best-practices/references/api-currency.md)
@@ -39,10 +39,14 @@ This skill is the other half.
 |---|---|
 | **22 implementation blueprints** | Player data, currency, inventory, trading, developer products, gacha, leaderboards, damage validation, abilities, projectiles, NPC AI at scale, round lifecycles, matchmaking, placement, pets, HUD sync, rate limiting, and more. Each carries its assembly order, the failure modes specific to that case, the budget it must fit inside, and how to prove it works. |
 | **A review that does not cry wolf** | Three severities — Blocker, Correctness, Advisory — behind a four-step confidence gate, plus a catalog of what *not* to flag: which allocations are actually hot, what does not leak, what is not a trust boundary, and where a discouraged API is simply not a deprecated one. |
-| **Platform ceilings, up front** | Data store size and request budgets, memory store quotas, message size caps, attribute windows, animation track limits. Checked while designing, not discovered in production. |
+| **Platform ceilings, up front** | Data store request budgets at both ceilings and per-key throughput, memory store quota formulas, message and HTTP limits, secrets, attribute windows, animation track limits. Checked while designing, not discovered in production. |
 | **Studio MCP safety** | Identifies which MCP variant it is connected to from the tools actually present, runs a preflight before the first write, and knows which operations cannot be undone — play mode discarding work, a mistyped path silently creating a new script, inserted assets carrying backdoor scripts. |
 
 Four things deserve more than a table row.
+
+### It knows the platform's actual numbers
+
+Request budgets at both the experience and per-server ceiling, per-key throughput, memory store quota formulas, the four-second read cache, HTTP and secret limits, frame and draw-call budgets, device demographics. Published Roblox figures are quoted as facts and kept separate from the skill's own heuristics, so an agent never invents a threshold and presents it as a platform limit.
 
 ### It verifies APIs instead of remembering them
 
@@ -183,7 +187,7 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [section-layout.md](roblox-best-practices/references/section-layout.md) | The header hierarchy, subsection contents, and Documentation Comment rules |
 | [style-rules.md](roblox-best-practices/references/style-rules.md) | Naming, deprecated and misremembered APIs, where code lives and `RunContext`, module hygiene |
 | [minimal-code.md](roblox-best-practices/references/minimal-code.md) | Reuse before writing, what the engine already provides, code density |
-| [edge-cases.md](roblox-best-practices/references/edge-cases.md) | The states production actually produces, and the guard for each |
+| [edge-cases.md](roblox-best-practices/references/edge-cases.md) | The states production actually produces — player and instance lifetimes, numbers, timing, cloud calls, UI — and the guard for each |
 | [adaptive-mode.md](roblox-best-practices/references/adaptive-mode.md) | Analyzing and adopting an existing project's conventions |
 | [community-libraries.md](roblox-best-practices/references/community-libraries.md) | ProfileStore, Packet, ByteNet, Trove, Fusion, and friends |
 | [luau-language.md](roblox-best-practices/references/luau-language.md) | Truthiness and coercion, table and `require` semantics, typing, scheduling, deferred events |
@@ -205,7 +209,7 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | Reference | Covers |
 |---|---|
 | [patterns/data.md](roblox-best-practices/references/patterns/data.md) | State ownership, data stores, failure policy, per-owner locks |
-| [patterns/network.md](roblox-best-practices/references/patterns/network.md) | Remotes, what survives serialization, cross-server messaging, streaming |
+| [patterns/network.md](roblox-best-practices/references/patterns/network.md) | Remotes, what survives serialization, memory store structures, cross-server messaging, streaming |
 | [patterns/lifecycle.md](roblox-best-practices/references/patterns/lifecycle.md) | Connection cleanup, character lifecycle, object pooling |
 | [patterns/world.md](roblox-best-practices/references/patterns/world.md) | Tag and attribute binding, client input, anti-patterns |
 
@@ -218,8 +222,8 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [security.md](roblox-best-practices/references/security.md) | Threat model, designing exploits out, validation depth, detection, script capabilities |
 | [monetization-policy.md](roblox-best-practices/references/monetization-policy.md) | `ProcessReceipt`, products and passes, PolicyService compliance |
 | [server-authority.md](roblox-best-practices/references/server-authority.md) | Authoritative simulation, with it and without it |
-| [limits-budgets.md](roblox-best-practices/references/limits-budgets.md) | Platform ceilings for data, messaging, attributes, animation |
-| [ui-crossplatform.md](roblox-best-practices/references/ui-crossplatform.md) | UI construction, conditional styling, cross-platform input, accessibility |
+| [limits-budgets.md](roblox-best-practices/references/limits-budgets.md) | Platform ceilings for data stores, memory stores, messaging, HTTP, secrets, attributes, animation |
+| [ui-crossplatform.md](roblox-best-practices/references/ui-crossplatform.md) | Containers, layout precedence, the styling system, text and filtering, interaction objects, cross-platform input, accessibility |
 | [genres.md](roblox-best-practices/references/genres.md) | Risk profiles per genre, from simulators to horror |
 
 **Process**
@@ -230,10 +234,10 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [runtime-rules.md](roblox-best-practices/references/runtime-rules.md) | The seven runtime rules in full, each with its scope |
 | [false-positives.md](roblox-best-practices/references/false-positives.md) | Severity taxonomy and the catalog of what not to flag |
 | [review-checklist.md](roblox-best-practices/references/review-checklist.md) | The completion gate before any task is called done |
-| [evaluation-matrix.md](roblox-best-practices/references/evaluation-matrix.md) | 1–5 scoring rubric for system health and architectural maturity audits |
+| [evaluation-matrix.md](roblox-best-practices/references/evaluation-matrix.md) | Auditing a live project on request: scoping, gathering evidence, scoring 1–5, reporting honestly |
 | [api-currency.md](roblox-best-practices/references/api-currency.md) | Dated baseline of confirmed engine and Luau APIs, and how to verify one |
 | [verification.md](roblox-best-practices/references/verification.md) | Proving a change works, and the command-bar VM pitfall |
-| [studio-mcp.md](roblox-best-practices/references/studio-mcp.md) | Operating a Studio MCP connection safely and without wasting tokens |
+| [studio-mcp.md](roblox-best-practices/references/studio-mcp.md) | Operating a Studio MCP connection safely: checking the connected tools, the preflight, and what cannot be undone |
 
 Entry point: [SKILL.md](roblox-best-practices/SKILL.md).
 
