@@ -136,6 +136,7 @@ The reuse ladder ([minimal-code.md](minimal-code.md)), the frame and device budg
 - Do **not** flag a hand-written helper as a violation because an engine API exists. Propose the replacement as **Advisory**; the team may have had a reason, and a deliberate, justified reimplementation is not a defect.
 - Do **not** report a missing edge-case guard on suspicion. It is a finding only with a concrete failure scenario, exactly like every other finding — the catalog is a prompt for your own writing, not a list of things to demand.
 - Do **not** flag code for being longer than you would have written it. Length alone is Advisory at most, and rewriting for brevity is an unrequested refactor.
+- Do **not** turn a maturity score into findings. [evaluation-matrix.md](evaluation-matrix.md) is an audit rubric the user asks for; a dimension scoring 3 has *passed*, and the distance to 5 is headroom, not defects.
 - Do **not** demand enterprise ceremony at toy scale: pooling below roughly once-per-second spawn rates, telemetry scaffolding, degradation ladders, lock tables in a one-script experience. Those authoring catalogs bind what you write fresh; they are not retrofit mandates against a small finished project.
 
 ### State ownership, failure policy, and locks — design decisions, not defects

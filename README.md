@@ -4,7 +4,7 @@
 
 **A working standard for Roblox and Luau, written for AI coding assistants.**
 
-[![Version](https://img.shields.io/badge/version-v1.18.0-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
+[![Version](https://img.shields.io/badge/version-v1.18.1-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
 [![Engine](https://img.shields.io/badge/engine-735-lightgrey)](roblox-best-practices/references/api-currency.md)
@@ -61,6 +61,8 @@ Long agent sessions get compacted, and the usual casualty is exactly the guidanc
 ### Less code, running on weaker hardware
 
 The agent reaches for the engine API before writing one, keeps functions dense, and budgets frame time in milliseconds rather than guessing. Bulk work is spread across frames, quality degrades in a fixed order instead of arbitrarily, and low-end mobile is the baseline rather than an afterthought.
+
+It also knows how to *measure* rather than assert: the MicroProfiler's real shortcuts, modes, dump locations and tag names, Scene Analysis and its six views, the Developer Console figures worth watching, and the Performance Dashboard that is the only view of real players. Published Roblox numbers are quoted as facts and kept separate from the skill's own heuristics, so an agent never invents a threshold and calls it a platform limit.
 
 Brevity applies to the implementation, never to what you asked for. Pairs with the optional [Ponytail](https://github.com/DietrichGebert/ponytail) plugin when installed, and works fully without it.
 
@@ -179,12 +181,12 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 |---|---|
 | [templates.md](roblox-best-practices/references/templates.md) | Annotated layouts for Scripts, LocalScripts, and ModuleScripts |
 | [section-layout.md](roblox-best-practices/references/section-layout.md) | The header hierarchy, subsection contents, and Documentation Comment rules |
-| [style-rules.md](roblox-best-practices/references/style-rules.md) | Naming, deprecated and misremembered APIs, `const`, module hygiene |
+| [style-rules.md](roblox-best-practices/references/style-rules.md) | Naming, deprecated and misremembered APIs, where code lives and `RunContext`, module hygiene |
 | [minimal-code.md](roblox-best-practices/references/minimal-code.md) | Reuse before writing, what the engine already provides, code density |
 | [edge-cases.md](roblox-best-practices/references/edge-cases.md) | The states production actually produces, and the guard for each |
 | [adaptive-mode.md](roblox-best-practices/references/adaptive-mode.md) | Analyzing and adopting an existing project's conventions |
 | [community-libraries.md](roblox-best-practices/references/community-libraries.md) | ProfileStore, Packet, ByteNet, Trove, Fusion, and friends |
-| [luau-language.md](roblox-best-practices/references/luau-language.md) | Typing, the new type solver, scheduling, deferred events, time APIs |
+| [luau-language.md](roblox-best-practices/references/luau-language.md) | Truthiness and coercion, table and `require` semantics, typing, scheduling, deferred events |
 
 **Implementation blueprints**
 
@@ -203,7 +205,7 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | Reference | Covers |
 |---|---|
 | [patterns/data.md](roblox-best-practices/references/patterns/data.md) | State ownership, data stores, failure policy, per-owner locks |
-| [patterns/network.md](roblox-best-practices/references/patterns/network.md) | Remotes, cross-server messaging, streaming |
+| [patterns/network.md](roblox-best-practices/references/patterns/network.md) | Remotes, what survives serialization, cross-server messaging, streaming |
 | [patterns/lifecycle.md](roblox-best-practices/references/patterns/lifecycle.md) | Connection cleanup, character lifecycle, object pooling |
 | [patterns/world.md](roblox-best-practices/references/patterns/world.md) | Tag and attribute binding, client input, anti-patterns |
 
@@ -211,9 +213,9 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 
 | Reference | Covers |
 |---|---|
-| [performance.md](roblox-best-practices/references/performance.md) | Hot loops, memory, network, physics queries, rendering, profiling |
-| [device-performance.md](roblox-best-practices/references/device-performance.md) | Frame budgets, low-end devices, quality degradation, time-slicing |
-| [security.md](roblox-best-practices/references/security.md) | Threat model, validation depth, movement sanity checks, text filtering |
+| [performance.md](roblox-best-practices/references/performance.md) | Hot loops, memory, network, physics queries, rendering, the full profiling toolkit |
+| [device-performance.md](roblox-best-practices/references/device-performance.md) | Frame budgets, join time, low-end devices, quality degradation, time-slicing |
+| [security.md](roblox-best-practices/references/security.md) | Threat model, designing exploits out, validation depth, detection, script capabilities |
 | [monetization-policy.md](roblox-best-practices/references/monetization-policy.md) | `ProcessReceipt`, products and passes, PolicyService compliance |
 | [server-authority.md](roblox-best-practices/references/server-authority.md) | Authoritative simulation, with it and without it |
 | [limits-budgets.md](roblox-best-practices/references/limits-budgets.md) | Platform ceilings for data, messaging, attributes, animation |

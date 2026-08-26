@@ -2,7 +2,7 @@
 
 The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm a newer API exists in the target environment before relying on it, and never flag an API as nonexistent from memory. This file is the **baseline that rule reads against** — a dated list of what is already confirmed, so the agent stops re-litigating shipped APIs while still verifying the genuinely bleeding-edge.
 
-**Snapshot basis: 26 August 2026.** Sources: Luau releases through **0.735** (22 August 2026), the Luau 2025 runtime recap (19 December 2025), the Luau RFC repository, Roblox engine release notes through **735**, and the versioned API dump at `robloxapi.github.io/ref` reflecting **v0.735.0.7351131** (17 August 2026).
+**Snapshot basis: 26 August 2026.** Sources: Luau releases through **0.735** (22 August 2026), the Luau 2025 runtime recap (19 December 2025), the Luau RFC repository, Roblox engine release notes through **735**, and the versioned API dump at `robloxapi.github.io/ref` reflecting **v0.735.0.7351131** (17 August 2026). The performance figures and tooling in [performance.md](performance.md), [device-performance.md](device-performance.md), and [verification.md](verification.md) were read directly from the Creator Hub performance-optimization guides (`create.roblox.com/docs/performance-optimization`, its `design`, `identify`, `improve`, `monitor`, `scene-analysis`, `test-on-hardware`, and `microprofiler/*` pages) and the `Workspace` class reference.
 
 **Maturity tags:** **[GA]** generally available, safe as a default · **[Beta]** opt-in and may change, document as an option but never make it the default · **[Undocumented]** confirmed present in the API dump with a known version, but create.roblox.com has not caught up — usable, with no reference page to read · **[Verify]** confirm in the target place before relying on it · **[UNVERIFIED]** this skill could not confirm it; treat with suspicion.
 
@@ -19,6 +19,7 @@ The verify-first rule ([SKILL.md](../SKILL.md#environment--scale)) says: confirm
 - [How to verify (the toolbox)](#how-to-verify-the-toolbox)
 - [Luau language and libraries](#luau-language-and-libraries)
 - [Engine](#engine)
+- [Performance figures and where they come from](#performance-figures-and-where-they-come-from)
 - [Studio MCP tooling](#studio-mcp-tooling)
 - [Deprecated (report as findings)](#deprecated-report-as-findings)
 - [Dates live here, and only here](#dates-live-here-and-only-here)
@@ -43,6 +44,7 @@ Never assert existence or nonexistence from training memory alone. Name which st
 | Area | Studio | Notes |
 |---|---|---|
 | `vector` library (`create`, `magnitude`, `normalize`, `dot`, `cross`, `angle`, `floor`, `ceil`, `abs`, `sign`, `clamp`, `lerp`, `max`, `min`, `zero`/`one`) | **[GA]** | Native, SIMD-backed; distinct from the engine `Vector3` datatype |
+| `table.clone`, `table.isfrozen` | **[GA]** | Shallow copy and frozen-state check; both documented members of the `table` library |
 | `buffer` library, including `readbits`/`writebits` | **[GA]** | Binary data and network serialization; 1 GB ceiling |
 | `math.map`, `math.lerp`, `math.isnan`/`isinf`/`isfinite` | **[GA]** | |
 | Native codegen `--!native` and the `@native` function attribute | **[GA]** | Costs memory; reserve for compute-heavy code. `@native` is **not** recursive into nested functions |
@@ -84,6 +86,8 @@ Never assert existence or nonexistence from training memory alone. Name which st
 | DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`, `ListKeysAsync`) | **[GA]** | |
 | Unified DataStore limits and raised storage | **[Verify]** — effective **29 July 2026** | Numbers in [limits-budgets.md](limits-budgets.md#data-stores) |
 | Streaming (`Model.ModelStreamingMode`, `Player:RequestStreamAroundAsync`) | **[GA]** | |
+| `Workspace:ApplyRecommendedStreamingSettings()` | **[GA]** | Plugin security. Applies Roblox's recommended streaming property values in one call ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
+| **Not scriptable — Studio-only settings:** `Workspace.StreamingEnabled`, `Workspace.PhysicsSteppingMethod`, `Workspace.EnableSLIMAvatars`; `Workspace.AuthorityMode` is read-only to scripts | **[GA]** | Recommending any of these means asking the user to change a Studio setting, never writing an assignment. Reading them is fine and is how the environment checks in [workflow.md](workflow.md#session-setup-resolving-the-five-decisions) work |
 | `Player.FrustumStreaming` + `FrustumStreamingMode` enum | **[Undocumented]** | Added in engine **v734**, August 2026 (API dump). Streams by view frustum rather than radius alone; test the camera-turn case before adopting ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
 | `Player:GetGlobalUserId()` | **[Undocumented]** | Added in engine **v734**, August 2026 (API dump). Non-yielding, returns `int64`. Semantics undocumented — probe before using it as an identity key; `Player.UserId` remains the settled choice |
 | `Player:GetFriendsInUniverseAsync()` | **[Undocumented]** | Added in engine **v735**, August 2026 (API dump). Yields, returns an array. Wrap in `pcall` like any yielding call |
@@ -102,10 +106,17 @@ Never assert existence or nonexistence from training memory alone. Name which st
 | Terrain water flow methods | **[Undocumented]** | Added in engine **v735**, August 2026 (API dump). No reference page yet |
 | `Players:BanAsync`/`UnbanAsync` (`ExcludeAltAccounts`, `ApplyDeviceBlock`, `ApplyToUniverse`) | **[GA]** | |
 | `game.ServerRestartScheduled` | **[GA]** | Now also fires on delayed restarts |
+| `SceneAnalysisService` (`GetInstanceCompositionAsync`, `GetScriptMemoryAsync`, `GetUnparentedInstancesAsync`, `GetTriangleCompositionAsync`, `GetAnimationMemoryAsync`, `GetAudioMemoryAsync`) | **[GA]** | Documented with the Scene Analysis tool (`create.roblox.com/docs/performance-optimization/scene-analysis`). Six views, six methods ([performance.md](performance.md#measurement-never-optimize-blind)) |
+| `Workspace.PlayerCharacterDestroyBehavior` | **[GA]** | Documented in the performance-improvement guidance as the automatic-cleanup path for character models on disconnect ([performance.md](performance.md#memory)) |
+| `Workspace.PhysicsSteppingMethod` (`Default`/`Fixed`/`Adaptive`) | **[GA]** | Documented enum. `Default` **is** `Adaptive` (per-assembly 240/120/60 Hz); `Fixed` runs everything at 240 Hz for accuracy at a cost |
+| `Workspace.ImprovedPhysicsReplication` | **[GA]** | Documented on the `Workspace` class reference as an optimized server/client state-synchronization path |
+| `debug.profilebegin` / `debug.profileend`, `debug.setmemorycategory` | **[GA]** | Custom MicroProfiler scopes and memory attribution; the documented way to confirm a suspected hot section is the one that costs |
 | Analytics: Client CPU Time Breakdown | **[GA]** | Scripts / Networking / Physics / Animation / Misc |
 | `Workspace.EnableSLIMAvatars`, `Model.LevelOfDetail = SLIM` | **[GA]** | Lightweight avatar and model stand-ins under streaming. `EnableSLIMAvatars` **cannot be set from a script**; it is configured in Studio. Excludes R6, NPCs, and custom proportions ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
 | Streaming tuning (`ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamingMinRadius`, `StreamingTargetRadius`, `StreamOutBehavior`) | **[GA]** | Recommended low-end values in [device-performance.md](device-performance.md#engine-levers-before-script-levers) |
 | `InstanceHandle` attributes (Instance references) | **[Beta]** 23 July 2026 | Official Studio Beta with no setup required; `handle:Get()` confirmed via the announcement thread. No datatype page exists in the Engine API Reference yet, so treat method specifics beyond `Get()` as unconfirmed ([patterns/world.md](patterns/world.md#behavior-binding-works-with-any-framework)) |
+| Script capabilities / sandboxed containers (`Workspace.SandboxedInstanceMode = Experimental`, `Sandboxed`, `Capabilities`) | **[Beta]** — documented as experimental | Per-container permission sets for third-party and user-generated scripts ([security.md](security.md#third-party-assets-and-script-capabilities)). Never a production default on this skill's initiative |
+| `debug.dumpcodesize()` | **[GA]** | Reports natively compiled code consumption against the per-experience ceiling ([luau-language.md](luau-language.md#native-and-native-codegen)) |
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints and inspection |
 | Input Action Manager (visual mapping editor) | **[Beta]** July 2026 | Studio tooling, not a runtime API |
 | Conditional styling: `StyleQuery` (with `StyleRule` / `StyleSheet`) | **[GA]** | Documented in the Engine API Reference and present in the API dump. Property `IsActive`; methods `SetCondition`/`SetConditions`/`GetCondition`/`GetConditions`. Conditions: `MaxSize`, `MinSize`, `AspectRatioRange`, `PreferredInput`, `PreferredTextSize`, `ReducedMotionEnabled`, `ViewportDisplaySize`. A previous snapshot marked this [UNVERIFIED] as "not present" — it was present ([ui-crossplatform.md](ui-crossplatform.md#conditional-styling-with-stylequery)) |
@@ -118,6 +129,37 @@ Never assert existence or nonexistence from training memory alone. Name which st
 - `IntentService`, `BranchService` — registered as services, but each defines **zero custom members**. Empty shells with nothing to call. Their presence is a placeholder for future work, not an API.
 
 The general rule: after step 2 confirms a member exists, check its **security tag** and whether the class has members of its own. Existence, accessibility, and usefulness are three different questions.
+
+## Performance figures and where they come from
+
+Numbers are engine facts too, and the same rule binds them: state the basis. Everything in the first table is published by Roblox under `create.roblox.com/docs/performance-optimization`; everything in the second is this skill's heuristic and must never be quoted as a platform limit.
+
+**Published — quote them as facts:**
+
+| Figure | Value | Used in |
+|---|---|---|
+| Frame budget | 60 FPS = **16.67 ms**; 30 = 33.33, 120 = 8.33, 240 = 4.17 | [device-performance.md](device-performance.md#the-frame-budget), [performance.md](performance.md#measurement-never-optimize-blind) |
+| Baseline scene budget | **< 1,000 draw calls**, **< 1,000,000 triangles** | [device-performance.md](device-performance.md#device-tiers) |
+| Server memory | `6.25 GiB + (100 MiB × largest_number_of_connected_players)`; keep usage **below 50%**; memory is not released when players leave | [performance.md](performance.md#memory) |
+| Server frame rate | Heartbeat **capped at 60**; read Server Jobs → Heartbeat → Steps Per Sec | [performance.md](performance.md#measurement-never-optimize-blind) |
+| Client crash rate | **Investigate above 2–3%** | [performance.md](performance.md#measurement-never-optimize-blind) |
+| Device demographics | **~65% Android**; of those ~60% at 2–4 GB RAM, ~35% at 4–8 GB, ~5% above; **50%+ of players** on devices scoring **10,000–20,000** Passmark | [device-performance.md](device-performance.md#device-tiers) |
+| Thermal test length | **10–15 minutes** of active gameplay | [device-performance.md](device-performance.md#device-tiers) |
+| GPU wait | MicroProfiler bars turn red above **2.5 ms** GPU Wait Time | [performance.md](performance.md#measurement-never-optimize-blind) |
+| Texture sizes | **≤ 512×512** for environment textures, **≤ 256×256** for minor images | [device-performance.md](device-performance.md#engine-levers-before-script-levers) |
+| MicroProfiler capture limits | Server captures **≤ 60 frames**, **≤ 4 s** delay; mobile web UI defaults to **30 frames** | [performance.md](performance.md#measurement-never-optimize-blind) |
+
+**This skill's heuristics — present them as starting points, never as limits:**
+
+| Heuristic | Where |
+|---|---|
+| Script Profiler candidates at `Self Time > 5%` / `Total Time > 15%` | [performance.md](performance.md#measurement-never-optimize-blind) |
+| Throttling naturally-slow work to 5–10 Hz | [performance.md](performance.md#cpu) |
+| Pooling above roughly one spawn per second | [patterns/lifecycle.md](patterns/lifecycle.md#object-pooling) |
+| Client bandwidth target of 30–50 KB/s per player | [device-performance.md](device-performance.md#bandwidth-per-player) |
+| Client RAM 400–500 MB on the low tier; the mid/high draw-call and triangle rows | [device-performance.md](device-performance.md#device-tiers) |
+
+**No per-tag millisecond budget exists.** Roblox publishes the frame bars and the GPU-wait rule, not "`stepHumanoid` above 2 ms". Earlier releases of this skill printed such a table; a MicroProfiler tag is a finding when it dominates a frame that missed its target, judged against that place's own baseline capture.
 
 ## Studio MCP tooling
 

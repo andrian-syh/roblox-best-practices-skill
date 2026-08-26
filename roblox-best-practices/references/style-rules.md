@@ -5,7 +5,7 @@ Luau-level conventions that apply to every script this skill writes. SKILL.md ke
 ## Rules
 
 - **Type safety is opt-in.** Do not add `--!strict` (or raise a file's strictness) on your own initiative — it requires an explicit request from the user. When a file or the surrounding project already declares a strictness level, match it for consistency, but never introduce or upgrade strictness unbidden; forcing strict can surface false type errors against loosely-typed engine APIs. Where strict is in use, type-annotate public function signatures, Configuration constants, and State tables.
-- **Naming:** `PascalCase` for services and required module tables; `camelCase` for local variables, functions, and Instance references (`purchaseRemote`, `coinLabel`); `UPPER_SNAKE_CASE` for Configuration constants. Module public methods `PascalCase` (`Inventory.AddItem`), private functions `camelCase`.
+- **Naming:** `PascalCase` for services and required module tables; `camelCase` for local variables, functions, and Instance references (`purchaseRemote`, `coinLabel`); `UPPER_SNAKE_CASE` for Configuration constants. Module public methods `PascalCase` (`Inventory.AddItem`), private functions `camelCase`. **Spell words out** — abbreviations are quicker to write and slower to read — and do not shout acronyms: `aJsonVariable`, not `aJSONVariable`.
 - Always `game:GetService()` — never `game.Workspace`-style direct indexing (exception: `workspace` global is fine).
 - **Never use deprecated APIs:** `wait()`/`spawn()`/`delay()` → `task.wait()`/`task.spawn()`/`task.delay()`; `:connect()`/`:wait()` lowercase → `:Connect()`/`:Wait()`; `Body*` movers (`BodyVelocity`/`BodyGyro`/`BodyPosition`/...) → constraints (`LinearVelocity`, `AlignOrientation`, `AlignPosition`); `Humanoid:LoadAnimation` → `Animator:LoadAnimation`; `Part.Velocity`/`RotVelocity` → `AssemblyLinearVelocity`/`AssemblyAngularVelocity`; `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame` → `PivotTo`/`GetPivot`; `Camera.CoordinateFrame` → `Camera.CFrame`; `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync`; InputContext/InputAction camera replication → `Player:GetCameraState()`; `tick()` → the right time API per [references/luau-language.md](luau-language.md#time-apis--one-job-each).
 - **Deprecated is not the same as discouraged.** Setting `Instance.new`'s second `parent` argument (create → set properties → parent last is a *performance* preference), or `FireAllClients` where a targeted list would do, are Advisory choices, not deprecated APIs — don't report them as violations. Full split: [references/false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them).
@@ -17,6 +17,24 @@ Luau-level conventions that apply to every script this skill writes. SKILL.md ke
 - **Documentation Comments follow the project; this skill's style is the recommendation.** Default block: `--[[ ... ]]` above the function, ordered desc params returns; Moonwave `--[=[ ... ]=]` or `---` when that is the project's style. Descriptions are at most 3 lines and 250 characters, implementation-agnostic and free of volatile detail, English preferred, no em dashes or double-hyphen dashes as punctuation, no emoji. Tags use Moonwave syntax (`@param <name> <type> -- <description>`). **In-body comments are banned in delivered code** — write self-documenting names and structure instead; existing notes in others' code stay untouched ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - **`const` for bindings that must not be rebound** [GA in Studio]. `const` is a contextual keyword valid anywhere `local` is, and it freezes the *binding*, not the value — a `const` table is still mutable, so it is not a substitute for `table.freeze` on shared config. Use it for Services, required modules, and Configuration constants, which are never legitimately reassigned; it is not required, and never retrofit it across an existing file unasked. Details and the `export` interaction: [references/luau-language.md](luau-language.md#const-bindings).
 - Deeper language/runtime rules — typing discipline, `task.spawn` vs `task.defer`, deferred engine events, error handling, time APIs, `@native`: [references/luau-language.md](luau-language.md).
+
+## Where code lives, and what runs it
+
+Placement is a correctness decision before it is an organizational one: the container decides whether code runs at all, on which side, and whether an exploiter can read it.
+
+| Container | Replicates to clients | What runs there |
+|---|---|---|
+| `ServerScriptService` | No | Server `Script`s (`RunContext` `Server` or `Legacy`) and ModuleScripts. The default home for game logic |
+| `ServerStorage` | No | Nothing executes; ModuleScripts and assets wait here to be required or cloned |
+| `ReplicatedStorage` | Yes | ModuleScripts shared by both sides, and `Script`s with `RunContext = Client`. **Not** LocalScripts |
+| `ReplicatedFirst` | Yes, first | The minimum needed before anything else loads (a loading screen). Keep it small |
+| `StarterPlayerScripts` | Copied to the player | Client scripts that live for the session |
+| `StarterCharacterScripts` | Copied per character | Client scripts that die and respawn with the character |
+| `StarterGui`, `StarterPack` | Copied to the player | UI scripts, and tools with their scripts |
+| `Workspace` | Yes | Server scripts driving specific instances. Everything here is visible to every client |
+
+- **`Script.RunContext` is the modern control**, with values `Legacy` (run only where a server Script legitimately runs), `Server`, and `Client`. A `Script` with `RunContext = Client` is how client code lives outside the Starter containers, in `ReplicatedFirst` or `ReplicatedStorage`. `LocalScript` has no `RunContext` and is client-only by definition; it is **not deprecated**, and a project built on LocalScripts is correct — never flag it.
+- **Anything in a replicating container is readable by an exploiter**, including scripts that are disabled or never run ([security.md](security.md#threat-model-assume-all-of-these-exist)). Secrets, enforcement lists, and loot tables live server-side, and the split is a project decision made at the start rather than a cleanup later.
 
 ## Commonly misremembered APIs (check before writing, before flagging)
 

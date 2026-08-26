@@ -84,7 +84,7 @@ Every rule in this skill applies to every genre — but each genre has a **domin
 - Set network ownership explicitly: `vehicle:SetNetworkOwner(driver)` on enter, back to `nil` (server) or auto on exit. Unowned high-speed vehicles rubber-band.
 - Constraint-based vehicles (`CylindricalConstraint`, `SpringConstraint`, `VectorForce`) — never legacy Body movers.
 - Race outcomes validated server-side from checkpoint-crossing order and timestamps; lap times measured on the server, displayed from the client.
-- Enable `Workspace.ImprovedPhysicsReplication`-era settings where available; test with Advanced Network Simulation at 100+ ms before shipping.
+- `Workspace.ImprovedPhysicsReplication` **[GA]** takes the optimized server/client state-synchronization path ([api-currency.md](api-currency.md#engine)); test with Network Simulation at 100+ ms before shipping.
 - Client-owned vehicle positions are cosmetic to other players — anti-cheat here means plausibility checks (max speed per vehicle class), not exact simulation.
 
 ## Horror / Story / Atmosphere

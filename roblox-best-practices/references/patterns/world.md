@@ -60,8 +60,23 @@ local targetInstance = targetHandle:Get()
 | Client-computed damage/currency sent to server | Server computes; client sends intent only |
 | `RemoteFunction` server→client | RemoteEvent pair |
 | Giant God-script | One module per responsibility; bootstrap script calls Init |
-| `Instance.new("Part", parent)` (parent arg) | Create, set properties, parent last |
+| `Instance.new("Part", parent)` (parent arg) — **discouraged, not deprecated**: Advisory in review, never a violation | Create, set properties, parent last |
 | Storing player data only in leaderstats | Session cache table; leaderstats is display-only |
 | `getfenv`/`setfenv`/`loadstring` | Never — kills Luau optimization and is a security hole |
 | `pcall` whose failure branch is silently ignored | Log the error with context or recover; a genuinely ignorable failure says why it is safe to skip in the function's Documentation Comment ([luau-language.md](../luau-language.md#error-handling)) |
 | Per-character state (connections, buffs) never cleared on respawn | Key by character, clear in `CharacterRemoving`/`Destroying` (see Character Lifecycle) |
+
+### Where the official tutorials differ, and why
+
+Roblox's *Coding Fundamentals* series is teaching material, and its shapes are simplified on purpose. A user citing it is not wrong about what it says; the tutorials simply stop before the production concern. Explain the gap rather than dismissing the source, and never treat tutorial-shaped code in an existing project as a defect on its own:
+
+| The tutorials teach | What ships |
+|---|---|
+| One script parented to each button, door, or trap | One tag-bound handler serving every tagged instance |
+| `Touched` with no debounce, and a blocking `task.wait` inside the handler | A debounce keyed by character, and no yield holding the handler open |
+| `CanTouch = false` as the cooldown mechanism | Explicit cooldown state; toggling engine properties as flags hides intent and affects other systems |
+| `leaderstats` as where the value lives | A session cache owns the value; `leaderstats` displays it ([patterns/data.md](data.md#one-owner-per-fact)) |
+| Points granted with no validation, rate limit, or persistence | Server-side validation, one shared rate limiter, and a real save path |
+| `pairs`/`ipairs` as the only iteration form | Generalized iteration in new code; `pairs`/`ipairs` remain correct ([luau-language.md](../luau-language.md#tables-references-copies-and-shape)) |
+
+The one place the tutorials are simply behind rather than simplified: an occasional `BrickColor.Red()` where `Color3.fromRGB` is the modern form.

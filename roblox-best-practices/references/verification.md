@@ -54,20 +54,31 @@ Once a finding passes all four steps, assign it a severity — **Blocker**, **Co
 
 Before closing any performance-sensitive system or optimization pass, validate against four concrete test gates:
 
+0. **Know which of the three you are proving.** Roblox measures an experience on **frame rate, memory, and join time**; a gate that only watches frame time can pass while join time doubles. Pick the axis the change touches, and record its number before and after.
 1. **Respawn Memory Leak Audit (20x Respawn Test):**
    - Playtest in Studio and record baseline `LuaGarbageCollector`, `Signals`, and `Instances` in Developer Console (`F9`).
    - Force character respawn / re-entry 20 times consecutively.
    - Inspect **Scene Analysis → Unparented Instances** and **Animation Memory**: active signal counts and Lua heap must return to baseline after garbage collection, with zero unparented model references leaking.
 2. **Replication & Data Ping Saturation Test:**
-   - Run a simulated combat / interaction scene with maximum players and entities under Studio Network Simulation (100–150 ms latency).
+   - Run a simulated combat / interaction scene with maximum players and entities under Studio Network Simulation (`Alt+S`, 100–150 ms latency with loss).
    - Check `Shift + F3` (Debug Stats) and Developer Console Server Stats: **Data Ping must not blow out significantly beyond Network Ping**. If Data Ping spikes, throttle remote firing rates or compress payloads into binary buffers.
 3. **Full-Load Baseline Frame Test (Device Emulator):**
    - Test with maximum realistic entity counts (100+ entities/projectiles).
-   - In Script Profiler, record 10 seconds under full load: no single function may exceed **`Self Time > 5%`**.
+   - In Script Profiler, record 10 seconds under full load and read the top of the list; `Self Time > 5%` is this skill's candidate threshold, not a platform limit ([api-currency.md](api-currency.md#performance-figures-and-where-they-come-from)).
+   - In the MicroProfiler (`Ctrl+F6` in Studio, `Ctrl+Alt+F6` in the client), confirm no frame overruns 16.67 ms and that GPU Wait Time stays out of the red (2.5 ms).
    - In Viewport Render Stats (`Shift + F2`), verify **Draw Calls <= 1,000** and **Triangles <= 1,000,000**.
 4. **Thermal & Sustained Play Test:**
    - Execute a 10–15 minute continuous active session on a physical test device (or observe frame time stability window).
    - Verify that frame pacing remains stable at 60 FPS without sustained degradation over time.
+
+## After it ships: monitor
+
+Verification does not end at the playtest, because the playtest is two people on good hardware. The **Performance Dashboard** on the Creator Dashboard is the only view of real players: client crash rate, client and server memory, frame rate, average session time, and a `PlaceScriptMemory` breakdown, across whatever date range you pick.
+
+- **Correlate with releases.** Read the dashboard against the dates you shipped changes; a memory line that starts climbing on a release day names its own cause.
+- **Watch trends, not snapshots.** Memory that grows across a session is the shape of a leak; a single reading cannot show it.
+- **Client crash rate above 2–3% is an investigation**, and usually a memory one on low-end devices.
+- **Reproduce in Studio with a long session**, then use Scene Analysis and `debug.setmemorycategory` attribution to find which system is growing ([performance.md](performance.md#measurement-never-optimize-blind)).
 
 ## Unit-testable architecture (framework-agnostic)
 

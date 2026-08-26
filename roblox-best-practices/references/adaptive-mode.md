@@ -8,7 +8,7 @@ Procedure for applying this skill while conforming to a studio's existing coding
 |---|---|
 | Section header syntax/wording (`-- // ... // --` vs `--== ... ==--` vs none) | Server-authoritative design; remote argument validation |
 | Section ordering and which subsections exist | Connection/instance cleanup; no leaks |
-| Naming conventions (casing of functions, constants, privates) | No deprecated APIs (`wait`, `spawn`, `Instance.new` parent arg, ...) |
+| Naming conventions (casing of functions, constants, privates) | No deprecated APIs (`wait`, `spawn`, `tick`, `Body*` movers, ...). Discouraged-but-functional shapes such as the `Instance.new` parent argument are **not** in this column ([false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them)) |
 | Module require ordering | No per-frame garbage; no polling; event-driven design |
 | Framework idioms (Knit services, ECS systems, single-script, custom loaders) | `pcall` + retry on external/yielding calls |
 | File/module organization and bootstrap pattern | Data-safety rules (UpdateAsync, BindToClose, save on leave) |

@@ -54,4 +54,4 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Never:** log per frame · send player-identifying free text without filtering · let an analytics failure propagate into a gameplay path.
 **Failure modes:** a client error storm from one broken build saturating the error-forwarding remote. The rate limit on that remote is not optional.
 **Verify:** trigger an error deliberately and confirm it appears with context, while gameplay continues unaffected.
-**Deeper:** [ui-crossplatform.md](../verification.md#error-telemetry--logging) · [performance.md](../performance.md#measurement-never-optimize-blind)
+**Deeper:** [verification.md](../verification.md#error-telemetry--logging) · [performance.md](../performance.md#measurement-never-optimize-blind)

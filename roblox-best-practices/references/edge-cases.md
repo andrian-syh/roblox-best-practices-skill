@@ -108,7 +108,7 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | State | What breaks | Guard |
 |---|---|---|
 | Remote fires before the receiver is ready | The event is lost with no error | Create remotes in one place at startup; have clients `WaitForChild` |
-| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([security.md](monetization-policy.md#processreceipt-developer-products--correctness-rules)) |
+| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([monetization-policy.md](monetization-policy.md#processreceipt-developer-products--correctness-rules)) |
 | Arguments of any type, at any rate | Type errors, or the handler acting on garbage | Validate type, range, ownership, rate ([patterns/network.md](patterns/network.md#remote-communication)) |
 | Flooding | The handler starves the server | One shared rate limiter ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
 | Client-reported position or time | Trivially forged | Treat as a hint; validate outcomes server-side |

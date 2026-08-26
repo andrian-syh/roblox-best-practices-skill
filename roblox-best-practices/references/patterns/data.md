@@ -49,6 +49,7 @@ Three classes cover almost everything:
 
 - **Say which class you chose.** Name it where the reader needs it: in the function's Documentation Comment (the block above carries non-obvious external constraints) or in a well-named helper such as `loadWithOrderedDataStore` — the body itself carries no note ([section-layout.md](../section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - **Never swallow silently.** A `pcall` whose failure branch does nothing hides the outage that caused it. Log with context even when the policy is to continue ([luau-language.md](../luau-language.md#error-handling)).
+- **Fire independent calls concurrently.** The engine batches web calls that start within a short window into far fewer HTTP requests on its own, so twenty product lookups started together can cost one or two requests instead of twenty. Start them with `task.spawn` and collect the results rather than awaiting each in turn; each still carries its own `pcall`. Sequential awaits defeat the batching entirely, and nothing here is opted into or configured.
 - **Bound the retries.** Retrying forever converts a transient outage into a hung session and burns the request budget everyone else needs ([limits-budgets.md](../limits-budgets.md)).
 - **A degraded session should be visible.** The player being told "your progress could not be loaded, changes will not be saved" is vastly better than discovering it after an hour of play.
 

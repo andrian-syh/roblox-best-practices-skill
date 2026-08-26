@@ -5,6 +5,7 @@ Everything that crosses a boundary: client to server, server to client, and serv
 ## Contents
 
 - [Remote Communication](#remote-communication)
+- [What survives a remote call](#what-survives-a-remote-call)
 - [Cross-Server Communication](#cross-server-communication)
 - [Streaming (StreamingEnabled)](#streaming-streamingenabled)
 
@@ -27,9 +28,26 @@ end
 ```
 
 - A handler that type-checks and early-returns on bad input is already **complete**: the skeleton is the maximum shape, not a mandatory checklist. A harmless, idempotent action needs no rate/ownership layer, and silent rejection is correct (an error reply aids fuzzing). Don't report a lean handler as missing layers — see [false-positives.md](../false-positives.md#security--validation--a-handler-can-already-be-complete).
+- **Every client-triggerable instance is a remote in disguise.** An exploiter can fire a `ProximityPrompt`, `ClickDetector`, or `DragDetector` from anywhere, at any rate, regardless of `Enabled`, `MaxActivationDistance`, or where their character actually is. Treat the resulting server-side event exactly like a `RemoteEvent` handler: re-verify distance, state, and ownership at execution time ([cases/world-interaction.md](../cases/world-interaction.md#interactable-objects-and-prompts)).
 - Prefer `RemoteEvent` + a response event over `RemoteFunction` server→client (a client that never returns hangs your thread). Client→server `RemoteFunction` is acceptable with a server-side timeout mindset.
 - Namespace remotes in one folder (`ReplicatedStorage/Remotes`); create them in one server script or build step so clients can `WaitForChild` deterministically.
 - State that clients merely *display* → replicate via Attributes on the player/character instead of remotes.
+
+## What survives a remote call
+
+Remote arguments are **serialized, not passed**. The receiving side gets a copy built by the engine, and several shapes do not survive the trip. Each of these is a silent `nil` or a changed value rather than an error, which is why they are found in production instead of in review:
+
+| Sent | Received |
+|---|---|
+| A function | `nil` |
+| A table with non-string, non-numeric keys | Keys converted to strings |
+| A mixed table (array part **and** string keys) | Mangled; send a pure array or a pure dictionary |
+| A `nil` inside a table | Truncates or holes the table; never send one |
+| A table with a metatable | Contents only; the metatable is stripped, so an OOP object arrives as plain data |
+| An instance the receiver cannot see (`ServerStorage`, streamed out) | `nil` |
+| Any table | A **copy**; the two sides no longer share identity, and mutating one does nothing to the other |
+
+Consequences worth designing around: send **ids and plain data**, never live objects or class instances; rebuild behavior on the receiving side from a shared catalog module; and never use table identity as a token, because it does not survive.
 
 ## Cross-Server Communication
 

@@ -10,6 +10,7 @@
 - [Engine levers before script levers](#engine-levers-before-script-levers)
 - [The degradation ladder](#the-degradation-ladder)
 - [Adaptive quality](#adaptive-quality)
+- [Join time](#join-time)
 - [Bandwidth per player](#bandwidth-per-player)
 - [Memory on low-end devices](#memory-on-low-end-devices)
 
@@ -67,7 +68,7 @@ end
 
 ## Device tiers
 
-Assume a wide spread of hardware and design for the bottom of it.
+Assume a wide spread of hardware and design for the bottom of it. The demographics and budgets below are Roblox's own published figures.
 
 | Tier | Reality & Demographic | Hard Budgets & Ceilings |
 |---|---|---|
@@ -75,7 +76,8 @@ Assume a wide spread of hardware and design for the bottom of it.
 | **Mid** | Recent phones, low-end laptops, older consoles. | Draw calls <= 2,000; Triangles <= 2,500,000 |
 | **High** | Desktops and current consoles. | Scaling headroom for post-fx & uncapped FPS |
 
-- **Pick a named baseline device and test on it throughout development**, watching frame rate and memory. This is Roblox's own recommendation, not a nicety.
+- **Pick a named baseline device and test on it throughout development**, watching frame rate and memory. This is Roblox's own recommendation, not a nicety. Their worked example of a test set spanning tiers and manufacturers: an Infinix Smart 9, a Motorola Moto G05, an Oppo A18, an Amazon Fire HD 10, and a Samsung Galaxy S22 Ultra.
+- **On the device itself:** Developer Console (`F9`) for memory, the MicroProfiler for frame data, and the Performance Stats overlay for FPS, memory, and ping. Check the things only real hardware shows: thermal behavior, cellular and weak-Wi-Fi conditions, touch target size, UI readability at arm's length, and input-method switching.
 - **Published budgets for a baseline device: under 1,000 draw calls and under 1,000,000 triangles.** Use `Shift+F2` debug stats to see where a scene stands.
 - **Build for low and scale up.** Adding effects for strong devices is easy; discovering the game is unplayable on a phone after launch is not.
 - **Thermal throttling testing:** run a continuous 10–15 minute active gameplay session on hardware. A steady decline in FPS over time indicates CPU/GPU downclocking due to heat; isolate sustained hot paths in the MicroProfiler.
@@ -88,7 +90,7 @@ Assume a wide spread of hardware and design for the bottom of it.
 
 Roblox ships settings that buy more headroom than most script optimization, and they cost no runtime code. Reach for these first.
 
-**Streaming settings tuned for low-end devices** ([patterns/network.md](patterns/network.md#streaming-streamingenabled) covers the code-side rules):
+**Streaming settings tuned for low-end devices** ([patterns/network.md](patterns/network.md#streaming-streamingenabled) covers the code-side rules). These are Roblox's own recommended values, and `Workspace:ApplyRecommendedStreamingSettings()` sets them in one call from a **plugin** — `StreamingEnabled` itself is not scriptable and is switched on in Studio:
 
 | Property | Recommended | Why |
 |---|---|---|
@@ -109,8 +111,10 @@ Roblox ships settings that buy more headroom than most script optimization, and 
 - **GPU Draw Call Instancing:** the engine batches identical meshes into 1 draw call **only when they share the same Asset ID**, identical `SurfaceAppearance`, or identical material/texture. Importing an entire scene as one piece creates unique asset IDs and destroys instancing; import assets once as Packages and duplicate them in Studio.
 - **Avoid Layered Transparency Overdraw:** placing multiple semi-transparent parts (glass, foliage alpha masks, layered particle emitters) in front of each other forces the GPU to redraw overlapping pixels repeatedly (hundreds of thousands of overdrawn pixels). Use transparency `0` or `1` where possible, and disable `BasePart.CastShadow` on decorative foliage.
 - **Prefer built-in materials to custom textures**, which conserves memory directly.
-- **Reuse meshes and textures** by resizing and rotating rather than importing near-duplicates, and use packages so the same asset does not enter the place under several IDs.
-- **Restrain `ContentProvider:PreloadAsync()`:** only preload opening UI, menu backgrounds, and the initial spawn area. Preloading the entire `Workspace` inflates join times and drives away mobile players. Enable **"Print Join Size Breakdown"** in Network Studio Settings to audit large replicated assets.
+- **Reuse meshes and textures** by resizing, rotating, and overlapping rather than importing near-duplicates, and use packages so the same asset does not enter the place under several IDs. Import map assets individually rather than as one whole map, which mints a unique id per piece and destroys instancing.
+- **Trim sheets and a single tinted texture** beat separate colored variants: one texture plus `SurfaceAppearance.Color` covers what several uploads otherwise would.
+- **Set `MeshPart.RenderFidelity` to `Automatic` or `Performance`**, and give identical meshes the same `MeshContent` and the same `SurfaceAppearance`/`TextureContent` so the engine can batch them.
+- **Restrain `ContentProvider:PreloadAsync()`** to the first screen, and audit join payloads — both belong to [Join time](#join-time) below.
 - **Keep client-unnecessary assets in `ServerStorage`, not `ReplicatedStorage`** — anything in ReplicatedStorage is downloaded and held by every client.
 
 ## The degradation ladder
@@ -136,6 +140,15 @@ Measuring and adjusting at runtime beats a fixed setting, provided it is done wi
 - The asymmetry is the point: without it, quality oscillates at the boundary and the flicker is worse than the low setting.
 - Keep the whole thing on a timed loop at a low frequency; this is scheduling, not per-frame work.
 - Expose a manual override. Players know their device better than a heuristic does.
+
+## Join time
+
+Roblox measures experience performance on **three** axes, and this is the one script rules never touch: frame rate, memory, and **the time from pressing play to a playable world**. It decides whether a player arrives at all, so it is a performance metric, not a loading detail.
+
+- **Time it, on the baseline device.** If it runs to more than a few seconds, instance streaming is the first lever.
+- **`ContentProvider:PreloadAsync()` is for the first screen only** — loading-screen images, menu buttons and icons, and the spawn area. Preloading the `Workspace` inflates join time and costs mobile players. Do not treat `ContentProvider.RequestQueueSize` as a completion signal, and give a **Skip Loading** button where the queue is large.
+- **Audit what replicates at join.** Enable *Print Join Size Breakdown* in Network Studio Settings; anything in `ReplicatedStorage` is downloaded by every client, so client-unnecessary assets belong in `ServerStorage`.
+- **Splitting a huge place across teleports trades one cost for another** — smaller joins, but a teleport wait each time. Decide deliberately.
 
 ## Bandwidth per player
 

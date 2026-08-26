@@ -83,7 +83,8 @@ The concrete payload of this file. Each left-hand entry is something agents rout
 |---|---|
 | Interpolation, clamping, remapping, sign, rounding | `math.lerp`, `math.clamp`, `math.map`, `math.sign`, `math.round` |
 | Numeric validity checks | `math.isnan`, `math.isinf`, `math.isfinite` |
-| Linear search, preallocation, range copy, joining, reuse, immutability | `table.find`, `table.create`, `table.move`, `table.concat`, `table.clear`, `table.freeze` |
+| Linear search, preallocation, range copy, joining, reuse, immutability | `table.find`, `table.create`, `table.move`, `table.concat`, `table.clear`, `table.freeze`/`table.isfrozen` |
+| A shallow copy of a table | `table.clone` (deep copies stay recursive, and the project usually has one) |
 | Manual per-frame property interpolation | `TweenService` |
 | A registry of instances by kind or role | `CollectionService` tags plus its added/removed signals |
 | `ObjectValue`/`StringValue`/`IntValue` config trees | Attributes |
@@ -99,6 +100,7 @@ The concrete payload of this file. Each left-hand entry is something agents rout
 | A custom scheduler or coroutine wrapper | the `task` library |
 | A deep-copy or merge helper written from scratch | Check the project first; these almost always already exist |
 | A rate limiter written per feature | One shared limiter, called from every handler ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
+| A cross-server queue built out of a sorted map | `MemoryStoreService` queues, which are a first-class structure ([patterns/network.md](patterns/network.md#cross-server-communication)) |
 
 Availability of the newer entries is recorded in [api-currency.md](api-currency.md). If an API is not available in the target environment, fall back to the stable equivalent rather than treating the gap as licence to build a framework.
 

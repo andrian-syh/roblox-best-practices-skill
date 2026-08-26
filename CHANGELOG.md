@@ -2,6 +2,67 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.18.1] - 2026-08-26
+
+**Two documentation passes, one theme: every claim now names a source, and the invented ones are gone.** The first read the Creator Hub performance-optimization guides (`design`, `identify`, `improve`, `monitor`, `scene-analysis`, `test-on-hardware`, `microprofiler/*`) and the `Workspace` class reference, confirming most of what 1.17.2–1.18.0 added, correcting the rest, and filling in the tooling those releases had described from memory. The second read the Luau reference, the scripting and security guides, and the whole *Coding Fundamentals* tutorial series, which surfaced the language fundamentals the skill had been assuming rather than stating — truthiness, table and `require` semantics, and what actually survives a remote call.
+
+### Fixed
+- **Stale StyleQuery claim.** `performance.md` still told the agent StyleQuery was unconfirmed; `api-currency.md` had it [GA] since 1.17.1. The exact class of error 1.17.1 exists to prevent, in the file that release did not touch.
+- **`Model.StreamingMode`** in `performance.md` is `Model.ModelStreamingMode`, the spelling every other file already used.
+- **The `Instance.new` parent argument was listed as a deprecated API** in `adaptive-mode.md`'s non-negotiable column and as "reject on sight" in `patterns/world.md`, while `style-rules.md` and `false-positives.md` correctly class it as discouraged-but-functional. Both now say Advisory.
+- **Invented MicroProfiler thresholds removed.** The per-tag millisecond budgets (4 ms FastClusters, 2–3 ms `stepHumanoid`, and the rest) are published nowhere. The tag table now carries the documented tag paths and Roblox's own mitigations, and the judgment rule is a tag's share of a frame that missed its target, against that place's baseline capture.
+- **Five mislabeled cross-references** (`security.md` pointing at `monetization-policy.md`, `ui-crossplatform.md` at `verification.md`).
+- `SceneAnalysisService`, `Workspace.PlayerCharacterDestroyBehavior`, and `Workspace.ImprovedPhysicsReplication` were held at [Verify]/[UNVERIFIED]; all three are documented. Promoted to [GA].
+
+### Added
+- **MicroProfiler, properly.** Shortcuts per environment (`Ctrl+F6` Studio and desktop, `Ctrl+Alt+F6`/`Ctrl+Shift+F6` in the client, `Ctrl+P` pause, `Ctrl+F` search), mobile web UI and its frame-count URL, dump filenames and their log directories, the 60-frame/4-second server capture limits, the frame-time bars for 30/60/120/240 FPS, the 2.5 ms GPU-wait red-bar rule, the six modes, the three threads, `debug.profilebegin`/`profileend` custom scopes, and the network view's rows, colors, and verbosity levels.
+- **Scene Analysis in full:** all six views including Instance Composition and Audio Memory, plus the six `SceneAnalysisService` methods.
+- **Task scheduler phases.** `PreSimulation` for logic feeding physics **and for `Motor6D.Transform` writes** (Animators overwrite later writes), `PostSimulation` for logic reacting to physics, `PreRender`/`BindToRenderStep` for camera and input only.
+- **Join time** as a first-class metric in `device-performance.md` — Roblox measures frame rate, memory, **and** join time; `PreloadAsync` scope, the join-size audit, and the teleport trade-off live there now.
+- **Post-ship monitoring** in `verification.md`: the Performance Dashboard, correlating metrics with release dates, and the 2–3% client crash rate investigation line.
+- **Non-scriptable settings called out.** `Workspace.StreamingEnabled`, `PhysicsSteppingMethod`, and `EnableSLIMAvatars` cannot be assigned from Luau, and `AuthorityMode` is read-only to scripts — recommending one means asking the user to change a Studio setting. `Workspace:ApplyRecommendedStreamingSettings()` (plugin security) applies the recommended streaming values in one call.
+- **Parallel Luau constraints:** `require()` is unavailable during a parallel phase, `Terrain:WriteVoxels` is serial-only, and the three entry points are `task.desynchronize`, `ConnectParallel`, and `Actor:BindToMessageParallel`.
+- `api-currency.md` gained a **Performance figures** section splitting published Roblox numbers from this skill's heuristics, so a reader can tell which is which.
+- Device testing: Roblox's own example baseline device set, and what only real hardware shows (thermal, cellular, touch targets, arm's-length readability, input switching).
+
+### Added (language fundamentals pass)
+- **`luau-language.md` gained the fundamentals the skill assumed everyone knew.** Three new sections, all sourced from the Luau reference pages:
+  - **Values, truth, and coercion** — only `false` and `nil` are falsy, so `0` and `""` pass an `if`; `and`/`or` return values rather than booleans, which is what makes `x and y or z` a trap; string/number coercion in both directions; full enum names over coerced numbers; `"100" < "20"` lexicographic ordering; doubles with ~15 digits and exact integers to 2^53; `0x`/`0b`/`1_000_000` literal forms.
+  - **Tables: references, copies, and shape** — assignment aliases rather than copies, `table.clone` and `table.freeze` are both shallow, `table.isfrozen`, mixed tables and `nil` holes break `#` and DataStore encoding alike, no mutation during iteration, and weak tables are not a cleanup strategy.
+  - **Modules: what `require` actually returns** — cached once per context, and **a separate instance per side of the client-server boundary**, which is shared code and never shared state.
+- **What survives a remote call (`patterns/network.md`).** Remote arguments are serialized, not passed: functions arrive `nil`, non-string keys become strings, mixed tables are mangled, `nil` inside a table truncates it, metatables are stripped so an OOP object arrives as plain data, instances the receiver cannot see arrive `nil`, and every table is a copy with a new identity. Silent wrong values, all of them.
+- **`security.md` grew the layers the engine's own security guides call for:**
+  - **Design it out before detecting it** — the guiding question, plus structural answers (sequential checkpoints, server-computed damage, making the reward not worth taking).
+  - **`NaN` as a validation hole** — its `typeof` is `"number"` and it fails every comparison, so it walks through a range check untouched. `math.isfinite` before the range check, not after.
+  - **Payload shape spoofing** — a table can impersonate an instance; `typeof(x) == "Instance"` plus `:IsDescendantOf()` is the real check.
+  - **Detection and the consequence ladder** — completion times, rate of gain, robotic action cadence, honeypots; then logging → quiet mitigation → temporary restriction → visible enforcement, with suspicion accumulated across signals rather than acted on singly.
+  - **Third-party assets and script capabilities** — backdoors in inserted models, and the sandboxed-container answer (`Workspace.SandboxedInstanceMode`, `Sandboxed`, `Capabilities`), with Network / DataStore / AssetRequire / CapabilityControl / LoadString named as the capabilities to withhold. Experimental, so never a default.
+  - **Client-visible code is decompilable** — including disabled and unused scripts — and **network ownership is authority**: an owning client can forge or suppress `Touched` and set velocity freely.
+  - Client-triggerable instances (`ProximityPrompt`, `ClickDetector`, `DragDetector`) fire from any distance regardless of `Enabled`, and are now stated as remotes in disguise in both `security.md` and `patterns/network.md`.
+- **Transparent batching (`patterns/data.md`).** Concurrent web calls are batched by the engine into far fewer HTTP requests; `task.spawn` the independent ones instead of awaiting each in turn, since sequential awaits defeat it.
+- **Native codegen limits (`luau-language.md`)** — 64K instructions per code block, 32K internal blocks, 1M per script, a shared per-experience allocation ceiling, `debug.dumpcodesize()`, plus where native compiles badly (unannotated parameters, `getfenv`/`setfenv`, engine-API-bound code) and why annotating `Vector3` arguments matters.
+- `table.clone`/`table.isfrozen` in the do-not-hand-roll catalog and in `api-currency.md`; script capabilities and `debug.dumpcodesize` recorded there too.
+- Review checklist gained a remote-serialization and `math.isfinite` gate.
+
+- **Where code lives (`style-rules.md`).** A container table the skill never carried: what replicates, what executes, and what each Starter container is for — plus **`Script.RunContext`** (`Legacy`/`Server`/`Client`), which is how client code lives in `ReplicatedFirst` or `ReplicatedStorage` without a LocalScript. LocalScripts remain correct and are never a finding.
+- **The full script-directive set (`luau-language.md`):** the three type modes, `--!native`, `--!optimize 0|1|2`, and `--!nolint`, with the note that Studio bolds the word after `TODO`.
+- **Bindables marshal like remotes** (`security.md`): copied tables, stringified keys, stripped metatables, and an `Invoke()` that yields forever with no `OnInvoke`. Not a trust boundary, but not a correctness free pass either.
+
+- **Where the official tutorials differ (`patterns/world.md`).** Reading the whole *Coding Fundamentals* series showed its shapes are simplified for teaching, not wrong: a script per button, `Touched` with no debounce and a blocking `task.wait` inside the handler, `CanTouch = false` as a cooldown, `leaderstats` as the value's home, points granted with no validation or persistence. A table now names each one against what ships, so a user citing the tutorial gets the gap explained rather than dismissed, and tutorial-shaped code in an existing project is never a defect on its own. (The one genuinely dated idiom found across the series: an occasional `BrickColor.Red()`.)
+- **Parallel Luau has four documented safety levels**, not the two the skill listed: Unsafe, Read Parallel, Local Safe, and Safe. Added, with `SharedTable`'s atomic updates, and two more anti-patterns: an actor per entity, and nesting actors.
+- **Removing several entries in place walks the array backwards** — `table.remove` shifts later indices down, so a forward loop skips whatever slid into the gap.
+- **Naming:** spell words out, and do not shout acronyms (`aJsonVariable`, not `aJSONVariable`).
+- **Releasing references** — an unparented instance or a large intermediate table stays in memory while any variable still names it; clearing that variable is what lets the collector work.
+- `MemoryStoreService` queues added to the do-not-hand-roll catalog.
+
+### Fixed (language fundamentals pass)
+- **`SignalBehavior` default was stated backwards.** The skill said Deferred is the default for new experiences; the enum value `Default` currently resolves to **Immediate**, with Deferred shipped in Roblox's place templates and forced by Server Authority. Corrected, and the deferred resumption points are now listed by name rather than as "the next invocation point".
+
+### Changed
+- **`evaluation-matrix.md` is scoped to audits the user asks for.** Scoring 3 is a pass; the distance from 3 to 5 is headroom, not a findings list. `review-checklist.md` and `false-positives.md` say the same, closing a conflict where the matrix demanded ceremony the false-positive rules forbid.
+- `performance.md`'s symptom table gained the documented server-heartbeat, Data-Ping-vs-Network-Ping, low-end-crash, and join-time rows.
+- SKILL.md trimmed back under the 5,000-token guideline.
+
 ## [1.18.0] - 2026-08-26
 
 **Adds official Roblox Studio diagnostic scopes, Scene Analysis suite, low-end hardware baseline hardening (anti-OOM Error 292), and structured proof-of-performance verification protocols.**

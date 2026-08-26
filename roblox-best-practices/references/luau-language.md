@@ -4,6 +4,9 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 
 ## Contents
 
+- [Values, truth, and coercion](#values-truth-and-coercion)
+- [Tables: references, copies, and shape](#tables-references-copies-and-shape)
+- [Modules: what require actually returns](#modules-what-require-actually-returns)
 - [Typing](#typing)
 - [Modern idioms](#modern-idioms)
 - [Standard library — recent additions](#standard-library--recent-additions)
@@ -12,6 +15,37 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 - [Error handling](#error-handling)
 - [Time APIs — one job each](#time-apis--one-job-each)
 - [Attributes](#attributes)
+
+## Values, truth, and coercion
+
+The rules that silently produce wrong behavior rather than an error. None is exotic; all are routinely written wrong by someone who learned another language first.
+
+- **Only `false` and `nil` are falsy.** `0` and `""` are **truthy**. `if playerCount then` is true when the count is zero, and `if text then` is true when the text is empty. Test what you mean: `if playerCount > 0 then`, `if text ~= "" then`.
+- **`and`/`or` return values, not booleans.** `a and b` yields `b` when `a` is truthy, else `a`; `a or b` yields `a` when truthy, else `b`. That makes `local name = customName or DEFAULT_NAME` idiomatic, and makes `x and y or z` a trap whenever `y` can itself be `false` or `nil` -- use the `if x then y else z` expression instead.
+- **Arithmetic coerces strings, concatenation coerces numbers.** `100 + "7"` is `107`; `"Pi is " .. math.pi` is a string; a non-numeric string throws. Never lean on either direction across a trust boundary: `typeof()` first, then convert deliberately with `tonumber`/`tostring`/`string.format`.
+- **Enums: write the full enum name.** Assigning a number or string to an enum-valued property works by coercion and reads as a magic value; `Enum.Material.Neon` says what it is.
+- **String comparison is lexicographic**, so `"100" < "20"` is true. Sort numbers as numbers.
+- **Numbers are doubles:** roughly 15 significant digits, exact integers to 2^53, past which counters stop incrementing ([genres.md](genres.md#simulator--tycoon--idle)). Roblox ids are int64 and must never take a lossy float path.
+- Literals may be written `0xFF`, `0b1100`, `12e3`, and `1_000_000`; the underscore form is worth using for large tunables. `math.floor(n) == n` is the integer test, and `math.modf` splits a number toward zero.
+
+## Tables: references, copies, and shape
+
+- **A table variable is a reference.** `local b = a` gives two names for one table. Passing a table into a function passes that same reference, so a function that mutates its argument is mutating the caller's data unless that was the contract.
+- **`table.clone` is shallow**, which is usually what you want; nested tables still share. A deep copy is a recursive helper, and one the project probably already has ([minimal-code.md](minimal-code.md#already-exists--do-not-hand-roll-these)).
+- **`table.freeze` is shallow too.** Freeze nested tables as well when the whole config must be immutable, and check with `table.isfrozen`. A frozen table errors at the mutation site instead of corrupting shared state quietly.
+- **Arrays are contiguous `1..n`; dictionaries are keyed.** Keep them apart. A mixed table has an undefined `#`, fails DataStore encoding, and is mangled in transit through a remote ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)).
+- **A `nil` in the middle of an array is a hole**, after which `#` may report either side of it. Remove with `table.remove`, which closes the gap, rather than assigning `nil` into the middle.
+- **Generalized iteration is the modern default:** `for key, value in dictionary do`. `pairs`/`ipairs` still work, are not deprecated, and are never a finding -- Roblox's own introductory tutorials still teach them as the primary form ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
+- **Do not mutate a table while iterating it.** Collect first and apply after, or iterate a copy. When you must remove several entries in place, **walk the array backwards** (`for i = #list, 1, -1`): `table.remove` shifts every later index down, so a forward loop skips the element that slid into the gap.
+- **Weak tables (`__mode`) are not a cleanup strategy.** To know whether an instance still exists, use `CollectionService:GetInstanceRemovedSignal` or `AncestryChanged`; the engine documentation says so, and the cleanup rules here assume an explicit teardown path regardless ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
+
+## Modules: what require actually returns
+
+- **One instance per context, cached.** `require` runs a ModuleScript once and hands every later caller the same value, so module-level state is shared by every script that requires it on that side.
+- **The client and the server get different copies.** A ModuleScript required from both sides of the boundary returns a **separate** instance to each, with separate state. Shared *code*, never shared *state*: anything both sides must agree on travels over a remote or an attribute.
+- That same one-instance-per-VM rule is why a command-bar `require` cannot tell you anything about live game state ([verification.md](verification.md#studio-native--mcp-environments)).
+- **Circular requires error** (`Requested module was required recursively`). Extract the shared part into a third module, or pass the dependency in at init time ([style-rules.md](style-rules.md)).
+- Return a table of functions rather than a bare function unless the module genuinely is one operation: it names its members at the call site and leaves room for a second.
 
 ## Typing
 
@@ -94,9 +128,9 @@ Not applicable to Studio work, despite appearing in Luau release notes: the embe
 
 ## Deferred engine events
 
-`Workspace.SignalBehavior` defaults to **Deferred** in new experiences; older places may still run Immediate — check the property, never assume either way. Under Deferred:
+`Workspace.SignalBehavior` decides whether a handler runs at fire time or later in the frame. **Read the property; never assume.** The enum value `Default` currently resolves to **Immediate** and is documented to become Deferred eventually, while new places from Roblox's templates ship set to **Deferred** and Server Authority forces it ([server-authority.md](server-authority.md)). Under Deferred:
 
-- Handlers run at the next invocation point later in the frame, **not synchronously at fire time**. Never write code that assumes a handler's side effects are visible on the line after the state change that fired it.
+- Handlers run at the next **resumption point** -- input processing, `PreRender`, `PreAnimation`, `PreSimulation`, `PostSimulation`, `Heartbeat`, a `task.wait`/`spawn`/`delay`, or `BindToClose` -- **not synchronously at fire time**. Never write code that assumes a handler's side effects are visible on the line after the state change that fired it.
 - A connection made after a fire within the same resumption cycle does not receive that fire — connect before you cause the event.
 - Re-entrant fire chains are depth-limited (10) and then dropped — recursive fire-inside-handler designs fail silently; restructure them as queues.
 - `Instance.Destroying` handlers run after destruction has already completed — capture any state you need from the instance *before* it dies, not inside the handler.
@@ -133,11 +167,27 @@ Two are documented today:
 | `@native` | none | Compiles this one function natively. Does **not** apply recursively to nested functions. |
 | `@deprecated` | `use`, `reason` (both optional) | Linter warning at every call site, plus deprecated styling in autocomplete/LSP. |
 
+### Script directives
+
+Directives are comments beginning with `!` on the first lines of a script, and they are the whole set — there is no user-defined directive:
+
+| Directive | Effect |
+|---|---|
+| `--!strict` / `--!nonstrict` / `--!nocheck` | Type-checking mode. Opt-in only; never added on this skill's initiative ([style-rules.md](style-rules.md)) |
+| `--!native` | Native code generation for the whole script |
+| `--!optimize 0` / `1` / `2` | Bytecode optimization level: disabled, baseline, enhanced. Pair `2` with `--!native` in compute-heavy modules |
+| `--!nolint` | Suppresses lint warnings. A blunt instrument — prefer fixing the warning, and never add it to silence a real one |
+
+Studio also bolds the word after `TODO` in a comment, which makes `-- TODO fix the respawn race` findable. That is a marker, not prose commentary: the in-body comment ban still holds for delivered code ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
+
 ### `@native` and native codegen
 
 - `--!native` for whole compute-heavy ModuleScripts, per [performance.md](performance.md#cpu) — don't scatter it; it costs memory.
 - `--!optimize 2` instructs the compiler to apply maximum bytecode optimizations (inlining, constant folding, register allocation). Pair `--!native` with `--!optimize 2` in modules dedicated to heavy mathematical simulation, custom pathfinding, or batch raycast calculations.
-- The `@native` **function attribute** compiles just one function natively — finer-grained than the whole-script directive; prefer it when a single hot function qualifies. Because it is not recursive, a hot closure defined *inside* an `@native` function is not itself native; hoist it or annotate it separately.
+- The `@native` **function attribute** compiles just one function natively, finer-grained than the whole-script directive; prefer it when a single hot function qualifies. Because it is not recursive, a hot closure defined *inside* an `@native` function is not itself native; hoist it or annotate it separately.
+- **Where it pays:** functions called repeatedly, doing math over tables and `buffer`s. Top-level code that runs once gains nothing, and a script dominated by engine API calls gains little.
+- **Where it compiles badly:** `getfenv`/`setfenv` (banned here anyway), unannotated parameters, and built-ins handed non-numeric arguments. **Annotate argument types**, `Vector3` especially, or the compiler guesses and pays for the check.
+- **There are hard ceilings** on natively compiled code: 64K instructions per code block, 32K internal blocks, 1 million instructions per script, and a per-experience allocation limit that stops compiling further scripts once exhausted. `debug.dumpcodesize()` reports consumption. That shared budget is the concrete reason not to sprinkle `--!native` everywhere.
 
 ### `@deprecated`
 

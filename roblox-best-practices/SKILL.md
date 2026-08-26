@@ -10,15 +10,15 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.18.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 1.18.1. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
 
-Long sessions get summarized, and a summary that drops these rules silently downgrades every file written afterwards. The card below is the irreducible core. Two standing obligations:
+A summary that drops these rules silently downgrades every file written afterwards. Two standing obligations:
 
-1. **Carry it forward verbatim.** Any summary, handoff, plan, or task note you produce reproduces this card as-is. It is active instruction, not background context — never compress it into "follow the Roblox skill".
-2. **Re-read before acting when it is gone.** Before writing or reviewing any Luau, if the card's full text is not visible in your current context, re-read this file first. Never reconstruct these rules from memory; a half-remembered layout or doc-comment rule is worse than none, because it looks deliberate.
+1. **Carry it forward verbatim** in any summary, handoff, plan, or task note. It is active instruction, never compressed into "follow the Roblox skill".
+2. **Re-read this file before acting** whenever the card's full text is not visible in your context. Never reconstruct these rules from memory — a half-remembered layout rule looks deliberate and is worse than none.
 
 ```text
 ROBLOX LUAU SKILL - INVARIANT CARD
@@ -77,7 +77,7 @@ Everything below expands these; nothing below overrides them.
 - [community-libraries.md](references/community-libraries.md) — ProfileStore, Packet, Trove, Knit, Fusion, ...
 - [minimal-code.md](references/minimal-code.md) — about to write a helper that may already exist; keeping code dense
 - [edge-cases.md](references/edge-cases.md) — nil, empty, stale, duplicate, reused, or departed state a function will meet
-- [luau-language.md](references/luau-language.md) — typing depth, `vector`/`buffer`/`math`, new type solver, `task.spawn` vs `task.defer`, deferred events, error handling, time APIs, native codegen
+- [luau-language.md](references/luau-language.md) — truthiness and coercion, table copy semantics, `require` semantics, typing depth, `vector`/`buffer`/`math`, `task.spawn` vs `task.defer`, deferred events, error handling, time APIs, native codegen
 
 **Implementing a known system** — read the one file whose domain matches; each gives assembly order and case-specific failure modes.
 
@@ -115,13 +115,7 @@ Everything below expands these; nothing below overrides them.
 - [api-currency.md](references/api-currency.md) — whether a newer engine/Luau API is confirmed before relying on it or flagging it missing
 - [limits-budgets.md](references/limits-budgets.md) — platform ceilings: DataStore size/requests, MemoryStore, messaging, attributes, animation tracks
 
-**Lookup files** — tables, not narratives. Grep for the row you need instead of reading them whole:
-
-```bash
-grep -i "datastore" references/limits-budgets.md      # a ceiling or quota
-grep -i "obby"      references/genres.md              # one genre's rules
-grep -i "yield"     references/edge-cases.md          # one failure state
-```
+**Lookup files** — `limits-budgets.md`, `genres.md`, `edge-cases.md` are tables, not narratives. Grep the row you need (`grep -i "datastore" references/limits-budgets.md`) instead of reading them whole.
 
 ## User Authority
 
@@ -143,7 +137,7 @@ Five decisions govern every later task. Resolve each **once**, cache it, never r
 | **Server Authority** | **OFF** — most places are not server-authoritative, and assuming otherwise produces confidently wrong code |
 | **Environment facts** — `SignalBehavior`, `StreamingEnabled`, rig type, strictness header | Assume none of them; each inverts correct guidance between values |
 
-*Default* applies these conventions as written; *Adaptive* proposes an adaptation of the project's own style and waits for confirmation ([references/adaptive-mode.md](references/adaptive-mode.md)). Community libraries win for the concern they own. Only style and structure ever adapt. **Never migrate a project to Server Authority on this skill's initiative.**
+*Default* applies these conventions as written; *Adaptive* proposes an adaptation of the project's own style and waits for confirmation ([references/adaptive-mode.md](references/adaptive-mode.md)). Only style and structure ever adapt, and community libraries win for the concern they own. **Never migrate a project to Server Authority on this skill's initiative.**
 
 ### Review/refactor mode
 
@@ -158,7 +152,7 @@ One severity per finding (**Blocker / Correctness / Advisory**), after the confi
 
 ## Script Section Layout (MANDATORY)
 
-Card item 1 is the layout and Card item 2 is the Documentation Comment rule; both are always in context and neither is restated here. Two things the card does not carry:
+Card items 1 and 2 hold the layout and the Documentation Comment rule; neither is restated here. Two things the card does not carry:
 
 - **Module requires** are ordered by source: ServerScriptService → ServerStorage → ReplicatedStorage → Workspace → script-relative, counting only locations the script can legally reach.
 - **Function order inside FUNCTIONS** and what belongs in each VARIABLES subsection are specified, not free.
@@ -170,7 +164,7 @@ Card item 1 is the layout and Card item 2 is the Documentation Comment rule; bot
 The ones that apply on nearly every task:
 - **Naming:** `PascalCase` services and module tables · `camelCase` locals, functions, Instance references · `UPPER_SNAKE_CASE` Configuration constants. Module publics `PascalCase`, privates `camelCase`.
 - Always `game:GetService()`; never direct indexing (the `workspace` global is fine).
-- **Never use deprecated APIs** — `wait`/`spawn`/`delay`, `tick`, lowercase `:connect`/`:wait`, `Body*` movers, `Humanoid:LoadAnimation`, `SetPrimaryPartCFrame`, and the rest of the list in [references/style-rules.md](references/style-rules.md). Discouraged-but-functional APIs are **not** deprecated ones.
+- **Never use deprecated APIs** — `wait`/`spawn`/`delay`, `tick`, lowercase `:connect`/`:wait`, `Body*` movers, `Humanoid:LoadAnimation`, `SetPrimaryPartCFrame`, and the rest of the list in [references/style-rules.md](references/style-rules.md). Discouraged-but-functional APIs (the `Instance.new` parent arg, `FireAllClients`) are **not** deprecated ones and are Advisory at most.
 - **Type safety is opt-in.** Never add or raise `--!strict` unbidden; match what the file or project already declares.
 - Guard external and yielding calls (`DataStore`, `MarketplaceService`, `HttpService`, `TeleportService`) with `pcall` plus a retry policy and a stated failure policy ([references/patterns/data.md](references/patterns/data.md#failure-policy-what-happens-after-the-last-retry)).
 - **Reuse before writing, and keep it dense** — search the project, the standard library, then the engine API. Brevity never reduces what gets delivered and never costs readability.

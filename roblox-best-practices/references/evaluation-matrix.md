@@ -16,6 +16,8 @@ An objective 1–5 scoring rubric for developers, tech leads, and AI to audit ga
 
 ## How to use this matrix
 
+**Scope: run this only when the user asks for an audit.** It is a maturity rubric, not a review rubric, and the two grade differently. A finding in review has to clear the confidence gate and carry a concrete failure scenario; a score here is a comparison against a ceiling most shipped experiences never reach. Scoring 3 is a **pass** — the invariants hold. A 3 is not a defect list, and the gap between 3 and 5 is never reported as findings: demanding Parallel Luau, adaptive quality, or zero-allocation hot loops from a small finished project is exactly the enterprise ceremony [false-positives.md](false-positives.md#code-economy-and-device-scalability--authoring-goals-not-review-standards) forbids. Anything you would report as Blocker or Correctness stands on its own evidence, not on a low score.
+
 Evaluate systems against concrete, falsifiable technical indicators rather than subjective aesthetics. Each dimension is scored from 1 (Critical Hazard) to 5 (Studio Elite).
 
 - **1 — Critical Hazard (Blocker):** Active exploit vulnerability, catastrophic data loss risk, or unbounded memory leak.
