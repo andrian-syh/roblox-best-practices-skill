@@ -4,7 +4,7 @@
 
 **A working standard for Roblox and Luau, written for AI coding assistants.**
 
-[![Version](https://img.shields.io/badge/version-v1.19.1-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
+[![Version](https://img.shields.io/badge/version-v1.19.2-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
 [![Engine](https://img.shields.io/badge/engine-735-lightgrey)](roblox-best-practices/references/api-currency.md)

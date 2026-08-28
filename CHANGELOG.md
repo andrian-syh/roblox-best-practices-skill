@@ -2,6 +2,24 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.19.2] - 2026-08-28
+
+**A validation pass over `luau.org`, and an installer that wrote the same folder twice.** Twenty pages of the Luau reference read against what the skill claims, plus a duplicate-install bug reported from a real run.
+
+### Fixed
+- **`vector.lerp` does not exist.** The skill listed it among the vector library's component-wise helpers. Luau's standard library documents `create`, `magnitude`, `normalize`, `cross`, `dot`, `angle`, `floor`, `ceil`, `abs`, `sign`, `clamp`, `max`, `min` and the `vector.zero`/`vector.one` constants — and no interpolation function at all. Removed, with `math.lerp` named as the scalar one and `a + (b - a) * t` as the vector form. This is exactly the invented-API failure the skill exists to prevent.
+- **`issubtypeof` was miscategorised** as a built-in type function alongside `keyof`. It is a method on a type inside a type function (`ty:issubtypeof(super)`). Corrected, with the fixed set of globals a type function may use.
+- **The installer wrote the same folder twice.** Running from the home directory makes the workspace `./.agents/skills` and the global `~/.agents/skills` the same path, so the second pass deleted the copy the first had just made and wrote it again. All three installers now track destinations they have already written and report a repeat as skipped, and the workspace step runs last so the named agent is the one reported. Distinct paths still install independently.
+
+### Added
+- **`unknown`, not `any`, for untrusted input.** Both are top types, but `any` may be used as any other type with no further checks while `unknown` forces a refinement first — so typing a remote's payload `unknown` makes the checker demand the validation the server already owes.
+- **A method's `self` is not typed for you.** Luau does not share `self` across a class's methods, so each needs its own annotation; the repetition is correct, not sloppy. Luau intends to change this for `:`-defined functions later.
+- **What refines**: truthiness, `type(x) == "..."`, equality against a literal, `assert`, composed through `and`/`or`/`not` — plus `IsA` on Roblox types, and inferred return types for `Instance.new` and `game:GetService`.
+- **A `require` path the checker cannot resolve statically is a path it cannot type**, silently, without an error.
+- **A "What the sandbox removes" section.** `io`, `package`, `dofile`, `loadfile`, and `string.dump`/`load` are gone; `os` keeps only `clock`, `date`, `difftime`, `time`; **`collectgarbage` accepts only `"count"`**, so forcing a collection is never the answer to a memory problem; `newproxy` takes only `true`/`false`/`nil`; the global table, library tables, and string metatable are read-only. Rejected by design and never a workaround: `goto`, integer types and the `&`/`|` operators (`bit32` instead), ephemeron weak tables, and **`__gc`** — there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path.
+- **A "What the VM rewards" section in `performance.md`**, from Luau's own performance documentation: constant field names hit the inline cache where a computed key cannot; `#t` is effectively constant-time; `ipairs`, `pairs`, and generalized `for ... in` all have specialised bytecode with no per-iteration call, which is the implementation reason this skill never flags `pairs`; `table.create(n)` preallocates; and `loadstring`/`getfenv`/`setfenv` force dynamic deoptimization of the whole script.
+- **The linter's 28 warning names**, tabulated. Several are the machine-checkable half of rules the skill already states — `MisleadingAndOr` for the `x and y or z` trap, `TableOperations` for `#`/`ipairs` on a table with no numeric keys, `ComparisonPrecedence` for `not X == Y`. Naming the warning beats describing it.
+
 ## [1.19.1] - 2026-08-28
 
 **The installer was writing to folders that no agent reads.** An audit of all 63 listed agents against each vendor's own documentation found 20 wrong paths, 13 agents missing entirely, and 2 products that no longer exist. Nothing about the skill's content changed; everything about where it lands did.

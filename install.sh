@@ -68,10 +68,25 @@ if [ ! -d "$SRC_SKILL_DIR" ]; then
   exit 1
 fi
 
+# Destinations already written in this run. Two targets can resolve to the same
+# folder -- running from the home directory makes the workspace "./.agents/skills"
+# and the global "$HOME/.agents/skills" the same path -- and installing twice would
+# delete the copy just made before writing it again.
+INSTALLED_DESTINATIONS=""
+
 copy_folder() {
   local src="$1"
   local dest="$2"
   mkdir -p "$(dirname "$dest")"
+  local resolved
+  resolved="$(cd "$(dirname "$dest")" && pwd)/$(basename "$dest")"
+  case " $INSTALLED_DESTINATIONS " in
+    *" $resolved "*)
+      echo "[SKIPPED] $dest -- already installed in this run"
+      return 0
+      ;;
+  esac
+  INSTALLED_DESTINATIONS="$INSTALLED_DESTINATIONS $resolved"
   rm -rf "$dest"
   cp -R "$src" "$dest"
   echo "${GREEN}[CREATED] $dest${NC}"
@@ -86,9 +101,6 @@ install_targets() {
   echo "    ${GREEN}•${NC} Amp, Antigravity, Cline, Codex, Cursor, Dexto, Gemini CLI, GitHub Copilot,"
   echo "    ${GREEN}•${NC} Kimi Code CLI, Loaf, OpenCode, Warp, Zed  (project scope)"
   echo ""
-
-  echo "Installing to Universal (.agents/skills)..."
-  copy_folder "$SRC_SKILL_DIR" "./.agents/skills/roblox-best-practices"
 
   local detected_names=""
   local detected_paths=""
@@ -144,6 +156,13 @@ install_targets() {
     echo "No other agent directories detected in your home directory. Skip additional agents."
     printf '%b\n' "$assumed_installed"
   fi
+
+  # The workspace path goes last, unconditionally. When it resolves to the same
+  # folder as an agent target above (running from the home directory), copy_folder
+  # reports it as already installed rather than deleting and rewriting the copy.
+  echo ""
+  echo "Installing to Universal (./.agents/skills)..."
+  copy_folder "$SRC_SKILL_DIR" "./.agents/skills/roblox-best-practices"
 
   echo ""
   echo "${GREEN}[SUCCESS] Installation complete!${NC}"

@@ -44,12 +44,23 @@ try {
     return
   }
 
+  # Destinations already written in this run. Two targets can resolve to the same
+  # folder -- running from the home directory makes the workspace ".agents\skills"
+  # and the global "~\.agents\skills" the same path -- and installing twice would
+  # delete the copy just made before writing it again.
+  $script:InstalledDestinations = New-Object System.Collections.Generic.HashSet[string]
+
   function Copy-SkillFolder($src, $dest) {
-    if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
     $parent = Split-Path $dest -Parent
     if (-not (Test-Path $parent)) {
       New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
+    $resolved = [System.IO.Path]::GetFullPath((Join-Path (Resolve-Path $parent).Path (Split-Path $dest -Leaf)))
+    if (-not $script:InstalledDestinations.Add($resolved)) {
+      Write-Host "[SKIPPED] $dest -- already installed in this run" -ForegroundColor DarkGray
+      return
+    }
+    if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
     Copy-Item -Path $src -Destination $dest -Recurse -Force
     Write-Host "[CREATED] $dest" -ForegroundColor Green
   }
@@ -89,10 +100,6 @@ try {
   Write-Host "      Kimi Code CLI, Loaf, OpenCode, Warp, Zed  (project scope)" -ForegroundColor Green
   Write-Host ""
 
-  # Always copy to Universal
-  Write-Host "Installing to Universal (.agents/skills)..." -ForegroundColor Cyan
-  Copy-SkillFolder $srcSkillDir (Join-Path "." ".agents\skills\roblox-best-practices")
-
   if ($detectedAgents.Count -gt 0) {
       Write-Host ""
       Write-Host "Detected existing agent directories in your home directory:" -ForegroundColor Yellow
@@ -127,6 +134,13 @@ try {
           Write-Host ("[INSTALLED] (Assumed) " + $agent.Name) -ForegroundColor Green
       }
   }
+
+  # The workspace path goes last, unconditionally. When it resolves to the same
+  # folder as an agent target above (running from the home directory), Copy-SkillFolder
+  # reports it as already installed rather than deleting and rewriting the copy.
+  Write-Host ""
+  Write-Host "Installing to Universal (./.agents/skills)..." -ForegroundColor Cyan
+  Copy-SkillFolder $srcSkillDir (Join-Path "." ".agents\skills\roblox-best-practices")
 
   Write-Host ""
   Write-Host "[SUCCESS] Installation complete!" -ForegroundColor Green

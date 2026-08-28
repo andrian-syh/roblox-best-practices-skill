@@ -9,12 +9,14 @@ Language-level and scheduler-level rules that go deeper than SKILL.md's Language
 - [Modules: what require actually returns](#modules-what-require-actually-returns)
 - [Typing](#typing)
 - [Modern idioms](#modern-idioms)
+- [What the sandbox removes](#what-the-sandbox-removes)
 - [Standard library — recent additions](#standard-library--recent-additions)
 - [Scheduling: the task library](#scheduling-the-task-library)
 - [Deferred engine events](#deferred-engine-events)
 - [Error handling](#error-handling)
 - [Time APIs — one job each](#time-apis--one-job-each)
 - [Attributes](#attributes)
+- [The linter's vocabulary](#the-linters-vocabulary)
 
 ## Values, truth, and coercion
 
@@ -44,6 +46,7 @@ The rules that silently produce wrong behavior rather than an error. None is exo
 - **One instance per context, cached.** `require` runs a ModuleScript once and hands every later caller the same value, so module-level state is shared by every script that requires it on that side.
 - **The client and the server get different copies.** A ModuleScript required from both sides of the boundary returns a **separate** instance to each, with separate state. Shared *code*, never shared *state*: anything both sides must agree on travels over a remote or an attribute.
 - That same one-instance-per-VM rule is why a command-bar `require` cannot tell you anything about live game state ([verification.md](verification.md#studio-native--mcp-environments)).
+- **A `require` path the checker cannot resolve statically is a path it cannot type.** Building a module path at runtime, or branching on one, does not error — it silently drops that module's types. Keep requires literal and at the top of the file, which the VARIABLES layout already forces.
 - **Circular requires error** (`Requested module was required recursively`). Extract the shared part into a third module, or pass the dependency in at init time ([style-rules.md](style-rules.md)).
 - Return a table of functions rather than a bare function unless the module genuinely is one operation: it names its members at the call site and leaves room for a second.
 
@@ -54,9 +57,12 @@ The rules that silently produce wrong behavior rather than an error. None is exo
 - **Precise table & dictionary typing:** prefer explicit optionality `{ [string]: ItemData? }` when indexing an arbitrary key can return `nil`, rather than assuming `{ [string]: ItemData }`.
 - **The cast operator `::` silences the checker — treat every cast as a claim you must have already proven.** Cast to *narrow* after a runtime check (`value :: string` after `typeof(value) == "string"`), never to force incompatible shapes through. An unchecked cast is a suppressed error, not a fix.
 - Generics (`local function first<T>(list: {T}): T?`) and type packs (`T...`) beat `any` in reusable utilities.
+- **`unknown` is the honest type for untrusted input, not `any`.** Both are top types, but `any` may be used as any other type with no further checks while `unknown` **forces a refinement first**. Typing a remote's payload `unknown` makes the checker demand the validation the server owes anyway ([security.md](security.md#server-side-validation-layers)); typing it `any` silently excuses it. `never` is the bottom type, and a branch inferred `never` is the checker telling you it is unreachable.
+- **Refinements narrow on truthiness, `type(x) == "..."`, equality against a literal (which narrows to that singleton), and `assert`,** and compose through `and`/`or`/`not`. On Roblox types, **`IsA` refines too**, and `Instance.new` and `game:GetService` have their return types inferred — so an explicit annotation on those is redundant, never a defect.
+- **A method's `self` is not typed for you.** Luau does not share `self` across a class's methods, because a caller may pass anything as `self`, so each `function Class.method(self: Class, ...)` needs its own annotation. Luau's docs state the intent to restrict `:`-defined functions to a shared `self` type later; until then, do not read the repetition as a mistake.
 - **Read-only table members** — prefix a property or indexer with `read` to forbid writes through that type: `{ read x: number }` and `{ read [string]: Part }`. Use it on types handed to consumers that should only observe (config snapshots, replicated state views); it documents the contract and the checker enforces it, which is cheaper than a runtime guard. `write` exists as the mirror modifier. Landed in Luau 0.721; requires the new solver for full enforcement, so treat it as **[Verify]** in old-solver projects.
 - **Extern types replace the old `class` tag.** Type declaration files now use `declare extern type`; the `declare class` and `extern class` spellings were removed in Luau 0.727. This only affects hand-written declaration files — ordinary gameplay code never declares extern types. Do not "fix" a project to the old spelling.
-- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). Built-ins such as `keyof` and `issubtypeof` sit alongside them (`issubtypeof` landed in Luau 0.724). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
+- **User-defined type functions** run at analysis time and can build types programmatically: a `type function` body uses the `types` library (`types.unionof`, `types.singleton`, `types.newfunction`) and can inspect its inputs (`ty:is("table")`, `ty:properties()`). `keyof` is the documented built-in type function, taking a table type and producing a union of singletons of its property names. `issubtypeof` is **not** a built-in of that kind — it is a method on a type inside a type function (`ty:issubtypeof(super)`), alongside `ty:is(tag)`. The type-function environment is restricted to a fixed set of globals (`assert`, `error`, `print`, `type`, `typeof`, `next`, `pairs`, `ipairs`, `getmetatable`, `setmetatable`, and the `math`/`table`/`string`/`bit32`/`utf8`/`buffer` libraries). These require the **new type solver** — see below for what that means today, and never flag their absence in old-solver projects ([false-positives.md](false-positives.md#typing--do-not-flag-the-project-for-tools-it-does-not-use)).
 
 ### The new type solver — what is on by default
 
@@ -104,11 +110,24 @@ Luau 0.723 implemented export-by-value semantics for modules, extending `export`
 
 **Status in Roblox Studio is [Verify].** Confirmed in upstream Luau; this skill could not confirm it is live in Studio. Until you verify it in the target place, keep using the standard `local Module = {} ... return Module` shape, which is unaffected and remains correct.
 
+## What the sandbox removes
+
+Luau is not Lua 5.1 minus nothing. These are gone or restricted at the language level, so an answer that reaches for them is wrong before it reaches Roblox's own restrictions.
+
+- **Removed entirely:** the `io` and `package` libraries, `dofile`, `loadfile`, and `string.dump`/`string.load`. The `debug` library is cut back to the memory-safe parts (`debug.traceback`, `debug.profilebegin`/`profileend`, `debug.setmemorycategory`, `debug.dumpcodesize`).
+- **`os` keeps only `clock`, `date`, `difftime`, and `time`.** No `os.execute`, `os.exit`, `os.getenv`, or `os.remove`.
+- **`collectgarbage` accepts only `"count"`.** There is no way to force a collection, so "call `collectgarbage`" is never the answer to a memory problem — measure with it, then fix the retention ([performance.md](performance.md#memory)).
+- **`newproxy` takes only `true`/`false`/`nil`.**
+- **The global table, the library tables, and the string metatable are read-only.** Monkey-patching a built-in fails, whether by assignment, `rawset`, or `setmetatable`.
+- **`getfenv`/`setfenv` still exist** in Roblox for backwards compatibility, but using either forces the compiler into a slower dynamic path for the whole script and is banned here regardless.
+
+Rejected outright, so never suggested as a workaround: **`goto`**, **integer types and the `&`/`|` bitwise operators** (`bit32` is the answer — all numbers are doubles), **ephemeron weak tables**, and **`__gc` finalizers**. That last one matters: there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
+
 ## Standard library — recent additions
 
 Confirmed available per [api-currency.md](api-currency.md) — use them, and don't treat them as unknown.
 
-- **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`, plus the component-wise helpers `vector.floor`/`ceil`/`abs`/`sign`/`clamp`/`lerp`/`max`/`min`. Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
+- **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`, plus the component-wise helpers `vector.floor`/`ceil`/`abs`/`sign`/`clamp`/`max`/`min`. **There is no `vector.lerp`** — the documented library has no interpolation function; `math.lerp` is the scalar one, and a vector lerp is `a + (b - a) * t`. Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
 - **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns/data.md](patterns/data.md#data-persistence)).
 
@@ -202,3 +221,25 @@ function Inventory.GiveStarterItems(player: Player)
 ```
 
 Two review consequences. Marking a project's own function `@deprecated` is a **suggestion**, never something to add unasked. And a call to an `@deprecated` function is a **Correctness** finding only when the replacement is named and reachable; otherwise it is Advisory ([false-positives.md](false-positives.md#deprecated-vs-discouraged--do-not-conflate-them)).
+
+## The linter's vocabulary
+
+Luau ships a linter with a fixed set of named warnings. Naming the warning is more useful to the user than describing it, and several of them are the machine-checkable half of rules stated elsewhere in this skill — cite the name when one applies.
+
+| Warning | Catches |
+|---|---|
+| `UnknownGlobal` | A global that is neither built in nor defined in the script — almost always a typo or a missing `local` |
+| `LocalUnused` / `FunctionUnused` / `ImportUnused` | Dead bindings, which the review checklist already asks about |
+| `DeprecatedGlobal` / `DeprecatedApi` | A deprecated global or member, including anything marked `@deprecated` ([style-rules.md](style-rules.md)) |
+| `MisleadingAndOr` | The `x and y or z` trap — the linter finds the case where `y` can be `false` or `nil` |
+| `ComparisonPrecedence` | `not X == Y` parsing as `(not X) == Y` |
+| `TableOperations` | `#` or `ipairs` on a table with no numeric keys or indexer |
+| `GlobalUsedAsLocal` / `BuiltinGlobalWrite` | A global that should have been a local; a write to a built-in global |
+| `UninitializedLocal` / `DuplicateLocal` / `LocalShadow` | Binding mistakes |
+| `ImplicitReturn` / `UnreachableCode` / `DuplicateCondition` / `DuplicateFunction` | Control-flow mistakes |
+| `FormatString` / `IntegerParsing` | A malformed format string; a numeric literal that does not parse as intended |
+| `UnknownType` / `ForRange` / `UnbalancedAssignment` / `PlaceholderRead` | A bad `type()` comparison string, an impossible numeric `for`, mismatched assignment arity, reading `_` |
+| `SameLineStatement` / `MultiLineStatement` | Formatting that hides control flow |
+| `CommentDirective` | A malformed or misplaced `--!` directive |
+
+`--!nolint <Warning>` silences one by name, which is the only defensible use of that directive; bare `--!nolint` silences all of them and should be treated as a finding.

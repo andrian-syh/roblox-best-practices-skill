@@ -32,16 +32,29 @@ function copyFileSync(src, dest) {
   }
 }
 
+// Destinations already written in this run. Two targets can resolve to the same
+// folder — running from the home directory makes the workspace ".agents/skills"
+// and the global "~/.agents/skills" the same path — and installing twice would
+// delete the copy just made before writing it again.
+const installedDestinations = new Set();
+
 // Replace the destination skill folder wholesale, then copy.
 // Removing first clears files deleted in newer versions so no stale files linger
 // (mirrors the `rm -rf`/`Remove-Item` behavior of the shell/PowerShell fallbacks).
 function installSkillFolder(src, dest) {
+  const resolved = path.resolve(dest);
+  if (installedDestinations.has(resolved)) {
+    console.log(`\x1b[90m[SKIPPED] ${formatPath(dest)} — already installed in this run\x1b[0m`);
+    return false;
+  }
+  installedDestinations.add(resolved);
   try {
     fs.rmSync(dest, { recursive: true, force: true });
   } catch (err) {
     console.error(`[WARN] Could not clear existing ${formatPath(dest)}: ${err.message}`);
   }
   copyFolderRecursiveSync(src, dest);
+  return true;
 }
 
 // Helper to copy folder recursively
@@ -256,14 +269,15 @@ if (args.includes('--all') || args.includes('-a')) {
     tempCleanDir = downloadResult.tempDir;
   }
 
-  // Universal
-  console.log(`\n--- Installing \x1b[36mUniversal (.agents/skills)\x1b[0m ---`);
-  installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
-
-  // All additional
+  // Named agents first, then the workspace path. When the two resolve to the same
+  // folder (running from the home directory), the named target is the one reported
+  // and the workspace step reports itself as already covered.
   additionalAgents.forEach(agent => {
     executeInstall(agent, activeSkillDir);
   });
+
+  console.log(`\n--- Installing \x1b[36mUniversal (./.agents/skills)\x1b[0m ---`);
+  installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
 
   cleanupTempDir(tempCleanDir);
   console.log('\n\x1b[32m[SUCCESS] Installation complete!\x1b[0m');
@@ -393,14 +407,16 @@ if (args.includes('--all') || args.includes('-a')) {
 
   console.log(`\n\x1b[32mInstalling skill...\x1b[0m`);
   
-  // 1. Always install to Universal
-  console.log(`\n--- Installing \x1b[36mUniversal (.agents/skills)\x1b[0m ---`);
-  installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
-
-  // 2. Install to selected additional agents (only if parent dir exists)
+  // 1. Selected agents first (only if parent dir exists)
   selectedAgents.forEach(agent => {
     executeInstall(agent, activeSkillDir);
   });
+
+  // 2. Always install to the workspace path, last: when it resolves to the same
+  // folder as a selected target (running from the home directory), that target
+  // has already reported it and this step says so rather than redoing the copy.
+  console.log(`\n--- Installing \x1b[36mUniversal (./.agents/skills)\x1b[0m ---`);
+  installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
 
   cleanupTempDir(tempCleanDir);
   console.log('\n\x1b[32m[SUCCESS] Installation complete!\x1b[0m');

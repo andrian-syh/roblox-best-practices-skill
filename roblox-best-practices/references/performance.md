@@ -8,6 +8,7 @@ Rules for writing lightweight, fast, resource-frugal Luau. Ordered by impact.
 
 - [Start here: find what is actually slow](#start-here-find-what-is-actually-slow)
 - [What costs what (relative, not measured)](#what-costs-what-relative-not-measured)
+- [What the VM rewards](#what-the-vm-rewards)
 - [CPU](#cpu)
 - [Physics queries and contact detection](#physics-queries-and-contact-detection)
 - [Memory](#memory)
@@ -53,6 +54,17 @@ When two correct designs compete, pick by order of magnitude rather than instinc
 | `table.concat` | `..` inside a loop | Repeated concatenation allocates a new string every time |
 
 **Order guards cheapest-first.** A handler that raycasts before checking whether the target is even in range has already paid the expensive question to answer the cheap one. This applies to validation too: type check, then ownership, then anything that touches the world.
+
+## What the VM rewards
+
+From Luau's own performance documentation — these are properties of the implementation, not heuristics.
+
+- **Constant field names hit the inline cache.** Luau predicts the hash slot for `t.field` and corrects itself at runtime. `t[key]` with a computed key cannot be predicted, so a hot loop indexing by a variable pays every time where the dotted form does not.
+- **`#t` is effectively constant-time** — the length is cached and the element at `#t` is guaranteed to live in the array part. Caching `#t` into a local before a loop is a micro-optimization, not a requirement.
+- **`ipairs`, `pairs`, and generalized `for ... in` all have specialized bytecode** with no per-iteration function call. This is the implementation reason the skill never flags `pairs`/`ipairs` ([false-positives.md](false-positives.md)).
+- **Preallocate when the size is known:** `table.create(n)` or a literal with every field present beats growing a table field by field.
+- **`loadstring`, `getfenv`, and `setfenv` force dynamic deoptimization** for the enclosing script. Their cost is not the call — it is everything around them getting slower.
+- Values are 16 bytes (tagged storage, not NaN-boxing), and `vector` is a native 32-bit 3-wide SIMD type rather than a table — which is why `vector` math is cheap and a `{x, y, z}` table is not ([luau-language.md](luau-language.md#standard-library--recent-additions)).
 
 ## CPU
 
