@@ -200,10 +200,16 @@ function loadAgents() {
 
 const additionalAgents = loadAgents();
 
+// The folder to look for in $HOME is the skills path minus its final segment:
+// ".config/goose/skills" must be detected as "~/.config/goose", never the
+// ubiquitous "~/.config", which would pre-select every agent that nests there.
+function detectionFolder(agentPath) {
+  return agentPath.split('/').slice(0, -1).join('/');
+}
+
 // Execute installation for a given target object
 function executeInstall(agent, skillDir) {
-  const firstSegment = agent.path.split('/')[0];
-  const appFolder = path.join(os.homedir(), firstSegment);
+  const appFolder = path.join(os.homedir(), detectionFolder(agent.path));
   const dest = path.join(os.homedir(), agent.path, 'roblox-best-practices');
   
   if (fs.existsSync(appFolder)) {
@@ -342,23 +348,15 @@ if (args.includes('--all') || args.includes('-a')) {
   }
 
   // Step 2: Select Targets
-  console.log(`\n\x1b[32m•\x1b[0m ${additionalAgents.length + 9} agents`);
+  console.log(`\n\x1b[32m•\x1b[0m ${additionalAgents.length} agent locations`);
   console.log('\x1b[32m•\x1b[0m Which agents do you want to install to?\n');
-  console.log('  \x1b[90m— Universal (.agents/skills) — always included —————\x1b[0m');
-  console.log('    \x1b[32m•\x1b[0m Amp');
-  console.log('    \x1b[32m•\x1b[0m Antigravity');
-  console.log('    \x1b[32m•\x1b[0m Antigravity CLI');
-  console.log('    \x1b[32m•\x1b[0m Cline');
-  console.log('    \x1b[32m•\x1b[0m Codex');
-  console.log('    \x1b[32m•\x1b[0m Kimi Code CLI');
-  console.log('    \x1b[32m•\x1b[0m OpenCode');
-  console.log('    \x1b[32m•\x1b[0m Warp');
-  console.log('    \x1b[32m•\x1b[0m Zed');
-  console.log('    \x1b[90m...and 4 more\x1b[0m\n');
+  console.log('  \x1b[90m— Universal (./.agents/skills) — always included —————\x1b[0m');
+  console.log('    \x1b[32m•\x1b[0m Amp, Antigravity, Cline, Codex, Cursor, Dexto, Gemini CLI,');
+  console.log('    \x1b[32m•\x1b[0m GitHub Copilot, Kimi Code CLI, Loaf, OpenCode, Warp, Zed');
+  console.log('    \x1b[90mProject scope only. Pick "Universal global" below for ~/.agents/skills.\x1b[0m\n');
 
   const targetChoices = additionalAgents.map(agent => {
-    const firstSegment = agent.path.split('/')[0];
-    const appFolder = path.join(os.homedir(), firstSegment);
+    const appFolder = path.join(os.homedir(), detectionFolder(agent.path));
     const exists = fs.existsSync(appFolder);
     return {
       title: `${agent.name} (~/${agent.path})`,

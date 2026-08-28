@@ -64,7 +64,11 @@ try {
           if ($trimmed -and -not $trimmed.StartsWith('#')) {
               $parts = $trimmed.Split('|', 2)
               $agentPath = $parts[1].Trim()
-              $additionalAgents += @{ Name = $parts[0].Trim(); Path = $agentPath; Parent = ($agentPath -split '/')[0] }
+              # Detect on the path minus its final "skills" segment, so ".config/goose/skills"
+              # checks "~/.config/goose" rather than the ubiquitous "~/.config".
+              $segments = $agentPath -split '/'
+              $parentPath = ($segments[0..($segments.Length - 2)]) -join '/'
+              $additionalAgents += @{ Name = $parts[0].Trim(); Path = $agentPath; Parent = $parentPath }
           }
       }
   }
@@ -81,7 +85,8 @@ try {
   Write-Host ""
   Write-Host "  Which agents do you want to install to?" -ForegroundColor Green
   Write-Host "  --- Universal (.agents/skills) -- always included -------" -ForegroundColor DarkGray
-  Write-Host "    * Amp, Antigravity, Antigravity CLI, Cline, Codex, Kimi Code CLI, OpenCode, Warp, Zed" -ForegroundColor Green
+  Write-Host "    * Amp, Antigravity, Cline, Codex, Cursor, Dexto, Gemini CLI, GitHub Copilot," -ForegroundColor Green
+  Write-Host "      Kimi Code CLI, Loaf, OpenCode, Warp, Zed  (project scope)" -ForegroundColor Green
   Write-Host ""
 
   # Always copy to Universal

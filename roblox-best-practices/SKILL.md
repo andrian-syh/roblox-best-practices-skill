@@ -10,7 +10,7 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.19.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 1.19.1. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)

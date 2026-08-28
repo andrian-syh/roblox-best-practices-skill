@@ -1,67 +1,75 @@
 # Canonical list of "additional" agents (beyond the always-included Universal ./.agents/skills path).
 # Single source of truth read by bin/cli.js, install.ps1, and install.sh — edit here only.
-# Format: Display Name|home-relative skills path   (the parent folder checked for detection is the path's first segment)
+# Format: Display Name|home-relative skills path
+# Detection: the folder checked in $HOME is the path with its final "skills" segment removed,
+# so ".config/goose/skills" is detected as "~/.config/goose" rather than the ubiquitous "~/.config".
+# Every path below is the agent's documented GLOBAL (home-directory) skills path, which is often
+# not the same as its project path — .windsurf/skills, .goose/skills, and .github/skills are all
+# project-level and were previously listed here by mistake.
 # Lines starting with '#' and blank lines are ignored.
+Universal global (Cline, Dexto, Kimi Code CLI, Loaf, Zed, ...)|.agents/skills
+Amp / Replit Agent|.config/agents/skills
 AiderDesk|.aider-desk/skills
-AstrBot|data/skills
+Antigravity|.gemini/config/skills
+Antigravity CLI|.gemini/antigravity-cli/skills
+AstrBot|.astrbot/data/skills
 Autohand Code CLI|.autohand/skills
 Augment|.augment/skills
 IBM Bob|.bob/skills
 Claude Code|.claude/skills
-OpenClaw|skills
+OpenClaw|.openclaw/skills
 CodeArts Agent|.codeartsdoer/skills
 CodeBuddy|.codebuddy/skills
 Codex|.codex/skills
 Codemaker|.codemaker/skills
 Code Studio|.codestudio/skills
 Command Code|.commandcode/skills
-Continue|.continue/skills
-Cortex Code|.cortex/skills
-Crush|.crush/skills
+Cortex Code|.snowflake/cortex/skills
+Crush|.config/crush/skills
 Cursor|.cursor/skills
-DeepAgents|.deepagents/skills
-Devin for Terminal|.devin/skills
-Dexto|.dexto/skills
+DeepAgents|.deepagents/agent/skills
+Devin for Terminal|.config/devin/skills
 Droid|.factory/skills
-Eve|.eve/skills
 Firebender|.firebender/skills
 ForgeCode|.forge/skills
-Gemini CLI|.gemini/config/skills
-GitHub Copilot|.github/skills
-Goose|.goose/skills
+Gemini CLI|.gemini/skills
+GitHub Copilot|.copilot/skills
+Goose|.config/goose/skills
+Grok Build|.grok/skills
 Hermes Agent|.hermes/skills
 inference.sh|.inferencesh/skills
 Jazz|.jazz/skills
 Junie|.junie/skills
 iFlow CLI|.iflow/skills
 Kilo Code|.kilocode/skills
+Kimchi|.config/kimchi/harness/skills
 Kiro CLI|.kiro/skills
 Kode|.kode/skills
 Lingma|.lingma/skills
-Loaf|.loaf/skills
 MCPJam|.mcpjam/skills
+MiniMax Code|.minimax/skills
 Mistral Vibe|.vibe/skills
 Moxby|.moxby/skills
 Mux|.mux/skills
+OpenCode|.config/opencode/skills
 OpenHands|.openhands/skills
 Ona|.ona/skills
-Pi|.pi/skills
+Pi|.pi/agent/skills
+Pochi|.pochi/skills
+Posit Assistant|.posit/assistant/skills
 Qoder|.qoder/skills
 Qoder CN|.qoder-cn/skills
 Qwen Code|.qwen/skills
-Replit Agent|.replit/skills
 Reasonix|.reasonix/skills
 Rovodev|.rovodev/skills
-Roo Code|.roo/skills
-Tabnine CLI|.tabnine/skills
+Tabnine CLI|.tabnine/agent/skills
 Terramind|.terramind/skills
 TinyCloud|.tinycloud/skills
 Trae AI|.trae/skills
 Trae CN|.trae-cn/skills
-Windsurf|.windsurf/skills
-Zencoder|.zencoder/skills
-Zenflow|.zenflow/skills
+Warp|.warp/skills
+Windsurf|.codeium/windsurf/skills
+Zencoder / Zenflow|.zencoder/skills
+ZCode|.zcode/skills
 Neovate|.neovate/skills
-Pochi|.pochi/skills
-Promptscript|.promptscript/skills
 Adal|.adal/skills

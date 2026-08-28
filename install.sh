@@ -79,11 +79,12 @@ copy_folder() {
 
 install_targets() {
   echo ""
-  echo "  ${GREEN}•${NC} 72 agents"
+  echo "  ${GREEN}•${NC} 66 agent locations"
   echo "  ${GREEN}•${NC} Which agents do you want to install to?"
   echo ""
   echo "  ${YELLOW}— Universal (.agents/skills) — always included —————${NC}"
-  echo "    ${GREEN}•${NC} Amp, Antigravity, Antigravity CLI, Cline, Codex, Kimi Code CLI, OpenCode, Warp, Zed"
+  echo "    ${GREEN}•${NC} Amp, Antigravity, Cline, Codex, Cursor, Dexto, Gemini CLI, GitHub Copilot,"
+  echo "    ${GREEN}•${NC} Kimi Code CLI, Loaf, OpenCode, Warp, Zed  (project scope)"
   echo ""
 
   echo "Installing to Universal (.agents/skills)..."
@@ -115,7 +116,9 @@ install_targets() {
       name=$(printf '%s' "$name" | tr -d '\r')
       case "$name" in ''|\#*) continue ;; esac
       apath=$(printf '%s' "$apath" | tr -d '\r')
-      parent=$(printf '%s' "$apath" | cut -d/ -f1)
+      # Detect on the path minus its final "skills" segment, so ".config/goose/skills"
+      # checks "$HOME/.config/goose" rather than the ubiquitous "$HOME/.config".
+      parent=$(printf '%s' "$apath" | sed 's:/[^/]*$::')
       check_agent "$name" "$apath" "$parent"
     done < "$AGENTS_FILE"
   fi

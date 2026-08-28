@@ -4,7 +4,7 @@
 
 **A working standard for Roblox and Luau, written for AI coding assistants.**
 
-[![Version](https://img.shields.io/badge/version-v1.19.0-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
+[![Version](https://img.shields.io/badge/version-v1.19.1-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
 [![Engine](https://img.shields.io/badge/engine-735-lightgrey)](roblox-best-practices/references/api-currency.md)
@@ -13,7 +13,7 @@
 
 It covers how each script is written, how systems are assembled, and where the platform's real limits sit — without assuming anything about your framework, folder layout, or genre.
 
-Works with Claude Code, Cursor, Codex, Gemini, Windsurf, Cline, Zed, and any other tool that reads the [Agent Skills](https://agentskills.io) standard.
+Works with Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Windsurf, Cline, Zed, and any other tool that reads the [Agent Skills](https://agentskills.io) standard.
 
 ```powershell
 irm https://raw.githubusercontent.com/andrian-syh/roblox-best-practices-skill/main/install.ps1 | iex
@@ -105,19 +105,23 @@ npx --allow-git=all github:andrian-syh/roblox-best-practices-skill
 
 The skill always lands in `./.agents/skills/roblox-best-practices/`, the standard workspace path any conforming tool reads. Beyond that, the installer scans your home directory for known agent configuration folders, pre-selects the ones it finds, and lets you filter as you type — folders that do not exist are skipped.
 
+Every global path is each agent's own **documented home-directory path**, which is frequently not its project path. Windsurf reads `~/.codeium/windsurf/skills/` while its project path is `.windsurf/skills/`; Goose, Crush, and Devin nest theirs under `~/.config/`; GitHub Copilot's is `~/.copilot/skills/`, not the repository's `.github/skills/`. Detection matches the folder holding `skills`, so an agent under `~/.config/` is not confused with any other.
+
 Version selection offers the bundled release plus the five most recent tags. Older versions stay installable through manual entry or `--tag`.
 
 | Scope | Directory | Tools |
 |---|---|---|
-| Universal (always) | `./.agents/skills/` | Antigravity, Amp, Cline, Codex, Kimi Code CLI, OpenCode, Warp, Zed, and others |
+| Universal (always) | `./.agents/skills/` | Project scope for Amp, Antigravity, Cline, Codex, Cursor, Gemini CLI, GitHub Copilot, OpenCode, Warp, Zed, and others |
+| Global | `~/.agents/skills/` | Home scope for the same cross-agent readers — Cline, Dexto, Kimi Code CLI, Loaf, Zed, and every tool that treats it as an alias |
 | Global | `~/.claude/skills/` | Claude Code |
 | Global | `~/.cursor/skills/` | Cursor |
-| Global | `~/.gemini/config/skills/` | Gemini |
 | Global | `~/.codex/skills/` | Codex |
-| Global | `~/.windsurf/skills/` | Windsurf and Cascade |
-| Global | `~/.roo/skills/` | Roo Code |
-| Global | `~/.trae/skills/` | Trae AI |
-| Global | *(and more)* | 63 agents in total, listed in [`bin/agents.txt`](bin/agents.txt) |
+| Global | `~/.gemini/skills/` | Gemini CLI |
+| Global | `~/.gemini/config/skills/` | Antigravity |
+| Global | `~/.copilot/skills/` | GitHub Copilot |
+| Global | `~/.codeium/windsurf/skills/` | Windsurf and Cascade |
+| Global | `~/.config/goose/skills/` | Goose |
+| Global | *(and more)* | 66 agent locations in total, listed in [`bin/agents.txt`](bin/agents.txt) |
 
 ---
 

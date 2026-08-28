@@ -2,6 +2,25 @@
 
 All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
 
+## [1.19.1] - 2026-08-28
+
+**The installer was writing to folders that no agent reads.** An audit of all 63 listed agents against each vendor's own documentation found 20 wrong paths, 13 agents missing entirely, and 2 products that no longer exist. Nothing about the skill's content changed; everything about where it lands did.
+
+### Fixed
+- **Twenty global paths were project paths.** Almost every error was the same mistake: an agent's *repository* path listed as its *home* path, so the skill installed somewhere that agent never looks. Corrected against each vendor's documentation — GitHub Copilot `~/.copilot/skills` (not `.github/skills`, which is the repo path), Windsurf `~/.codeium/windsurf/skills`, Goose `~/.config/goose/skills`, Crush `~/.config/crush/skills`, Devin for Terminal `~/.config/devin/skills`, Cortex Code `~/.snowflake/cortex/skills`, Replit Agent `~/.config/agents/skills`, Tabnine `~/.tabnine/agent/skills`, Pi `~/.pi/agent/skills`, DeepAgents `~/.deepagents/agent/skills`, AstrBot `~/.astrbot/data/skills`, OpenClaw `~/.openclaw/skills`, Zenflow `~/.zencoder/skills`, and Dexto and Loaf onto `~/.agents/skills`.
+- **Gemini CLI and Antigravity are two products sharing `~/.gemini/`, and the list conflated them.** The single "Gemini CLI" entry carried Antigravity's path. Gemini CLI reads `~/.gemini/skills/`; Antigravity reads `~/.gemini/config/skills/`. Both are now listed, separately, alongside Antigravity CLI.
+- **Detection pre-selected on the first path segment**, which would have marked every `~/.config/`-nested agent as present the moment `~/.config` existed. It now matches the folder that actually holds `skills`, so `~/.config/goose` and `~/.config/crush` are distinguished. Fixed identically in `bin/cli.js`, `install.ps1`, and `install.sh`.
+- Both installers claimed a set of agents were covered by the workspace `.agents/skills` path without saying that was project scope only, and `install.sh` reported an agent count that no longer matched the list.
+
+### Added
+- **`~/.agents/skills/` is now an installable target.** It is the cross-agent *home* path — the counterpart to the workspace `.agents/skills/` the installer already wrote — and is the primary global location for Cline, Dexto, Kimi Code CLI, Loaf, Zed, and Warp, and an alias read by Cursor, Gemini CLI, GitHub Copilot, Windsurf, Amp, and OpenCode. One entry covers a dozen agents.
+- Eleven agents that had a documented global path but no entry: Antigravity, Antigravity CLI, OpenCode, Warp, Grok Build, Kimchi, MiniMax Code, Posit Assistant, ZCode, and the Amp/Replit and Zencoder/Zenflow pairings.
+
+### Removed
+- **Roo Code** — shut down 15 May 2026. The repository is archived and `roocode.com` redirects to `roomote.dev`. Kilo Code, the maintained fork, is already in the list.
+- **Continue** — acquired by Cursor and discontinued; final release 19 June 2026, repository read-only. It also never had a skills directory.
+- **Eve** and **Promptscript**, which are project-scope only and have no home-directory path to install into.
+
 ## [1.19.0] - 2026-08-28
 
 **Roblox code is increasingly written outside Studio, and the skill knew three environment names and nothing about how any of them behave.** A pass over every mainstream sync tool and the toolchain around it, read from each project's own documentation — plus a correction to how the skill reads Roblox's release notes, which had been wrong about where they live.
