@@ -6,11 +6,11 @@ description: "Framework-agnostic Roblox/Luau coding standards. Use when writing,
 
 # Roblox Game Development Best Practices
 
-Framework-agnostic standards for writing clean, efficient, lightweight, and resource-frugal Luau code. These rules fit any architecture (single-script, module-based, Knit, actor-based, ECS, etc.) — they govern *how each script is written*, not how the project is structured.
+Framework-agnostic standards for writing clean, efficient, lightweight, and resource-frugal Luau code. These rules fit any architecture — they govern *how each script is written*, not how the project is structured.
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.18.2. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 1.19.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -109,13 +109,14 @@ Everything below expands these; nothing below overrides them.
 - [workflow.md](references/workflow.md) — resolving a session-setup decision, supervision behavior, opening a review, the preflight before a non-trivial system
 - [verification.md](references/verification.md) — proving a change works: playtests, multi-client sessions, test injection, testable architecture, telemetry, the command-bar VM pitfall
 - [studio-mcp.md](references/studio-mcp.md) — Studio MCP connection: which tool, what is irreversible, how not to burn tokens
+- [external-editors.md](references/external-editors.md) — the project is edited outside Studio: Script Sync, Rojo, Argon, Azul, and the toolchain around them
 - [false-positives.md](references/false-positives.md) — reviewing code: whether a finding is real, how severe, what NOT to flag
 - [review-checklist.md](references/review-checklist.md) — **finishing any task**: the completion gate before calling work done
 - [evaluation-matrix.md](references/evaluation-matrix.md) — auditing a live project on request: how to scope it, gather the evidence, score 1–5 across security, lifecycle, and performance, and report it honestly
 - [api-currency.md](references/api-currency.md) — whether a newer engine/Luau API is confirmed before relying on it or flagging it missing
 - [limits-budgets.md](references/limits-budgets.md) — platform ceilings: DataStore size/requests, MemoryStore, messaging, attributes, animation tracks
 
-**Lookup files** — `limits-budgets.md`, `genres.md`, `edge-cases.md` are tables, not narratives. Grep the row you need (`grep -i "datastore" references/limits-budgets.md`) instead of reading them whole.
+**Lookup files** — `limits-budgets.md`, `genres.md`, `edge-cases.md` are tables, not narratives. Grep the row you need instead of reading them whole.
 
 ## User Authority
 
@@ -145,14 +146,14 @@ One severity per finding (**Blocker / Correctness / Advisory**), after the confi
 
 ## Environment & Scale
 
-- **Detect the project environment first:** **Studio-native** (Studio/MCP tools, Instance paths), **Rojo/filesystem** (files; path aliases, `src/` maps to services), or **Studio Script Sync** (files with bidirectional sync, but the DataModel stays the source of truth and there is no Rojo project file). Match how you read, write, and reference scripts. On an MCP connection, [references/studio-mcp.md](references/studio-mcp.md) applies before any write.
+- **Detect the project environment first** — **Studio-native**, or a filesystem project synced by Script Sync, Rojo, Argon, or Azul. **Which side is the source of truth differs per tool**, and assuming wrong overwrites the user's work: [references/external-editors.md](references/external-editors.md). Never start, stop, or reconfigure a sync session unasked. On an MCP connection, [references/studio-mcp.md](references/studio-mcp.md) applies before any write.
 - **Verify newer APIs, and state the basis for every engine fact.** Memory is never presented as fact. Two authorities, two questions: **does it exist** — the versioned API dump or an in-Studio probe; **what does it do** — the Engine API Reference. The docs site **lags the engine**, so a member missing from a reference page is undocumented, not unshipped; never call an API nonexistent on that basis. Cite the check, or say "unverified" and name the one that would settle it: [references/api-currency.md](references/api-currency.md#how-to-verify-the-toolbox).
 - **Maturity tags:** **[GA]** safe as a default · **[Beta]** opt-in, may change · **[Undocumented]** shipped, but no reference page — probe its semantics · **[Verify]** confirm in the target place · **[UNVERIFIED]** unconfirmed by this skill. **Never make a [Beta] feature a production default** — offer it, state its status, recommend the stable path.
 - **Scale the ceremony to the script.** Tiny scripts (< ~40 lines) may use the three top-level headers with no subsections; add deeper headers only when a section needs them, never empty placeholders. **Pure data/type modules** (config tables, item catalogs, shared types) are exempt from the three-section layout.
 
 ## Script Section Layout (MANDATORY)
 
-Card items 1 and 2 hold the layout and the Documentation Comment rule; neither is restated here. Two things the card does not carry:
+Card items 1–2 hold the layout and Documentation Comment rules. Two things the card does not carry:
 
 - **Module requires** are ordered by source: ServerScriptService → ServerStorage → ReplicatedStorage → Workspace → script-relative, counting only locations the script can legally reach.
 - **Function order inside FUNCTIONS** and what belongs in each VARIABLES subsection are specified, not free.

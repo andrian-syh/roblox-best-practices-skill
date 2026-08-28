@@ -4,7 +4,7 @@
 
 **A working standard for Roblox and Luau, written for AI coding assistants.**
 
-[![Version](https://img.shields.io/badge/version-v1.18.2-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
+[![Version](https://img.shields.io/badge/version-v1.19.0-0a7bbb)](https://github.com/andrian-syh/roblox-best-practices-skill/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
 [![Engine](https://img.shields.io/badge/engine-735-lightgrey)](roblox-best-practices/references/api-currency.md)
@@ -41,8 +41,15 @@ This skill is the other half.
 | **A review that does not cry wolf** | Three severities — Blocker, Correctness, Advisory — behind a four-step confidence gate, plus a catalog of what *not* to flag: which allocations are actually hot, what does not leak, what is not a trust boundary, and where a discouraged API is simply not a deprecated one. |
 | **Platform ceilings, up front** | Data store request budgets at both ceilings and per-key throughput, memory store quota formulas, message and HTTP limits, secrets, attribute windows, animation track limits. Checked while designing, not discovered in production. |
 | **Studio MCP safety** | Identifies which MCP variant it is connected to from the tools actually present, runs a preflight before the first write, and knows which operations cannot be undone — play mode discarding work, a mistyped path silently creating a new script, inserted assets carrying backdoor scripts. |
+| **Editing outside Studio** | Script Sync, Rojo, Argon, Azul, Lync, and the toolchain around them — each one's file mapping, project format, and destructive settings. Above all, which side is the source of truth, because the tools disagree and assuming wrong overwrites the user's work. |
 
-Four things deserve more than a table row.
+Five things deserve more than a table row.
+
+### It knows which side of a sync wins
+
+Roblox code is increasingly written in VS Code rather than Studio, through tools that disagree about something fundamental: whether the filesystem or the DataModel is authoritative. Rojo and Argon say the files are; Script Sync and Azul say the place is. An agent that writes a file into an Azul project and assumes Studio followed has silently done nothing — or worse, is about to push a half-finished tree over a live place.
+
+The skill settles that question before the first write, then carries what each tool actually does: Script Sync losing tags and attributes on synced scripts, Rojo's `emitLegacyScripts` making `Script`/`LocalScript` output correct rather than stale, Argon silently renaming instances that are not legal filenames, Azul refusing local structural edits entirely, Lync deciding a script's class from a comment inside the file. It also knows where the credentials are — `rojo upload --cookie` and Lune's `getAuthCookie` both handle a `.ROBLOSECURITY`, and neither belongs in a command, a config file, or a log.
 
 ### It knows the platform's actual numbers
 
@@ -189,7 +196,7 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [minimal-code.md](roblox-best-practices/references/minimal-code.md) | Reuse before writing, what the engine already provides, code density |
 | [edge-cases.md](roblox-best-practices/references/edge-cases.md) | The states production actually produces — player and instance lifetimes, numbers, timing, cloud calls, UI — and the guard for each |
 | [adaptive-mode.md](roblox-best-practices/references/adaptive-mode.md) | Analyzing and adopting an existing project's conventions |
-| [community-libraries.md](roblox-best-practices/references/community-libraries.md) | ProfileStore, Packet, ByteNet, Trove, Fusion, and friends |
+| [community-libraries.md](roblox-best-practices/references/community-libraries.md) | ProfileStore, Packet, ByteNet, Trove, Fusion, Pronghorn, and friends |
 | [luau-language.md](roblox-best-practices/references/luau-language.md) | Truthiness and coercion, table and `require` semantics, typing, scheduling, deferred events |
 
 **Implementation blueprints**
@@ -235,9 +242,10 @@ Each rule carries scoped exceptions, documented so that legitimate code is not r
 | [false-positives.md](roblox-best-practices/references/false-positives.md) | Severity taxonomy and the catalog of what not to flag |
 | [review-checklist.md](roblox-best-practices/references/review-checklist.md) | The completion gate before any task is called done |
 | [evaluation-matrix.md](roblox-best-practices/references/evaluation-matrix.md) | Auditing a live project on request: scoping, gathering evidence, scoring 1–5, reporting honestly |
-| [api-currency.md](roblox-best-practices/references/api-currency.md) | Dated baseline of confirmed engine and Luau APIs, and how to verify one |
-| [verification.md](roblox-best-practices/references/verification.md) | Proving a change works, and the command-bar VM pitfall |
+| [api-currency.md](roblox-best-practices/references/api-currency.md) | Dated baseline of confirmed engine and Luau APIs, and how to verify one against the dump, the reference, and the weekly updates pages |
+| [verification.md](roblox-best-practices/references/verification.md) | Proving a change works, whether it reached the place, and the command-bar VM pitfall |
 | [studio-mcp.md](roblox-best-practices/references/studio-mcp.md) | Operating a Studio MCP connection safely: checking the connected tools, the preflight, and what cannot be undone |
+| [external-editors.md](roblox-best-practices/references/external-editors.md) | Editing outside Studio: which side is the source of truth, then Script Sync, Rojo, Argon, Azul, Lync, and the toolchain around them |
 
 Entry point: [SKILL.md](roblox-best-practices/SKILL.md).
 

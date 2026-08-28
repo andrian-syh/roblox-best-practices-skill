@@ -23,11 +23,12 @@ Confirm availability in the target environment before relying on these ([api-cur
 
 - **Studio CLI** — officially documented (`create.roblox.com/docs/studio/command-line-interface`). `--task RunScript --runScriptFile <path>` executes a `.luau` file, optionally against `--placeId`/`--universeId` or `--localPlaceFile`, with `--outputFile` capturing output and `--quitAfterExecution` exiting when done; `--openScriptPath` opens a specific script; and `--api` / `--fullApi` / `--apiV2` write the installed engine's API surface as JSON — the strongest offline check for whether an API exists in your target build. CLI scripts run at command-bar permission, so the command-bar VM caveat above still applies.
 - **`ScriptDebuggerService` [Beta]** — programmatic debugging from Luau: conditional breakpoints, logpoints, call-stack and variable inspection, and execution control. Useful for pinpointing a failure that logging alone cannot localize. Being Beta, it is a debugging aid, not something to build a permanent test harness on.
-- **Studio Script Sync** — scripts edited as files in an external editor with bidirectional sync. Verification still happens in a Studio session; the editor is only the authoring surface.
+- **Studio Script Sync** — scripts edited as files in an external editor with bidirectional sync. Verification still happens in a Studio session; the editor is only the authoring surface, and **the Studio debugger cannot be driven from it** ([external-editors.md](external-editors.md#studio-script-sync--the-official-one)).
 
 ## Rojo / filesystem environments
 
 - Pure-logic modules (no Instances, no services — see [unit-testable architecture](#unit-testable-architecture-framework-agnostic)) run under the Luau CLI or lune in CI; match the project's runner (TestEZ, Jest-Lua, plain asserts) if one exists.
+- **Confirm the change actually reached the place before trusting a playtest.** A file written on disk is not a synced instance: the serve session may be down, the plugin disconnected, or the wrong place open. Which tool is in use decides which direction even flows — settle that first ([external-editors.md](external-editors.md#the-one-question-to-answer-first)).
 - CI passing does not exempt engine-touching paths from an in-Studio session — sync the change in and drive the flow there too.
 
 ## Review verification discipline (trace before flag)

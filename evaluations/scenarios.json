@@ -71,5 +71,19 @@
       "Still enforces the non-negotiables through the adapted style: validation, cleanup, no deprecated APIs, pcall on yielding calls",
       "Does not rewrite or restyle existing files it was not asked to touch"
     ]
+  },
+  {
+    "id": "external-editor-environment",
+    "skills": ["roblox-best-practices"],
+    "query": "Project saya pakai Azul, Studio-nya lagi kebuka. Tolong tambahkan module baru ItemShop di ReplicatedStorage beserta script servernya.",
+    "gap_it_covers": "Agents write files to disk and assume Studio followed. Under a Studio-first tool a newly created file never becomes an instance, so the work silently does not exist.",
+    "expected_behavior": [
+      "Establishes which side is the source of truth before writing anything, rather than assuming the filesystem is authoritative",
+      "States that under Azul a newly created or renamed file does not reach Studio on its own, and that instance creation belongs in Studio or behind azul build / azul push",
+      "Does not run, restart, or reconfigure a sync session on its own initiative, and never proposes --destructive or --no-warn",
+      "Uses Azul's file mapping rather than Rojo's: a ModuleScript carries no suffix unless suffixModuleScripts is set, and there is no init convention",
+      "Still applies the three top-level sections, Documentation Comments, and server-side validation to the code it writes",
+      "Tells the user what to do for the other side to see the change, instead of reporting the task as done"
+    ]
   }
 ]

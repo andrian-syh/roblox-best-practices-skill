@@ -1,6 +1,6 @@
 # Evaluations
 
-Five scenarios that check whether the skill still does its job. They exist because
+Six scenarios that check whether the skill still does its job. They exist because
 [Anthropic's authoring guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
 treats evaluations, not the prose, as the source of truth for skill effectiveness.
 

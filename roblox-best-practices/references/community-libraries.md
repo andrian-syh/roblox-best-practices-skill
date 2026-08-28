@@ -57,6 +57,8 @@ The section layout applies *inside* each Service/Controller file:
 - INITIALIZATION: `KnitInit`/`KnitStart` (or `onInit`/`onStart`) bodies are the initialization — wire connections there, not at require time. The bootstrap script's `Knit.Start()` is the project's single entry point.
 - Knit's Client remotes replace raw remote creation, but server handlers still validate every argument.
 
+**Pronghorn** (Iron Stag Games, LGPL-2.1) is a lighter alternative in the same slot — "no Controllers or Services, just Modules and Remotes". Treat it the way this file treats any framework: it owns module discovery and remote creation, the section layout still applies inside each module, and server handlers still validate every argument themselves.
+
 ## UI: Fusion / React-lua / Roact
 
 **Maintenance status:** Roact is deprecated upstream in favor of React-lua; treat a Roact codebase as legacy — adapt it, don't extend it.

@@ -18,6 +18,7 @@ Read this **before reporting any finding**. A rule in this skill says what good 
   - [Newer APIs — do not flag what simply postdates your memory](#newer-apis--do-not-flag-what-simply-postdates-your-memory)
   - [Code economy and device scalability — authoring goals, not review standards](#code-economy-and-device-scalability--authoring-goals-not-review-standards)
   - [State ownership, failure policy, and locks — design decisions, not defects](#state-ownership-failure-policy-and-locks--design-decisions-not-defects)
+  - [External-editor project shapes are not defects](#external-editor-project-shapes-are-not-defects)
   - [Tutorial-shaped code is not a defect](#tutorial-shaped-code-is-not-a-defect)
   - [MCP tooling — not the code under review](#mcp-tooling--not-the-code-under-review)
   - [Authority mode — establish it before judging movement, input, or camera code](#authority-mode--establish-it-before-judging-movement-input-or-camera-code)
@@ -160,6 +161,21 @@ Three patterns added for authoring ([patterns/data.md](patterns/data.md#one-owne
 - **A missing lock is a finding only with a real interleaving.** Name the yield between the check and the effect, and the two callers that reach it in one frame. An operation with no yield in that window cannot interleave, and a lock added there would be ceremony. Equally, do **not** flag an existing lock as unnecessary without tracing the same path.
 - **Do not propose a global lock as a fix.** Serializing all players to remove one player's race is a performance regression dressed as a correctness fix.
 - Absent all three patterns, a small project is not defective. These matter at the scale where concurrency and data loss are real risks; a one-script experience does not need a lock table.
+
+### External-editor project shapes are not defects
+
+A project synced from outside Studio looks different from a Studio-native one, and none of the following is a finding.
+
+- **`Script`/`LocalScript` throughout a Rojo project.** `emitLegacyScripts` defaults to `true`, so that is what the project file asked for. Do not "modernize" it to `RunContext`.
+- **`.lua` rather than `.luau`.** Both are supported by every tool here; Argon even has a `lua_extension` switch. It is a project convention.
+- **`init.luau` / `init.server.luau` / `init.client.luau`.** These make a directory into a script — correct Rojo structure, not a misnamed file.
+- **No project file.** Script Sync and Azul need none. Absence is not misconfiguration, and demanding a `default.project.json` is wrong advice.
+- **A flat `src/` that does not mirror service names.** The project file decides the mapping; read it before calling the layout wrong.
+- **Generated `.luau` beside `.ts`, or darklua output.** That is build output. Never review it as authored code and never edit it.
+- **A `--@`-prefixed comment at the top of a Luau file.** In a Lync project that line *is* the script's class and run context, and deleting it silently turns a server `Script` into a `ModuleScript`. Comment-shaped configuration is not an in-body comment ([external-editors.md](external-editors.md#other-tools-in-the-same-space)).
+- **A committed `Packages/` folder, or a gitignored one.** Both are defensible — `wally.lock` makes either reproducible. Not a finding in either direction.
+- **Explicit property syntax in a Rojo project file** (`{"Bool": false}` rather than `true`). Implicit is preferred by Rojo's docs, but explicit is valid and sometimes required; Advisory at most, never a finding.
+- **`stylua.toml` conventions that differ from this skill's formatting.** The project's formatter wins ([external-editors.md](external-editors.md#the-toolchain-that-sits-alongside)).
 
 ### Tutorial-shaped code is not a defect
 
