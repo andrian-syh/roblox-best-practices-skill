@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Structural checks for the skill: broken links, orphan references, token budgets.
 
-Run from the repo root:  python scripts/validate-skill.py
-Exit code is non-zero when a check fails, so it can gate a release.
+Usage, from the repository root:
+
+    python scripts/validate-skill.py
+
+Exit status is 0 when every check passes and 1 otherwise, so it can gate a release.
+The SKILL.md token budget is reported as a warning and does not fail the run.
 
 Checks, in the order Anthropic's authoring guidance cares about them:
   1. Every intra-skill link and anchor resolves.
@@ -12,8 +16,10 @@ Checks, in the order Anthropic's authoring guidance cares about them:
   5. Every table of contents matches the headings actually in its file.
   6. The YAML frontmatter stays inside the spec's name and description limits.
   7. No file except the API-currency baseline carries a date.
+  8. SKILL.md states the same version as package.json.
 """
 
+import json
 import os
 import re
 import sys
@@ -33,17 +39,20 @@ CHARS_PER_TOKEN = 3.7
 
 
 def slug(text):
+    """Return the GitHub-style anchor for a heading text."""
     text = re.sub(r"[`*]", "", text).strip().lower()
     text = re.sub(r"[^\w\s-]", "", text)
     return text.replace(" ", "-")
 
 
 def read(path):
+    """Return a file's contents as UTF-8 text."""
     with open(path, encoding="utf-8") as handle:
         return handle.read()
 
 
 def markdown_files(root):
+    """Return every .md path under root, with forward slashes, in a stable order."""
     found = []
     for base, _, names in os.walk(root):
         for name in sorted(names):
@@ -53,6 +62,7 @@ def markdown_files(root):
 
 
 def main():
+    """Run every check, print a summary, and return the process exit code."""
     if not os.path.isdir(SKILL_DIR):
         print(f"error: run from the repo root; {SKILL_DIR}/ not found")
         return 1
@@ -142,6 +152,16 @@ def main():
         for n, line in enumerate(read(path).splitlines(), 1):
             if re.search(r"\b(19|20)\d{2}\b", line):
                 failures.append(f"{path}:{n}: contains a year; dates belong in {DATE_OWNER}, elsewhere use the maturity tag")
+
+    # 8. every place that states the version agrees with package.json
+    version = json.loads(read("package.json"))["version"]
+    stated = {
+        "SKILL.md version line": re.search(r"\*Skill version ([\d.]+)\.", body),
+        "SKILL.md metadata.version": re.search(r'^\s+version:\s*"([\d.]+)"', front, re.M),
+    }
+    for where, match in stated.items():
+        if not match or match.group(1) != version:
+            failures.append(f"{where}: {match.group(1) if match else 'missing'}, package.json says {version}")
 
     corpus = sum(len(read(f)) for f in files)
     print(f"files:      {len(files)}")
