@@ -8,6 +8,31 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-07
+
+This release is not a port. It aligns the skill with current skill-authoring guidance from the Agent Skills specification and vendor documentation, and corrects the Azul guidance in `external-editors.md` against Azul 2.3.0 and its documentation, as reported in [#1](https://github.com/andrian-syh/roblox-best-practices-skill/issues/1).
+
+### Added
+
+- A trigger test set, `evaluations/triggers.json`: ten queries that must load the skill and ten near-misses that must not.
+- Evaluation procedures for comparing each scenario against a run without the skill, for trigger tests, and for testing in other languages.
+- A language rule: the agent replies in the user's language, and code and Documentation Comments follow the project's language, with English as the default.
+- The `liveFsSync` setting, which turns off the replication of filesystem actions to Studio during a live session, together with its `usePolling` and `pollInterval` options.
+- Azul's best practices for distributing a project: when a sourcemap is needed at all, the `*.sourcemap.json` naming, and importing with `--from-sourcemap` and `--destructive`.
+
+### Changed
+
+- The `description` now states what the skill does and when to use it instead of summarizing its rules, says it applies to requests in any language, and names the nearby cases it does not cover.
+- `SKILL.md` is within the 5,000-token guideline. The preflight and finishing-gate sections are merged, and wording that repeated the invariant card or a reference file is shortened. No rule was removed.
+- Capitalized emphasis outside the invariant card is replaced with plain wording and, where it was missing, the reason for the rule.
+- Evaluation queries are written in English.
+
+### Fixed
+
+- The skill no longer says Azul is unsuited to a Git-based workflow. Azul works with Git whether the repository holds only the code or the whole game.
+- The skill now warns that Studio always wins over local state on session start, so offline edits on disk are overwritten when the plugin connects.
+- `daemonPath` is removed from the list of CLI settings, since Azul does not have it.
+
 ## [2.0.0] - 2026-10-07
 
 _Ported from roblox-optimum 1.11.5. Upgrade by running the installer again. No project changes are needed._
@@ -436,7 +461,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.2...v2.0.0
 [1.19.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.1...v1.19.2
 [1.19.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.0...v1.19.1
