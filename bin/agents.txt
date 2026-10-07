@@ -1,13 +1,14 @@
-# Canonical list of "additional" agents (beyond the always-included Universal ./.agents/skills path).
-# Single source of truth read by bin/cli.js, install.ps1, and install.sh — edit here only.
-# Format: Display Name|home-relative skills path
-# Detection: the folder checked in $HOME is the path with its final "skills" segment removed,
-# so ".config/goose/skills" is detected as "~/.config/goose" rather than the ubiquitous "~/.config".
-# Every path below is the agent's documented GLOBAL (home-directory) skills path, which is often
-# not the same as its project path — .windsurf/skills, .goose/skills, and .github/skills are all
-# project-level and were previously listed here by mistake.
+# Agents the installer can target, in addition to the always-included ./.agents/skills path.
+# Read by bin/cli.js, install.ps1, and install.sh. Edit this file only.
+#
+# Format: Display Name|home-relative global skills path
 # Lines starting with '#' and blank lines are ignored.
-Universal global (Cline, Dexto, Kimi Code CLI, Loaf, Zed, ...)|.agents/skills
+#
+# Each path is the agent's documented global (home-directory) skills path, which often differs
+# from its project path: Windsurf reads ~/.codeium/windsurf/skills, not .windsurf/skills.
+# An agent counts as detected when the path minus its final "skills" segment exists in $HOME,
+# so ".config/goose/skills" is detected by "~/.config/goose", never by "~/.config".
+Universal global (Codex, Cline, Dexto, Kimi Code CLI, Loaf, Warp, Zed, ...)|.agents/skills
 Amp / Replit Agent|.config/agents/skills
 AiderDesk|.aider-desk/skills
 Antigravity|.gemini/config/skills
@@ -20,7 +21,6 @@ Claude Code|.claude/skills
 OpenClaw|.openclaw/skills
 CodeArts Agent|.codeartsdoer/skills
 CodeBuddy|.codebuddy/skills
-Codex|.codex/skills
 Codemaker|.codemaker/skills
 Code Studio|.codestudio/skills
 Command Code|.commandcode/skills
@@ -41,7 +41,7 @@ inference.sh|.inferencesh/skills
 Jazz|.jazz/skills
 Junie|.junie/skills
 iFlow CLI|.iflow/skills
-Kilo Code|.kilocode/skills
+Kilo Code|.kilo/skills
 Kimchi|.config/kimchi/harness/skills
 Kiro CLI|.kiro/skills
 Kode|.kode/skills
@@ -67,7 +67,6 @@ Terramind|.terramind/skills
 TinyCloud|.tinycloud/skills
 Trae AI|.trae/skills
 Trae CN|.trae-cn/skills
-Warp|.warp/skills
 Windsurf|.codeium/windsurf/skills
 Zencoder / Zenflow|.zencoder/skills
 ZCode|.zcode/skills

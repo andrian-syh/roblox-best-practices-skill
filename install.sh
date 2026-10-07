@@ -1,14 +1,29 @@
 #!/bin/sh
+#
+# Installs the roblox-best-practices skill for AI coding agents.
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/andrian-syh/roblox-best-practices-skill/main/install.sh | bash
+#   sh install.sh [--all] [--tag vX.Y.Z]
+#
+# With Node.js and npm present, runs the npx installer (bin/cli.js) and
+# forwards every argument to it. Otherwise downloads the newest release tag
+# (or main when no tag exists) with git, curl, or wget, and copies the skill
+# into ./.agents/skills and into each detected agent you confirm. The agent
+# list is read from bin/agents.txt.
+#
+# Requires: git, or curl or wget plus unzip, when Node.js is absent.
+# Exit status: non-zero when the download or a copy fails.
+# Docs: https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/INSTALL.md
 
-# Stop on errors
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
-NC='\033[0;0m' # No Color
+# printf, not a literal: bash's echo does not expand \033, and this script runs under curl | bash.
+RED=$(printf '\033[0;31m')
+GREEN=$(printf '\033[0;32m')
+BLUE=$(printf '\033[0;34m')
+YELLOW=$(printf '\033[0;33m')
+NC=$(printf '\033[0m')
 
 echo "${BLUE}========================================================${NC}"
 echo "${BLUE}       Roblox Best Practices Skill Installer            ${NC}"
@@ -35,13 +50,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Download the skill files
-echo "Downloading skill files..."
+# Download the newest release tag rather than main, so a half-finished main never ships.
+REPO_URL="https://github.com/andrian-syh/roblox-best-practices-skill"
+latest_tag() {
+  if command -v git >/dev/null 2>&1; then
+    git ls-remote --tags --refs "$REPO_URL.git" 2>/dev/null | sed 's:.*/::'
+  elif command -v curl >/dev/null 2>&1; then
+    curl -fsSL "https://api.github.com/repos/andrian-syh/roblox-best-practices-skill/tags" 2>/dev/null | grep -o '"name": *"[^"]*"' | sed 's/.*"\([^"]*\)"$/\1/'
+  fi | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -t. -k1.2,1n -k2,2n -k3,3n | tail -n 1
+}
+TAG=$(latest_tag || true)
+REF_NAME=${TAG:-main}
+echo "Downloading skill files ($REF_NAME)..."
+
 if command -v git >/dev/null 2>&1; then
-  git clone --depth 1 https://github.com/andrian-syh/roblox-best-practices-skill.git "$TEMP_DIR" > /dev/null 2>&1
+  git clone --depth 1 --branch "$REF_NAME" "$REPO_URL.git" "$TEMP_DIR/src" > /dev/null 2>&1
 else
-  # Fallback to downloading ZIP
-  ZIP_URL="https://github.com/andrian-syh/roblox-best-practices-skill/archive/refs/heads/main.zip"
+  if [ -n "$TAG" ]; then ZIP_URL="$REPO_URL/archive/refs/tags/$TAG.zip"; else ZIP_URL="$REPO_URL/archive/refs/heads/main.zip"; fi
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$ZIP_URL" -o "$TEMP_DIR/archive.zip"
   elif command -v wget >/dev/null 2>&1; then
@@ -50,10 +75,10 @@ else
     echo "${RED}[ERROR] Neither git, curl, nor wget is installed. Please install one of them to download the skill.${NC}"
     exit 1
   fi
-  
+
   if command -v unzip >/dev/null 2>&1; then
     unzip -q "$TEMP_DIR/archive.zip" -d "$TEMP_DIR"
-    mv "$TEMP_DIR"/roblox-best-practices-skill-main/* "$TEMP_DIR"/ || true
+    mv "$TEMP_DIR"/roblox-best-practices-skill-* "$TEMP_DIR/src"
   else
     echo "${RED}[ERROR] 'unzip' utility not found. Please install unzip or Node.js to continue.${NC}"
     exit 1
@@ -61,7 +86,7 @@ else
 fi
 
 # The source skill folder
-SRC_SKILL_DIR="$TEMP_DIR/roblox-best-practices"
+SRC_SKILL_DIR="$TEMP_DIR/src/roblox-best-practices"
 
 if [ ! -d "$SRC_SKILL_DIR" ]; then
   echo "${RED}[ERROR] Failed to locate roblox-best-practices directory in download.${NC}"
@@ -94,7 +119,6 @@ copy_folder() {
 
 install_targets() {
   echo ""
-  echo "  ${GREEN}•${NC} 66 agent locations"
   echo "  ${GREEN}•${NC} Which agents do you want to install to?"
   echo ""
   echo "  ${YELLOW}— Universal (.agents/skills) — always included —————${NC}"
@@ -105,8 +129,7 @@ install_targets() {
   local detected_names=""
   local detected_paths=""
   local count=0
-  local assumed_installed=""
-  
+
   check_agent() {
     name="$1"
     apath="$2"
@@ -115,14 +138,12 @@ install_targets() {
       count=$((count+1))
       detected_names="$detected_names\n  $count) [x] $name (~/$apath)"
       detected_paths="$detected_paths $apath"
-    else
-      assumed_installed="$assumed_installed\n${GREEN}[INSTALLED] (Assumed) $name${NC}"
     fi
   }
 
   # Read the canonical agent list from the shared data file (bin/agents.txt in the download),
   # so this fallback stays in sync with bin/cli.js and install.ps1.
-  AGENTS_FILE="$TEMP_DIR/bin/agents.txt"
+  AGENTS_FILE="$TEMP_DIR/src/bin/agents.txt"
   if [ -f "$AGENTS_FILE" ]; then
     while IFS='|' read -r name apath; do
       name=$(printf '%s' "$name" | tr -d '\r')
@@ -141,7 +162,8 @@ install_targets() {
     printf '%b\n' "$detected_names"
     echo ""
     printf "Do you want to install the skill to these detected agents? (Y/n): "
-    read -r CONFIRM
+    # stdin is the script itself under curl | bash; ask the terminal instead.
+    { read -r CONFIRM < /dev/tty; } 2>/dev/null || CONFIRM=""
     CONFIRM=$(echo "$CONFIRM" | tr '[:lower:]' '[:upper:]')
     if [ "$CONFIRM" = "" ] || [ "$CONFIRM" = "Y" ]; then
       for path in $detected_paths; do
@@ -149,12 +171,10 @@ install_targets() {
         echo "Installing to $HOME/$path/roblox-best-practices..."
         copy_folder "$SRC_SKILL_DIR" "$HOME/$path/roblox-best-practices"
       done
-      printf '%b\n' "$assumed_installed"
     fi
   else
     echo ""
     echo "No other agent directories detected in your home directory. Skip additional agents."
-    printf '%b\n' "$assumed_installed"
   fi
 
   # The workspace path goes last, unconditionally. When it resolves to the same

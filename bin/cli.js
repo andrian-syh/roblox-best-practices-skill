@@ -1,18 +1,35 @@
 #!/usr/bin/env node
+/**
+ * @file Installer for the roblox-best-practices skill.
+ *
+ * Copies the skill folder into the workspace `.agents/skills` path and into
+ * the global skills directory of each selected agent listed in `agents.txt`.
+ *
+ * Usage: npx --allow-git=all github:andrian-syh/roblox-best-practices-skill [options]
+ *   -a, --all        install to every detected agent without prompts
+ *   -t, --tag <tag>  install a published release instead of the bundled copy
+ *   -h, --help       show help
+ *
+ * Exit codes: 0 on success, 1 when a download or any file copy fails.
+ */
 
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const https = require('https');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const prompts = require('prompts');
 
 const localSkillDir = path.join(__dirname, '../roblox-best-practices');
 const cwd = process.cwd();
 
-// Single source of truth for the bundled version (kept in sync with package.json automatically)
 const { version: bundledVersion } = require('../package.json');
 
+/**
+ * Shortens a path for display: home-relative as `~/...`, otherwise relative to the working directory.
+ * @param {string} p Absolute path.
+ * @returns {string} Display form of the path.
+ */
 function formatPath(p) {
   const home = os.homedir();
   if (p.startsWith(home)) {
@@ -21,26 +38,22 @@ function formatPath(p) {
   return path.relative(cwd, p) || p;
 }
 
-// Helper to copy file
-function copyFileSync(src, dest) {
-  try {
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.copyFileSync(src, dest);
-    console.log(`[CREATED] ${formatPath(dest)}`);
-  } catch (err) {
-    console.error(`[ERROR] Failed to write ${dest}: ${err.message}`);
-  }
-}
-
 // Destinations already written in this run. Two targets can resolve to the same
 // folder — running from the home directory makes the workspace ".agents/skills"
 // and the global "~/.agents/skills" the same path — and installing twice would
 // delete the copy just made before writing it again.
 const installedDestinations = new Set();
 
-// Replace the destination skill folder wholesale, then copy.
-// Removing first clears files deleted in newer versions so no stale files linger
-// (mirrors the `rm -rf`/`Remove-Item` behavior of the shell/PowerShell fallbacks).
+// Copy errors are reported as they happen; this decides the exit code.
+let failures = 0;
+
+/**
+ * Replaces `dest` with a fresh copy of `src`, once per run.
+ * Removing first clears files deleted in newer versions, matching the shell fallbacks.
+ * @param {string} src Skill folder to copy.
+ * @param {string} dest Destination skill folder.
+ * @returns {boolean} False when `dest` was already written in this run.
+ */
 function installSkillFolder(src, dest) {
   const resolved = path.resolve(dest);
   if (installedDestinations.has(resolved)) {
@@ -57,7 +70,11 @@ function installSkillFolder(src, dest) {
   return true;
 }
 
-// Helper to copy folder recursively
+/**
+ * Copies a file or folder tree, logging each file and counting failures instead of throwing.
+ * @param {string} src Source file or folder.
+ * @param {string} dest Destination path.
+ */
 function copyFolderRecursiveSync(src, dest) {
   try {
     if (!fs.existsSync(src)) return;
@@ -73,11 +90,15 @@ function copyFolderRecursiveSync(src, dest) {
       console.log(`[CREATED] ${formatPath(dest)}`);
     }
   } catch (err) {
+    failures += 1;
     console.error(`[ERROR] Failed to copy from ${src} to ${dest}: ${err.message}`);
   }
 }
 
-// Fetch available tags from GitHub API
+/**
+ * Lists the repository's tag names from the GitHub API.
+ * @returns {Promise<string[]>} Tag names, or an empty list when GitHub is unreachable.
+ */
 function fetchGithubTags() {
   return new Promise((resolve) => {
     const options = {
@@ -111,13 +132,21 @@ function fetchGithubTags() {
   });
 }
 
-// A git tag/version this installer will accept (e.g. v1.5.1 or 1.5.1).
-// Guards against a malicious --tag value reaching a shell command.
+/**
+ * Accepts only `X.Y.Z` or `vX.Y.Z`, so a crafted `--tag` value cannot reach a command line.
+ * @param {unknown} tag Candidate tag.
+ * @returns {boolean} True for a well-formed version tag.
+ */
 function isValidTag(tag) {
   return typeof tag === 'string' && /^v?\d+\.\d+\.\d+$/.test(tag);
 }
 
-// Sort version tags newest-first by numeric major.minor.patch (e.g. v1.5.1 before v1.1.7).
+/**
+ * Sort comparator that orders version tags newest first by numeric major, minor, and patch.
+ * @param {string} a Version tag.
+ * @param {string} b Version tag.
+ * @returns {number} Negative when `a` is newer than `b`.
+ */
 function compareTagsDesc(a, b) {
   const parse = t => t.replace(/^v/, '').split('.').map(Number);
   const pa = parse(a);
@@ -128,7 +157,12 @@ function compareTagsDesc(a, b) {
   return 0;
 }
 
-// Download a specific tag from GitHub to a temporary directory
+/**
+ * Downloads a release tag into a temporary folder with git, or as a zip archive without it.
+ * Exits the process with code 1 on an invalid tag or a failed download.
+ * @param {string} tag Version tag, with or without the `v` prefix.
+ * @returns {{tempDir: string, skillDir: string}} The temporary folder and the skill folder inside it.
+ */
 function downloadVersion(tag) {
   if (!isValidTag(tag)) {
     console.error(`\x1b[31m[ERROR] Invalid version tag "${tag}". Expected a form like v1.5.1.\x1b[0m`);
@@ -189,6 +223,10 @@ function downloadVersion(tag) {
   }
 }
 
+/**
+ * Deletes a temporary download folder, ignoring errors.
+ * @param {string | null} tempDir Folder to delete, or null when nothing was downloaded.
+ */
 function cleanupTempDir(tempDir) {
   if (tempDir && fs.existsSync(tempDir)) {
     try {
@@ -197,8 +235,10 @@ function cleanupTempDir(tempDir) {
   }
 }
 
-// Load the canonical agent list from the shared data file (bin/agents.txt),
-// so cli.js, install.ps1, and install.sh all read the same source.
+/**
+ * Reads `agents.txt`, the agent list shared with `install.ps1` and `install.sh`.
+ * @returns {{name: string, path: string}[]} Agents with their home-relative skills path.
+ */
 function loadAgents() {
   const file = path.join(__dirname, 'agents.txt');
   return fs.readFileSync(file, 'utf8')
@@ -213,30 +253,52 @@ function loadAgents() {
 
 const additionalAgents = loadAgents();
 
-// The folder to look for in $HOME is the skills path minus its final segment:
-// ".config/goose/skills" must be detected as "~/.config/goose", never the
-// ubiquitous "~/.config", which would pre-select every agent that nests there.
+/**
+ * Returns the folder whose presence means an agent is installed: the skills path minus `skills`.
+ * `.config/goose/skills` is detected as `~/.config/goose`, never the shared `~/.config`.
+ * @param {string} agentPath Home-relative skills path.
+ * @returns {string} Home-relative detection folder.
+ */
 function detectionFolder(agentPath) {
   return agentPath.split('/').slice(0, -1).join('/');
 }
 
-// Execute installation for a given target object
-function executeInstall(agent, skillDir) {
-  const appFolder = path.join(os.homedir(), detectionFolder(agent.path));
-  const dest = path.join(os.homedir(), agent.path, 'roblox-best-practices');
-  
-  if (fs.existsSync(appFolder)) {
-    console.log(`\n--- Installing \x1b[36m${agent.name}\x1b[0m ---`);
-    installSkillFolder(skillDir, dest);
-  } else {
-    console.log(`\x1b[32m[INSTALLED]\x1b[0m (Assumed) ${agent.name}`);
-  }
+/**
+ * @param {{path: string}} agent Agent entry from `agents.txt`.
+ * @returns {boolean} True when the agent's folder exists in the home directory.
+ */
+function isDetected(agent) {
+  return fs.existsSync(path.join(os.homedir(), detectionFolder(agent.path)));
 }
 
-// Argument parsing for automation/non-interactive
+/**
+ * Installs the skill into one agent's global skills directory.
+ * @param {{name: string, path: string}} agent Agent entry from `agents.txt`.
+ * @param {string} skillDir Skill folder to copy.
+ */
+function executeInstall(agent, skillDir) {
+  console.log(`\n--- Installing \x1b[36m${agent.name}\x1b[0m ---`);
+  installSkillFolder(skillDir, path.join(os.homedir(), agent.path, 'roblox-best-practices'));
+}
+
+/**
+ * Cleans up, reports the outcome, and exits: code 1 if any copy failed, otherwise 0.
+ * @param {string | null} tempDir Temporary download folder to delete.
+ */
+function finish(tempDir) {
+  cleanupTempDir(tempDir);
+  if (failures > 0) {
+    console.error(`\n\x1b[31m[FAILED] ${failures} file(s) could not be installed; see the errors above.\x1b[0m`);
+    process.exit(1);
+  }
+  console.log('\n\x1b[32m[SUCCESS] Installation complete!\x1b[0m');
+  process.exit(0);
+}
+
+// Non-interactive path: --all, with an optional --tag.
 const args = process.argv.slice(2);
 
-let chosenTag = 'latest';
+let chosenTag = null;
 const tagArgIndex = args.findIndex(arg => arg === '--tag' || arg === '-t');
 if (tagArgIndex !== -1 && args[tagArgIndex + 1]) {
   chosenTag = args[tagArgIndex + 1];
@@ -250,7 +312,7 @@ Usage:
   npx github:andrian-syh/roblox-best-practices-skill [options]
 
 Options:
-  -a, --all                   Install for all supported additional agents
+  -a, --all                   Install for every agent detected in your home directory, without prompts
   -t, --tag <tag_name>        Target a specific version tag from GitHub (e.g. v1.0.0, v1.1.7)
   -h, --help                  Show this help message
   `);
@@ -258,12 +320,12 @@ Options:
 }
 
 if (args.includes('--all') || args.includes('-a')) {
-  console.log(`Installing version '${chosenTag}' to Universal and all selected additional agents...`);
-  
+  console.log(`Installing version '${chosenTag || 'latest'}' to Universal and every detected agent...`);
+
   let activeSkillDir = localSkillDir;
   let tempCleanDir = null;
 
-  if (chosenTag !== 'latest') {
+  if (chosenTag) {
     const downloadResult = downloadVersion(chosenTag);
     activeSkillDir = downloadResult.skillDir;
     tempCleanDir = downloadResult.tempDir;
@@ -272,93 +334,90 @@ if (args.includes('--all') || args.includes('-a')) {
   // Named agents first, then the workspace path. When the two resolve to the same
   // folder (running from the home directory), the named target is the one reported
   // and the workspace step reports itself as already covered.
-  additionalAgents.forEach(agent => {
+  additionalAgents.filter(isDetected).forEach(agent => {
     executeInstall(agent, activeSkillDir);
   });
 
   console.log(`\n--- Installing \x1b[36mUniversal (./.agents/skills)\x1b[0m ---`);
   installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
 
-  cleanupTempDir(tempCleanDir);
-  console.log('\n\x1b[32m[SUCCESS] Installation complete!\x1b[0m');
-  process.exit(0);
+  finish(tempCleanDir);
 }
 
-// Interactive prompt
+// Interactive path: choose a version, then the agents to install to.
 (async () => {
   console.log('\x1b[36m========================================================\x1b[0m');
   console.log('\x1b[36m       Roblox Best Practices Skill Installer CLI        \x1b[0m');
   console.log('\x1b[36m========================================================\x1b[0m\n');
 
-  // Step 1: Select Version
-  console.log('Fetching available tags from GitHub...');
-  const tags = await fetchGithubTags();
-  
-  const versionChoices = [
-    { title: `Latest (Local bundled v${bundledVersion})`, value: 'latest', description: 'Installs the latest version instantly' }
-  ];
+  let selectedTag = chosenTag;
 
-  const RECENT_LIMIT = 5;
+  // Step 1: Select Version, unless --tag already chose one
+  if (!selectedTag) {
+    console.log('Fetching available tags from GitHub...');
+    const tags = await fetchGithubTags();
+    
+    const versionChoices = [
+      { title: `Latest (Local bundled v${bundledVersion})`, value: 'latest', description: 'Installs the latest version instantly' }
+    ];
 
-  if (tags.length > 0) {
-    // Show only the latest few published versions to keep the menu short;
-    // older ones stay installable via the manual-entry option below (or --tag).
-    tags
-      .filter(isValidTag)
-      .sort(compareTagsDesc)
-      .slice(0, RECENT_LIMIT)
-      .forEach(tag => {
-        versionChoices.push({
-          title: `${tag} (Download from GitHub)`,
-          value: tag,
-          description: `Downloads and installs version ${tag}`
+    const RECENT_LIMIT = 5;
+
+    if (tags.length > 0) {
+      // Show only the latest few published versions to keep the menu short;
+      // older ones stay installable via the manual-entry option below (or --tag).
+      tags
+        .filter(isValidTag)
+        .sort(compareTagsDesc)
+        .slice(0, RECENT_LIMIT)
+        .forEach(tag => {
+          versionChoices.push({
+            title: `${tag} (Download from GitHub)`,
+            value: tag,
+            description: `Downloads and installs version ${tag}`
+          });
         });
-      });
-  } else {
-    // Fallback static choices if offline/rate-limited
-    versionChoices.push(
-      { title: `v${bundledVersion} (Download from GitHub)`, value: `v${bundledVersion}`, description: `Downloads and installs v${bundledVersion}` },
-      { title: 'v1.1.7 (Download from GitHub)', value: 'v1.1.7', description: 'Downloads and installs v1.1.7' },
-      { title: 'v1.0.0 (Download from GitHub)', value: 'v1.0.0', description: 'Downloads and installs v1.0.0' }
-    );
-  }
+    } else {
+      console.log('\x1b[90mCould not reach GitHub; older versions stay installable by typing a tag.\x1b[0m');
+    }
 
-  // Always let the user reach an older/unlisted version by typing it.
-  versionChoices.push({
-    title: 'Other version (type manually)…',
-    value: '__manual__',
-    description: 'Enter any published version tag, e.g. v1.0.0 (for versions not listed above)'
-  });
-
-  const versionResponse = await prompts({
-    type: 'select',
-    name: 'version',
-    message: 'Select the skill version to install:',
-    choices: versionChoices
-  });
-
-  if (!versionResponse.version) {
-    console.log('\n\x1b[31m[CANCELLED] Installation cancelled.\x1b[0m');
-    process.exit(0);
-  }
-
-  let selectedTag = versionResponse.version;
-
-  // Manual entry: prompt for a version tag and validate it.
-  if (selectedTag === '__manual__') {
-    const manualResponse = await prompts({
-      type: 'text',
-      name: 'tag',
-      message: 'Enter the version tag to install (e.g. v1.0.0):',
-      validate: value => isValidTag((value || '').trim()) ? true : 'Enter a version like v1.0.0'
+    // Always let the user reach an older/unlisted version by typing it.
+    versionChoices.push({
+      title: 'Other version (type manually)…',
+      value: '__manual__',
+      description: 'Enter any published version tag, e.g. v1.0.0 (for versions not listed above)'
     });
 
-    if (!manualResponse.tag) {
+    const versionResponse = await prompts({
+      type: 'select',
+      name: 'version',
+      message: 'Select the skill version to install:',
+      choices: versionChoices
+    });
+
+    if (!versionResponse.version) {
       console.log('\n\x1b[31m[CANCELLED] Installation cancelled.\x1b[0m');
       process.exit(0);
     }
 
-    selectedTag = manualResponse.tag.trim();
+    selectedTag = versionResponse.version;
+
+    // Manual entry: prompt for a version tag and validate it.
+    if (selectedTag === '__manual__') {
+      const manualResponse = await prompts({
+        type: 'text',
+        name: 'tag',
+        message: 'Enter the version tag to install (e.g. v1.0.0):',
+        validate: value => isValidTag((value || '').trim()) ? true : 'Enter a version like v1.0.0'
+      });
+
+      if (!manualResponse.tag) {
+        console.log('\n\x1b[31m[CANCELLED] Installation cancelled.\x1b[0m');
+        process.exit(0);
+      }
+
+      selectedTag = manualResponse.tag.trim();
+    }
   }
 
   // Step 2: Select Targets
@@ -369,15 +428,11 @@ if (args.includes('--all') || args.includes('-a')) {
   console.log('    \x1b[32m•\x1b[0m GitHub Copilot, Kimi Code CLI, Loaf, OpenCode, Warp, Zed');
   console.log('    \x1b[90mProject scope only. Pick "Universal global" below for ~/.agents/skills.\x1b[0m\n');
 
-  const targetChoices = additionalAgents.map(agent => {
-    const appFolder = path.join(os.homedir(), detectionFolder(agent.path));
-    const exists = fs.existsSync(appFolder);
-    return {
-      title: `${agent.name} (~/${agent.path})`,
-      value: agent,
-      selected: exists
-    };
-  });
+  const targetChoices = additionalAgents.map(agent => ({
+    title: `${agent.name} (~/${agent.path})`,
+    value: agent,
+    selected: isDetected(agent)
+  }));
 
   const response = await prompts({
     type: 'autocompleteMultiselect',
@@ -407,7 +462,7 @@ if (args.includes('--all') || args.includes('-a')) {
 
   console.log(`\n\x1b[32mInstalling skill...\x1b[0m`);
   
-  // 1. Selected agents first (only if parent dir exists)
+  // 1. Selected agents first; picking an undetected one installs it anyway
   selectedAgents.forEach(agent => {
     executeInstall(agent, activeSkillDir);
   });
@@ -418,6 +473,5 @@ if (args.includes('--all') || args.includes('-a')) {
   console.log(`\n--- Installing \x1b[36mUniversal (./.agents/skills)\x1b[0m ---`);
   installSkillFolder(activeSkillDir, path.join(cwd, '.agents/skills/roblox-best-practices'));
 
-  cleanupTempDir(tempCleanDir);
-  console.log('\n\x1b[32m[SUCCESS] Installation complete!\x1b[0m');
+  finish(tempCleanDir);
 })();
