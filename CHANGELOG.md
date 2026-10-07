@@ -1,523 +1,462 @@
 # Changelog
 
-All notable changes to the roblox-best-practices skill are documented here. The format loosely follows [Keep a Changelog](https://keepachangelog.com); the skill version tracks `package.json`.
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and from 2.0.0 this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). Earlier versions were numbered by the size of each change rather than by SemVer, so some numbers between releases were never used. The version is the one in `package.json`; the release tag is that version prefixed with `v`.
+
+From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/andrian-syh/roblox-optimum), and each release names the roblox-optimum version it was ported from.
+
+## [Unreleased]
+
+## [2.0.0] - 2026-10-07
+
+_Ported from roblox-optimum 1.11.5. Upgrade by running the installer again. No project changes are needed._
+
+### Added
+- Add `diagnosis.md`, which narrows a reported symptom to a confirmed cause before any fix.
+- Add `team-workflow.md`: git alongside a place file, branch places, tree ownership, and the merge gate.
+- Add a table of contents to `community-libraries.md`, with new sections on judging networking libraries and on Jecs.
+- Add `INSTALL.md` with requirements, options, install locations, agent-specific notes, update, and uninstall.
+- Add `MAINTAINING.md` with the port and release procedure.
+- Add `scripts/port-from-optimum.mjs`, which copies references from a roblox-optimum checkout and lists the lines that need a standalone rewrite.
+- Add a validator check that `SKILL.md` states the same version as `package.json`.
+- Add `license` and `metadata.version` to the `SKILL.md` frontmatter.
+
+### Changed
+- **Breaking:** Revise the invariant card. Item 5 exempts cold paths and timer-driven work, item 7 applies only where a yield sits between a check and its use, and item 9 requires a search before any claim about a file.
+- Port every reference from roblox-optimum 1.11.5. The largest updates are `api-currency.md` (engine 739 baseline, the three release-note pages, a probe that separates present, gated, and unreadable members, new deprecations), `limits-budgets.md` (MessagingService, HTTP, and remote limits), `patterns/network.md` (per-type remote rate limits, the unreliable payload cap), `minimal-code.md`, `templates.md`, and `luau-language.md` (stricter generic bodies, `if local` bindings in beta).
+- Rewrite the `SKILL.md` description so the skill also triggers when a request never names Roblox or Luau, and on a reported symptom with no file named.
+- Count runtime rules in `SKILL.md` and `runtime-rules.md` as card items 3 to 7, with network budgeting kept in the file.
+- Download the newest release tag in the fallback installers (`install.sh`, `install.ps1`) instead of `main`.
+- Apply `--tag` in interactive mode, where it now skips the version menu.
+- Install only to detected agents under `--all`.
+- Point Kilo Code at `~/.kilo/skills`, and fold Codex and Warp into the Universal global entry (`~/.agents/skills`), which they read.
+- Document every script to its language's convention: JSDoc in `bin/cli.js` and `scripts/port-from-optimum.mjs`, comment-based help in `install.ps1` (`Get-Help .\install.ps1`), a usage header in `install.sh`, and docstrings in `scripts/validate-skill.py`.
+- Move installation detail from `README.md` to `INSTALL.md`, and rewrite `README.md`, `evaluations/README.md`, and this file to current documentation conventions.
+
+### Removed
+- Remove the unused `copyFileSync` helper and `execSync` import from `bin/cli.js`.
+- Remove the hard-coded v1.1.7 and v1.0.0 menu entries shown when GitHub is unreachable. Any tag can still be typed.
+
+### Fixed
+- Stop the installers from printing `[INSTALLED] (Assumed)` for agents they did not install to.
+- Exit with code 1 and print `[FAILED]` in `bin/cli.js` when a file cannot be copied, instead of reporting success.
+- Read the `install.sh` confirmation prompt from `/dev/tty`. Under `curl | bash` it read from the script itself.
+- Print colours correctly in `install.sh` under bash, whose `echo` does not expand `\033`.
+- Correct the `external-editor-environment` evaluation for Azul 2.0, where files created during a live session reach Studio.
 
 ## [1.19.2] - 2026-08-28
 
-**A validation pass over `luau.org`, and an installer that wrote the same folder twice.** Twenty pages of the Luau reference read against what the skill claims, plus a duplicate-install bug reported from a real run.
-
-### Fixed
-- **`vector.lerp` does not exist.** The skill listed it among the vector library's component-wise helpers. Luau's standard library documents `create`, `magnitude`, `normalize`, `cross`, `dot`, `angle`, `floor`, `ceil`, `abs`, `sign`, `clamp`, `max`, `min` and the `vector.zero`/`vector.one` constants — and no interpolation function at all. Removed, with `math.lerp` named as the scalar one and `a + (b - a) * t` as the vector form. This is exactly the invented-API failure the skill exists to prevent.
-- **`issubtypeof` was miscategorised** as a built-in type function alongside `keyof`. It is a method on a type inside a type function (`ty:issubtypeof(super)`). Corrected, with the fixed set of globals a type function may use.
-- **The installer wrote the same folder twice.** Running from the home directory makes the workspace `./.agents/skills` and the global `~/.agents/skills` the same path, so the second pass deleted the copy the first had just made and wrote it again. All three installers now track destinations they have already written and report a repeat as skipped, and the workspace step runs last so the named agent is the one reported. Distinct paths still install independently.
+_A validation pass over the Luau reference on luau.org, and a fix for an installer that wrote the same folder twice._
 
 ### Added
-- **`unknown`, not `any`, for untrusted input.** Both are top types, but `any` may be used as any other type with no further checks while `unknown` forces a refinement first — so typing a remote's payload `unknown` makes the checker demand the validation the server already owes.
-- **A method's `self` is not typed for you.** Luau does not share `self` across a class's methods, so each needs its own annotation; the repetition is correct, not sloppy. Luau intends to change this for `:`-defined functions later.
-- **What refines**: truthiness, `type(x) == "..."`, equality against a literal, `assert`, composed through `and`/`or`/`not` — plus `IsA` on Roblox types, and inferred return types for `Instance.new` and `game:GetService`.
-- **A `require` path the checker cannot resolve statically is a path it cannot type**, silently, without an error.
-- **A "What the sandbox removes" section.** `io`, `package`, `dofile`, `loadfile`, and `string.dump`/`load` are gone; `os` keeps only `clock`, `date`, `difftime`, `time`; **`collectgarbage` accepts only `"count"`**, so forcing a collection is never the answer to a memory problem; `newproxy` takes only `true`/`false`/`nil`; the global table, library tables, and string metatable are read-only. Rejected by design and never a workaround: `goto`, integer types and the `&`/`|` operators (`bit32` instead), ephemeron weak tables, and **`__gc`** — there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path.
-- **A "What the VM rewards" section in `performance.md`**, from Luau's own performance documentation: constant field names hit the inline cache where a computed key cannot; `#t` is effectively constant-time; `ipairs`, `pairs`, and generalized `for ... in` all have specialised bytecode with no per-iteration call, which is the implementation reason this skill never flags `pairs`; `table.create(n)` preallocates; and `loadstring`/`getfenv`/`setfenv` force dynamic deoptimization of the whole script.
-- **The linter's 28 warning names**, tabulated. Several are the machine-checkable half of rules the skill already states — `MisleadingAndOr` for the `x and y or z` trap, `TableOperations` for `#`/`ipairs` on a table with no numeric keys, `ComparisonPrecedence` for `not X == Y`. Naming the warning beats describing it.
+- Recommend `unknown` over `any` for untrusted input, so the type checker demands the validation a remote handler owes.
+- State that a method's `self` needs its own annotation in every method.
+- List what refines a type: truthiness, `type(x) == "..."`, literal equality, `assert`, `IsA`, and their `and`/`or`/`not` compositions.
+- Note that a `require` path the checker cannot resolve statically is silently untyped.
+- Add a "What the sandbox removes" section: `io`, `package`, `dofile`, `loadfile`, `string.dump`/`load`, most of `os`, `collectgarbage` beyond `"count"`, and the features rejected by design (`goto`, integer types, bitwise operators, ephemeron tables, `__gc`).
+- Add a "What the VM rewards" section to `performance.md`: inline caches for constant field names, specialised iteration bytecode, `table.create`, and the deoptimisation caused by `loadstring`, `getfenv`, and `setfenv`.
+- Tabulate the linter's 28 warning names.
+
+### Fixed
+- Remove `vector.lerp`, which does not exist. Use `math.lerp` for scalars and `a + (b - a) * t` for vectors.
+- Describe `issubtypeof` as a method on a type inside a type function, not a built-in type function.
+- Write each install destination once. Running from the home directory made the workspace and global `.agents/skills` paths the same folder, and the second write deleted the first.
 
 ## [1.19.1] - 2026-08-28
 
-**The installer was writing to folders that no agent reads.** An audit of all 63 listed agents against each vendor's own documentation found 20 wrong paths, 13 agents missing entirely, and 2 products that no longer exist. Nothing about the skill's content changed; everything about where it lands did.
-
-### Fixed
-- **Twenty global paths were project paths.** Almost every error was the same mistake: an agent's *repository* path listed as its *home* path, so the skill installed somewhere that agent never looks. Corrected against each vendor's documentation — GitHub Copilot `~/.copilot/skills` (not `.github/skills`, which is the repo path), Windsurf `~/.codeium/windsurf/skills`, Goose `~/.config/goose/skills`, Crush `~/.config/crush/skills`, Devin for Terminal `~/.config/devin/skills`, Cortex Code `~/.snowflake/cortex/skills`, Replit Agent `~/.config/agents/skills`, Tabnine `~/.tabnine/agent/skills`, Pi `~/.pi/agent/skills`, DeepAgents `~/.deepagents/agent/skills`, AstrBot `~/.astrbot/data/skills`, OpenClaw `~/.openclaw/skills`, Zenflow `~/.zencoder/skills`, and Dexto and Loaf onto `~/.agents/skills`.
-- **Gemini CLI and Antigravity are two products sharing `~/.gemini/`, and the list conflated them.** The single "Gemini CLI" entry carried Antigravity's path. Gemini CLI reads `~/.gemini/skills/`; Antigravity reads `~/.gemini/config/skills/`. Both are now listed, separately, alongside Antigravity CLI.
-- **Detection pre-selected on the first path segment**, which would have marked every `~/.config/`-nested agent as present the moment `~/.config` existed. It now matches the folder that actually holds `skills`, so `~/.config/goose` and `~/.config/crush` are distinguished. Fixed identically in `bin/cli.js`, `install.ps1`, and `install.sh`.
-- Both installers claimed a set of agents were covered by the workspace `.agents/skills` path without saying that was project scope only, and `install.sh` reported an agent count that no longer matched the list.
+_An audit of every listed agent against its vendor's documentation. Skill content is unchanged._
 
 ### Added
-- **`~/.agents/skills/` is now an installable target.** It is the cross-agent *home* path — the counterpart to the workspace `.agents/skills/` the installer already wrote — and is the primary global location for Cline, Dexto, Kimi Code CLI, Loaf, Zed, and Warp, and an alias read by Cursor, Gemini CLI, GitHub Copilot, Windsurf, Amp, and OpenCode. One entry covers a dozen agents.
-- Eleven agents that had a documented global path but no entry: Antigravity, Antigravity CLI, OpenCode, Warp, Grok Build, Kimchi, MiniMax Code, Posit Assistant, ZCode, and the Amp/Replit and Zencoder/Zenflow pairings.
+- Add `~/.agents/skills/` as an install target. Cline, Dexto, Kimi Code CLI, Loaf, Zed, and Warp read it as their global path, and several other agents read it as an alias.
+- Add Antigravity, Antigravity CLI, OpenCode, Warp, Grok Build, Kimchi, MiniMax Code, Posit Assistant, ZCode, Amp and Replit, and Zencoder and Zenflow.
 
 ### Removed
-- **Roo Code** — shut down 15 May 2026. The repository is archived and `roocode.com` redirects to `roomote.dev`. Kilo Code, the maintained fork, is already in the list.
-- **Continue** — acquired by Cursor and discontinued; final release 19 June 2026, repository read-only. It also never had a skills directory.
-- **Eve** and **Promptscript**, which are project-scope only and have no home-directory path to install into.
+- Remove Roo Code, which shut down, and Continue, which was discontinued and never had a skills directory.
+- Remove Eve and PromptScript, which have no home-directory skills path.
+
+### Fixed
+- Correct 20 global paths that were project paths, including GitHub Copilot (`~/.copilot/skills`), Windsurf (`~/.codeium/windsurf/skills`), Goose, Crush, Devin for Terminal, Cortex Code, Tabnine, Pi, DeepAgents, AstrBot, OpenClaw, and Zenflow.
+- List Gemini CLI (`~/.gemini/skills`) and Antigravity (`~/.gemini/config/skills`) as separate products.
+- Detect agents by the folder that holds `skills`, so every agent under `~/.config/` is no longer pre-selected when `~/.config` exists.
+- Say that the workspace `.agents/skills` path is project scope only, and correct the agent count in `install.sh`.
 
 ## [1.19.0] - 2026-08-28
 
-**Roblox code is increasingly written outside Studio, and the skill knew three environment names and nothing about how any of them behave.** A pass over every mainstream sync tool and the toolchain around it, read from each project's own documentation — plus a correction to how the skill reads Roblox's release notes, which had been wrong about where they live.
+_Coverage of editing outside Studio, read from each sync tool's own documentation._
 
 ### Added
-- **`external-editors.md`, a new reference.** It opens with the decision everything else depends on: **which side is the source of truth**. The tools disagree — Rojo and Argon are filesystem-first, Script Sync and Azul are DataModel-first — and an agent that writes a file assuming Studio follows has either done nothing or is about to push a half-finished tree over a live place. Two standing rules follow from it: never assume a disk write reached the place, and never start, stop, or reconfigure a sync session unasked.
-  - **Detecting the environment from disk**, before the first read: a project file means Rojo or Argon, `argon.toml` means Argon, a bare `sourcemap.json` means Script Sync or Azul, a `sync/` directory means Azul, `lune/` means automation rather than game code.
-  - **Studio Script Sync** — the official one, and its limits are sharp. It syncs four classes and ignores everything else; **attributes and tags on synced scripts are ignored and can be lost**, which Roblox's own docs call out; ceilings of 10,000 scripts per top-level instance and 128 top-level instances; deleting a top-level synced instance requires stopping the sync first; and the Studio debugger cannot be driven from the editor. The official IDE path is Script Sync plus Luau LSP and its Studio companion plugin — **not** Rojo.
-  - **Rojo** — the full file mapping and project format, `emitLegacyScripts` defaulting to `true` (so `Script`/`LocalScript` output is configuration, not stale code), the properties that cannot sync live at all (terrain, `MeshPart.MeshId`, `HttpService.HttpEnabled`), implicit versus explicit property syntax and the four types with no project-file form, and **`rojo syncback`** as the supported pull-from-place path — the plugin's live Two-Way Sync is a different, still-experimental feature.
-  - **Argon** — and the trap that its project file is *not* Rojo's despite the shared filename: five renamed fields, and `placeId` that must become an entry in `placeIds`. Its plugin defaults are conservative and usually untouched (`Two-Way Sync` off, `Keep Unknowns` off, which destroys instances absent from the filesystem). **`rename_instances` defaults to `true`, so Argon silently strips characters that are illegal in filenames** and the instance in Studio can end up named differently from what the code looks for.
-  - **Azul** — Studio-first, and asymmetric in a way its marketing does not convey: Studio is the **exclusive** source of truth for instance creation, deletion, and renaming, so **creating or renaming a file locally does not affect Studio at all**. Script bodies flow both ways; anything structural needs `azul build` or `azul push`. Its `ModuleScript`s carry no suffix, there is no `init` convention, and its per-place config lives *inside the place* at `ServerStorage.Azul.Config`, where a push mapping can carry `destructive = true`.
-  - **Lync** — filesystem-first, syncing all in-game content rather than only scripts (properties, attributes, tags, collision groups, terrain). **Its script class comes from a `--@` comment inside the file**, which the skill's ban on in-body comments must not touch. Its documented gaps are stated plainly: `LYNC BUILD` unavailable, no conversion wizard, Windows-only source builds.
-  - **The toolchain that sits alongside**, with Roblox's own third-party tools page and its disclaimer that none of it is Roblox-maintained: Rokit, Wally, Luau LSP, StyLua, selene, roblox-ts, darklua, Tarmac, Verde, Lune, rbxmk.
-  - **Moving an existing game out of Studio**, and a symptom/cause/action table for what breaks in every such setup.
-- **`community-libraries.md` gained Pronghorn** in the Frameworks section.
+- Add `external-editors.md`. It settles which side is the source of truth first, then covers Studio Script Sync, Rojo, Argon, Azul, and Lync, how to detect each from disk, the surrounding toolchain (Rokit, Wally, Luau LSP, StyLua, selene, roblox-ts, darklua, Tarmac, Lune, rbxmk), moving a game out of Studio, and a symptom table.
+- Add two standing rules: never assume a disk write reached the place, and never start, stop, or reconfigure a sync session unasked.
+- Add Pronghorn to `community-libraries.md`.
 
 ### Changed
-- **How the skill reads Roblox's release notes was wrong.** `api-currency.md` told the agent that release-note doc pages render client-side and to read the DevForum instead. Roblox now publishes one page per week at `/docs/updates/<date>`, with a Status column and a `Previous` link chaining backwards, and **appending `.md` returns full raw markdown**. Two traps are now recorded: the dated pages' HTML tables *are* client-rendered, so fetch the `.md`; and the sibling `/docs/updates/pending` has no `.md` form at all, so a fetch returns nothing and the absence of an entry there proves nothing.
-- **The engine-version row now shows the dump and the notes disagreeing, and says which leads.** Release notes ship the week a change goes live; the dump is regenerated per version. So a member announced for a version the dump lacks is **unconfirmed, not absent** — the same trap as reading absence from the documentation site, approached from the other side.
-- **`SKILL.md`'s environment bullet** now names the source-of-truth question and routes to the new file, instead of describing three environments in a sentence each.
-- **`verification.md`** gained the check that a change actually reached the place before a playtest is trusted, and records that Script Sync cannot drive the Studio debugger.
-- **`adaptive-mode.md`** widened its toolchain-file list to `foreman.toml` and `argon.toml`, and reads a bare `sourcemap.json` as Script Sync or Azul rather than Rojo.
-- **Two credential paths are now called out as credential paths.** `rojo upload --cookie` and Lune's `roblox.getAuthCookie()` both handle a `.ROBLOSECURITY`, which is full account takeover and is not revoked by a password change. Neither belongs in a proposed command, a config file, a repository, or a log.
+- Read Roblox release notes from the weekly `/docs/updates/<date>` pages, fetched with a `.md` suffix, instead of from the DevForum.
+- Treat a member announced for an engine version the API dump lacks as unconfirmed, not absent.
+- Route the `SKILL.md` environment bullet to `external-editors.md`.
+- Check in `verification.md` that a change reached the place before a playtest is trusted.
+- Read `foreman.toml` and `argon.toml` in `adaptive-mode.md`, and treat a bare `sourcemap.json` as Script Sync or Azul.
 
 ### Fixed
-- **`false-positives.md` gained nine external-editor shapes that are not defects**, several of which the skill would previously have flagged: `Script`/`LocalScript` throughout a Rojo project, `.lua` rather than `.luau`, `init.luau` files, a project with no project file at all, a flat `src/` that does not mirror services, generated `.luau` beside `.ts`, `stylua.toml` conventions that differ from this skill's, explicit Rojo property syntax, a `Packages/` folder committed or ignored, and — most consequentially — **a `--@` directive comment, whose deletion silently turns a server `Script` into a `ModuleScript`**.
-- **The Wally entry now carries the thunk-types problem.** Wally's generated package thunks do not re-export types, so a package's exported Luau types do not resolve and the language server reports errors in correct code. `wally-package-types` is the fix, and this is the usual cause of a false "this API does not exist" report. Wally's `realm` is also recorded as a security boundary rather than a label: server-realm code mapped into `ReplicatedStorage` is readable by every exploiter.
-- **Lune's security posture is stated before its convenience.** A Lune script has full access to the machine with no sandbox, and its Instance surface is a documented subset of the engine's — an API missing from that list may never be implemented, so engine parity cannot be assumed.
-- **rbxmk is recorded as Lua rather than Luau**, and its own README's warning that thorough testing is still in progress is passed through rather than dropped.
+- Add nine external-editor shapes to `false-positives.md` that are not defects, including `Script` and `LocalScript` in a Rojo project, `init.luau`, and Lync's `--@` directive comment, whose removal turns a `Script` into a `ModuleScript`.
+- Note that Wally thunks drop exported types (fixed by `wally-package-types`), and that Wally's `realm` is a security boundary.
+- State Lune's lack of sandboxing and its partial Instance API, and record rbxmk as Lua rather than Luau.
+
+### Security
+- Flag `rojo upload --cookie` and Lune's `roblox.getAuthCookie()` as `.ROBLOSECURITY` handlers that must never appear in a command, a config file, a repository, or a log.
 
 ## [1.18.2] - 2026-08-26
 
-**Auditing someone else's project, understanding UI, and using the cloud correctly.** Three documentation passes — the full UI set, the full cloud-services set, and the official Studio MCP page — plus a rework of how an audit gathers evidence instead of impressions, and the propagation of all of it into the guardrails and recipes that consume it.
+_The full UI and cloud-services documentation, the official Studio MCP page, and an audit that gathers evidence instead of impressions._
 
 ### Added
-- **`evaluation-matrix.md` learned how to run an audit, not just score one.** It described what a 4 looks like without ever saying where the number comes from, which let a rubric be filled in from impressions and read like a measurement.
-  - **Scoping** — a scorecard covers one system with one owner, not a whole place. Risk-carrying systems first, and say which ones were skipped.
-  - **Gathering evidence** — a table mapping each dimension to what to look for and where. Four of the six dimensions need no playtest at all: remote handlers, connection sites against teardown paths, store call sites, and sampled structure. Only CPU and Network require a session, with the specific tools and readings named.
-  - **"Not assessed" is a valid cell, and a guessed number is not.** An unaudited dimension reported as a 3 is a fabrication, and it is the one the owner will act on.
-  - **The verdict is capped by the lowest dimension** whenever any sits at 1 or 2. Five dimensions at 5 and Data Safety at 1 averages to 4.3 and reads "Production Ready", while still deleting player progress.
-  - The report template gained an Evidence column, a "Not audited" line, and an example shaped like an honest audit rather than a flattering one.
-- **An audit workflow in `studio-mcp.md`:** scope, then static reads, then a playtest only for what needs one.
-- **`ui-crossplatform.md` rewritten against the full UI documentation set** (28 pages: containers, layouts, modifiers, styling, text, interaction objects, specialty frames, animation). It had covered construction basics and cross-platform input; it now covers what an agent actually has to know to build UI:
-  - **Containers and their lifetimes** — `ScreenGui` is cloned into `PlayerGui` (script that copy, not `StarterGui`), `ResetOnSpawn` defaults to **true** and silently rebuilds a HUD on respawn, `DisplayOrder` orders sheets while `ZIndex` orders within one, and `ScreenInsets` has four values rather than two. For `SurfaceGui`/`BillboardGui`: `Adornee`, `MaxDistance`, `AlwaysOnTop`, `LightInfluence`, and the rule that their buttons take input only when parented under `PlayerGui` **and** the part has `CanQuery = true`.
-  - **Precedence** — layouts take over `Position`/`Size`, constraints override layouts, `UIScale` multiplies the result. This is the answer to "why does setting Position do nothing".
-  - **Clipping limits** — no rotated clipping without `StarterGui.ClipsDescendantsSupportsRotation`, never rounded clipping; `CanvasGroup` is the answer, and carries `GroupTransparency`.
-  - **The styling system in full** — `StyleSheet`/`StyleRule`/`StyleLink`/`StyleDerive`, selectors (class, `.tag`, `#name`, `:state`, `::pseudo-instance`, `@query`), `>` and `>>` combinators, `$` tokens, swappable themes via `SetDerives()`, and transitions. A Luau loop that assigns colors across many instances is what this replaces.
-  - **Text and filtering** — the rich-text tag set, that localization strips those tags, and the UI-specific filtering rule: server-side, **after submission, never per character typed**.
-  - **Interaction objects** — `SecondaryActivated` for right-click and long-press in one connection; `ProximityPrompt` properties with `ProximityPromptService` as the central handler; `UIDragDetector` and 3D `DragDetector`, including **`RunLocally = true` replicating nothing**, which makes every resulting position a client claim.
-  - **Specialty frames** — `ViewportFrame`, `CanvasGroup`, `Path2D`, and `VideoFrame`'s hard limits (format, five minutes, two concurrent, paid ID-verified upload).
-  - Appearance-modifier caveats worth knowing before shipping: `UIShadow` does not shadow text, and tweening `UIStroke.Thickness` on a text object flickers.
-
-- **`studio-mcp.md` checked against the official Studio MCP page.** Two standing rules added: **enumerate the connected tools every session before the first call** (tool sets differ between Studio builds and servers, and a session inherits nothing from the last), and treat the connection as the real permission grant Roblox describes — a connected client can read and modify the open place. Added the enablement path for when no MCP tools are present (Assistant → … → Manage MCP Servers), the supported quick-connect clients, and the documented official tool set, which is wider than the file's previous list (`wait_job_finished`, `search_asset`, `insert_asset`, `http_get`, `skill`, the input-simulation trio, and the rest).
-
-- **Cloud services read end to end** (21 pages: data stores and their limits, best practices, versioning and caching, observability, RTBF, memory stores and each structure, per-partition limits, secrets, HTTP, extended services, cross-server messaging).
-  - **`limits-budgets.md` now carries the real numbers.** DataStore request budgets per type at **both** ceilings (experience-wide and per-server, the latter usually binding first), **per-key throughput** of 25 MB/min read and 4 MB/min write, exact name/key/scope/metadata lengths, and `GetRequestBudgetForRequestType()` instead of guesswork. MemoryStore gained its actual quota formulas (`64 KB + 1.2 KB × users`, `1,000 + 120 × CCU` request units), 128-character keys, 32 KB values, and the 8-day traceback. New sections for HTTP limits, the secrets store, and Extended Services.
-  - **`UpdateAsync`'s transform callback may not yield.** A rule with no workaround, and the skill had never stated it.
-  - **`GetAsync` serves a four-second cache**, which means the read that checks whether a failed write landed can be answered by the cache that makes it wrong. `DataStoreGetOptions.UseCache = false` is the authoritative read, and the data-economy recipe now says so at the point the mistake gets made.
-  - **Version history is a backup with rules:** overwritten versions live 30 days, and repeated writes to one key inside a single UTC hour overwrite each other permanently — a tight autosave loop destroys its own history.
-  - **Right to be forgotten** as an obligation with a 30-day clock: deletion templates configured in advance with a `{UserId}` pattern, and the design consequence that player data keyed by `UserId` is matchable while the same data hidden in a shared blob is not.
-  - **MemoryStore structures chosen by shape** — sorted map below ~1,000 keys, hash map above, queue for handoffs — plus the queue **invisibility timeout** (30 s default) that defines its delivery guarantee, and per-partition sharding, since throttling is per partition and a hot key throttles while the quota still looks healthy.
-  - **Secrets store** (`HttpService:GetSecret`, the `Secret` datatype, domain scoping, no local playtests) as the answer to credentials in a ModuleScript.
-  - Fewer stores with bigger objects, key prefixes over legacy scopes, `BatchGetAsync`, and the observability dashboards that show throttling before players report it.
-
-- **The research propagated into the files that consume it.** New facts are only worth what the guardrails and recipes do with them:
-  - **`edge-cases.md`** gained a **Cloud calls** section (the four-second cache answering a verification read, the non-yielding `UpdateAsync` transform, same-hour writes destroying version history, per-key and per-partition throttling, a queue item reappearing mid-processing, keys a deletion template cannot match, secrets that do not resolve in a local playtest) and a **UI** section (`ResetOnSpawn` rebuilding a HUD, editing `StarterGui` at runtime, positions silently discarded by a layout, world-space buttons that need `PlayerGui` plus `CanQuery`, rotated clipping, localization stripping rich text). Truthiness rows for `0` and `""` under Numbers and Collections, remote-serialization rows under Network, and an eighth finishing-pass question: is this read authoritative or cached?
-  - **`false-positives.md`** gained six near-miss pairs — the cached verification read, `RunLocally = true` with a trusted position, a prompt granting currency with no re-check, `if value then` where zero or empty is real, and mixed tables through a remote — plus the newer-API list this crop of research produced, a carve-out against demanding the styling system or RTBF templates of existing projects, three regression samples, and a **"Tutorial-shaped code is not a defect"** rule: judge it on consequence, and explain the gap rather than disputing the source.
-  - **Recipes:** purchase history stored inside the profile in one write with session locking as the race-killer; leaderboard structure chosen by key count with sharding against hot keys; prompts and drag detectors as client claims in world interaction; the consequence ladder and cloud dashboards in client infrastructure.
-  - **`review-checklist.md`** gained three gates covering the non-yielding transform, authoritative reads, `UserId` keying, secrets, and UI container and layout ownership.
-  - **`community-libraries.md`** now says what a data or networking library does *not* take over: the request budget, the cache, and the deletion obligation stay yours, and a serializing transport is not the engine's marshalling.
-  - **`verification.md`** notes that cloud paths need a session where the calls actually reach the backend — secrets resolve only in live servers and Team Test.
+- Add scoping, evidence gathering, a "Not assessed" cell, and a verdict capped by the lowest dimension to `evaluation-matrix.md`.
+- Add an audit workflow to `studio-mcp.md`, and require enumerating the connected tools before the first call in every session.
+- Rewrite `ui-crossplatform.md` against 28 UI pages: container lifetimes, layout precedence, clipping limits, the styling system, rich text and filtering, interaction objects, and specialty frames.
+- Add real cloud limits to `limits-budgets.md`: DataStore budgets at both ceilings, per-key throughput, MemoryStore quota formulas, HTTP, secrets, and Extended Services.
+- State that an `UpdateAsync` transform may not yield, that `GetAsync` serves a four-second cache, and how version history overwrites same-hour writes.
+- Add right-to-be-forgotten obligations, MemoryStore structure selection, and the secrets store.
+- Add Cloud calls and UI sections to `edge-cases.md`, six near-miss pairs to `false-positives.md`, and matching gates to `review-checklist.md`.
 
 ### Fixed
-- **A Studio MCP row told the agent that absence from a documentation page settles nonexistence**, which is the exact reasoning `api-currency.md` exists to forbid and which 1.17.1 already corrected everywhere else. Docs answer *what a member does*; the API dump or a probe answers *whether it exists*.
-- **Targeting one of several connected Studio instances is a `studio_id` argument on each call**, not a "set active studio" tool. The preflight and the capability map said otherwise.
-- **`UIFlexLayout` does not exist**, and the skill recommended it in the do-not-hand-roll catalog. Flex is `HorizontalFlex`/`VerticalFlex`/`ItemLineAlignment` on `UIListLayout`, plus a `UIFlexItem` parented to the child that should flex. Corrected, and recorded in the misremembered-API table so the invented name is never written again.
+- Stop treating absence from a documentation page as proof that a Studio MCP tool does not exist.
+- Target one of several Studio instances with a `studio_id` argument per call, not a "set active studio" tool.
+- Remove `UIFlexLayout`, which does not exist. Flex lives on `UIListLayout` plus `UIFlexItem`.
 
 ## [1.18.1] - 2026-08-26
 
-**Two documentation passes, one theme: every claim now names a source, and the invented ones are gone.** The first read the Creator Hub performance-optimization guides (`design`, `identify`, `improve`, `monitor`, `scene-analysis`, `test-on-hardware`, `microprofiler/*`) and the `Workspace` class reference, confirming most of what 1.17.2–1.18.0 added, correcting the rest, and filling in the tooling those releases had described from memory. The second read the Luau reference, the scripting and security guides, and the whole *Coding Fundamentals* tutorial series, which surfaced the language fundamentals the skill had been assuming rather than stating — truthiness, table and `require` semantics, and what actually survives a remote call.
-
-### Fixed
-- **Stale StyleQuery claim.** `performance.md` still told the agent StyleQuery was unconfirmed; `api-currency.md` had it [GA] since 1.17.1. The exact class of error 1.17.1 exists to prevent, in the file that release did not touch.
-- **`Model.StreamingMode`** in `performance.md` is `Model.ModelStreamingMode`, the spelling every other file already used.
-- **The `Instance.new` parent argument was listed as a deprecated API** in `adaptive-mode.md`'s non-negotiable column and as "reject on sight" in `patterns/world.md`, while `style-rules.md` and `false-positives.md` correctly class it as discouraged-but-functional. Both now say Advisory.
-- **Invented MicroProfiler thresholds removed.** The per-tag millisecond budgets (4 ms FastClusters, 2–3 ms `stepHumanoid`, and the rest) are published nowhere. The tag table now carries the documented tag paths and Roblox's own mitigations, and the judgment rule is a tag's share of a frame that missed its target, against that place's baseline capture.
-- **Five mislabeled cross-references** (`security.md` pointing at `monetization-policy.md`, `ui-crossplatform.md` at `verification.md`).
-- `SceneAnalysisService`, `Workspace.PlayerCharacterDestroyBehavior`, and `Workspace.ImprovedPhysicsReplication` were held at [Verify]/[UNVERIFIED]; all three are documented. Promoted to [GA].
+_Every claim now names a source. Read against the Creator Hub performance guides, the `Workspace` reference, the Luau reference, and the Coding Fundamentals series._
 
 ### Added
-- **MicroProfiler, properly.** Shortcuts per environment (`Ctrl+F6` Studio and desktop, `Ctrl+Alt+F6`/`Ctrl+Shift+F6` in the client, `Ctrl+P` pause, `Ctrl+F` search), mobile web UI and its frame-count URL, dump filenames and their log directories, the 60-frame/4-second server capture limits, the frame-time bars for 30/60/120/240 FPS, the 2.5 ms GPU-wait red-bar rule, the six modes, the three threads, `debug.profilebegin`/`profileend` custom scopes, and the network view's rows, colors, and verbosity levels.
-- **Scene Analysis in full:** all six views including Instance Composition and Audio Memory, plus the six `SceneAnalysisService` methods.
-- **Task scheduler phases.** `PreSimulation` for logic feeding physics **and for `Motor6D.Transform` writes** (Animators overwrite later writes), `PostSimulation` for logic reacting to physics, `PreRender`/`BindToRenderStep` for camera and input only.
-- **Join time** as a first-class metric in `device-performance.md` — Roblox measures frame rate, memory, **and** join time; `PreloadAsync` scope, the join-size audit, and the teleport trade-off live there now.
-- **Post-ship monitoring** in `verification.md`: the Performance Dashboard, correlating metrics with release dates, and the 2–3% client crash rate investigation line.
-- **Non-scriptable settings called out.** `Workspace.StreamingEnabled`, `PhysicsSteppingMethod`, and `EnableSLIMAvatars` cannot be assigned from Luau, and `AuthorityMode` is read-only to scripts — recommending one means asking the user to change a Studio setting. `Workspace:ApplyRecommendedStreamingSettings()` (plugin security) applies the recommended streaming values in one call.
-- **Parallel Luau constraints:** `require()` is unavailable during a parallel phase, `Terrain:WriteVoxels` is serial-only, and the three entry points are `task.desynchronize`, `ConnectParallel`, and `Actor:BindToMessageParallel`.
-- `api-currency.md` gained a **Performance figures** section splitting published Roblox numbers from this skill's heuristics, so a reader can tell which is which.
-- Device testing: Roblox's own example baseline device set, and what only real hardware shows (thermal, cellular, touch targets, arm's-length readability, input switching).
-
-### Added (language fundamentals pass)
-- **`luau-language.md` gained the fundamentals the skill assumed everyone knew.** Three new sections, all sourced from the Luau reference pages:
-  - **Values, truth, and coercion** — only `false` and `nil` are falsy, so `0` and `""` pass an `if`; `and`/`or` return values rather than booleans, which is what makes `x and y or z` a trap; string/number coercion in both directions; full enum names over coerced numbers; `"100" < "20"` lexicographic ordering; doubles with ~15 digits and exact integers to 2^53; `0x`/`0b`/`1_000_000` literal forms.
-  - **Tables: references, copies, and shape** — assignment aliases rather than copies, `table.clone` and `table.freeze` are both shallow, `table.isfrozen`, mixed tables and `nil` holes break `#` and DataStore encoding alike, no mutation during iteration, and weak tables are not a cleanup strategy.
-  - **Modules: what `require` actually returns** — cached once per context, and **a separate instance per side of the client-server boundary**, which is shared code and never shared state.
-- **What survives a remote call (`patterns/network.md`).** Remote arguments are serialized, not passed: functions arrive `nil`, non-string keys become strings, mixed tables are mangled, `nil` inside a table truncates it, metatables are stripped so an OOP object arrives as plain data, instances the receiver cannot see arrive `nil`, and every table is a copy with a new identity. Silent wrong values, all of them.
-- **`security.md` grew the layers the engine's own security guides call for:**
-  - **Design it out before detecting it** — the guiding question, plus structural answers (sequential checkpoints, server-computed damage, making the reward not worth taking).
-  - **`NaN` as a validation hole** — its `typeof` is `"number"` and it fails every comparison, so it walks through a range check untouched. `math.isfinite` before the range check, not after.
-  - **Payload shape spoofing** — a table can impersonate an instance; `typeof(x) == "Instance"` plus `:IsDescendantOf()` is the real check.
-  - **Detection and the consequence ladder** — completion times, rate of gain, robotic action cadence, honeypots; then logging → quiet mitigation → temporary restriction → visible enforcement, with suspicion accumulated across signals rather than acted on singly.
-  - **Third-party assets and script capabilities** — backdoors in inserted models, and the sandboxed-container answer (`Workspace.SandboxedInstanceMode`, `Sandboxed`, `Capabilities`), with Network / DataStore / AssetRequire / CapabilityControl / LoadString named as the capabilities to withhold. Experimental, so never a default.
-  - **Client-visible code is decompilable** — including disabled and unused scripts — and **network ownership is authority**: an owning client can forge or suppress `Touched` and set velocity freely.
-  - Client-triggerable instances (`ProximityPrompt`, `ClickDetector`, `DragDetector`) fire from any distance regardless of `Enabled`, and are now stated as remotes in disguise in both `security.md` and `patterns/network.md`.
-- **Transparent batching (`patterns/data.md`).** Concurrent web calls are batched by the engine into far fewer HTTP requests; `task.spawn` the independent ones instead of awaiting each in turn, since sequential awaits defeat it.
-- **Native codegen limits (`luau-language.md`)** — 64K instructions per code block, 32K internal blocks, 1M per script, a shared per-experience allocation ceiling, `debug.dumpcodesize()`, plus where native compiles badly (unannotated parameters, `getfenv`/`setfenv`, engine-API-bound code) and why annotating `Vector3` arguments matters.
-- `table.clone`/`table.isfrozen` in the do-not-hand-roll catalog and in `api-currency.md`; script capabilities and `debug.dumpcodesize` recorded there too.
-- Review checklist gained a remote-serialization and `math.isfinite` gate.
-
-- **Where code lives (`style-rules.md`).** A container table the skill never carried: what replicates, what executes, and what each Starter container is for — plus **`Script.RunContext`** (`Legacy`/`Server`/`Client`), which is how client code lives in `ReplicatedFirst` or `ReplicatedStorage` without a LocalScript. LocalScripts remain correct and are never a finding.
-- **The full script-directive set (`luau-language.md`):** the three type modes, `--!native`, `--!optimize 0|1|2`, and `--!nolint`, with the note that Studio bolds the word after `TODO`.
-- **Bindables marshal like remotes** (`security.md`): copied tables, stringified keys, stripped metatables, and an `Invoke()` that yields forever with no `OnInvoke`. Not a trust boundary, but not a correctness free pass either.
-
-- **Where the official tutorials differ (`patterns/world.md`).** Reading the whole *Coding Fundamentals* series showed its shapes are simplified for teaching, not wrong: a script per button, `Touched` with no debounce and a blocking `task.wait` inside the handler, `CanTouch = false` as a cooldown, `leaderstats` as the value's home, points granted with no validation or persistence. A table now names each one against what ships, so a user citing the tutorial gets the gap explained rather than dismissed, and tutorial-shaped code in an existing project is never a defect on its own. (The one genuinely dated idiom found across the series: an occasional `BrickColor.Red()`.)
-- **Parallel Luau has four documented safety levels**, not the two the skill listed: Unsafe, Read Parallel, Local Safe, and Safe. Added, with `SharedTable`'s atomic updates, and two more anti-patterns: an actor per entity, and nesting actors.
-- **Removing several entries in place walks the array backwards** — `table.remove` shifts later indices down, so a forward loop skips whatever slid into the gap.
-- **Naming:** spell words out, and do not shout acronyms (`aJsonVariable`, not `aJSONVariable`).
-- **Releasing references** — an unparented instance or a large intermediate table stays in memory while any variable still names it; clearing that variable is what lets the collector work.
-- `MemoryStoreService` queues added to the do-not-hand-roll catalog.
-
-### Fixed (language fundamentals pass)
-- **`SignalBehavior` default was stated backwards.** The skill said Deferred is the default for new experiences; the enum value `Default` currently resolves to **Immediate**, with Deferred shipped in Roblox's place templates and forced by Server Authority. Corrected, and the deferred resumption points are now listed by name rather than as "the next invocation point".
+- Document the MicroProfiler in full: shortcuts, dump locations, capture limits, modes, threads, custom scopes, and the network view.
+- Document Scene Analysis (six views) and the six `SceneAnalysisService` methods.
+- Add task scheduler phases, join time as a metric, post-ship monitoring, and non-scriptable Studio settings.
+- Add Parallel Luau constraints and its four safety levels.
+- Separate Roblox's published performance figures from the skill's heuristics in `api-currency.md`.
+- Add language fundamentals to `luau-language.md`: truthiness and coercion, table copy semantics, and per-context `require` caching.
+- Document what survives a remote call in `patterns/network.md`.
+- Add to `security.md`: designing exploits out, `NaN` in range checks, payload shape spoofing, the consequence ladder, script capabilities for third-party assets, decompilable client code, and network ownership as authority.
+- Add where code lives and `Script.RunContext` to `style-rules.md`, the full script-directive set, and bindable marshalling.
+- Add a table of where the official tutorials differ from shipping code.
 
 ### Changed
-- **`evaluation-matrix.md` is scoped to audits the user asks for.** Scoring 3 is a pass; the distance from 3 to 5 is headroom, not a findings list. `review-checklist.md` and `false-positives.md` say the same, closing a conflict where the matrix demanded ceremony the false-positive rules forbid.
-- `performance.md`'s symptom table gained the documented server-heartbeat, Data-Ping-vs-Network-Ping, low-end-crash, and join-time rows.
-- SKILL.md trimmed back under the 5,000-token guideline.
+- Scope `evaluation-matrix.md` to audits the user asks for.
+- Add server-heartbeat, ping, low-end crash, and join-time rows to the `performance.md` symptom table.
+- Trim `SKILL.md` back under 5,000 tokens.
+
+### Removed
+- Remove the per-tag MicroProfiler millisecond budgets added in 1.18.0, which Roblox publishes nowhere.
+
+### Fixed
+- Correct the `SignalBehavior` default: `Default` resolves to Immediate, not Deferred.
+- Fix a stale StyleQuery claim, the `Model.ModelStreamingMode` spelling, and five mislabelled cross-references.
+- Class the `Instance.new` parent argument as Advisory everywhere.
+- Promote `SceneAnalysisService`, `Workspace.PlayerCharacterDestroyBehavior`, and `Workspace.ImprovedPhysicsReplication` to [GA].
 
 ## [1.18.0] - 2026-08-26
 
-**Adds official Roblox Studio diagnostic scopes, Scene Analysis suite, low-end hardware baseline hardening (anti-OOM Error 292), and structured proof-of-performance verification protocols.**
+_Studio diagnostic scopes, Scene Analysis, and low-end hardware budgets._
 
 ### Added
-- **Official MicroProfiler Engine Scopes (`references/performance.md`):** Complete diagnostic mapping for 6 core engine scopes (`updateInvalidatedFastClusters`, `stepHumanoid`, `stepAnimation`, `ProcessPackets`, `ShadowMapSystem`, `physicsStepped`) with warning thresholds and concrete architectural mitigations.
-- **Studio Scene Analysis & Leak Detection (`references/performance.md`):** Comprehensive procedures for using the Studio Scene Analysis tool (`Window` > `Performance Summary` > `Scene Analysis`) and `SceneAnalysisService` to detect unparented instance leaks, animation memory churn, and render pass triangle breakdowns.
-- **Hardware Baseline Hardening for Low-End Devices (`references/device-performance.md`):** Defined concrete budgets for the ~65% Android demographic (Draw calls <= 1,000, Triangles <= 1,000,000, Client RAM <= 400–500 MB) to prevent out-of-memory crashes (Error 292), along with 10–15 min continuous thermal throttling tests.
-- **GPU Texture Memory Physics & Draw Call Instancing (`references/device-performance.md`):** Codified that texture GPU RAM is strictly pixel-bound (1024x1024 = 4x the RAM of 512x512, independent of disk compression) and established single-package asset deduplication for automatic 1-draw-call GPU instancing.
-- **Client-Side Tweening Mandate (`references/performance.md` & `references/review-checklist.md`):** Explicitly banned server-side `TweenService` for part movements (which causes 60 Hz per-client replication floods) in favor of client-side tween execution and server target replication.
-- **Proof-of-Performance Verification Protocols (`references/verification.md`):** Added 4-step test gates (20x Respawn Memory Leak Audit, Data Ping Saturation Check, Full-Load Baseline Frame Test, and Sustained Thermal Test).
+- Map six MicroProfiler engine scopes to their mitigations in `performance.md`.
+- Add Scene Analysis and `SceneAnalysisService` procedures for leak detection.
+- Add low-end device budgets for draw calls, triangles, and client memory to `device-performance.md`.
+- Note that texture GPU memory depends on pixel dimensions, and that deduplicated assets instance automatically.
+- Require client-side tweening of part movement in `performance.md` and `review-checklist.md`.
+- Add four performance test gates to `verification.md`.
 
 ## [1.17.2] - 2026-08-26
 
-**Adds the System Health & Architecture Evaluation Matrix, strengthens Server-Authoritative Combat security, and formalizes Parallel Luau concurrency patterns.**
+_A system health evaluation matrix, combat origin checks, and Parallel Luau patterns._
 
 ### Added
-- **System Health & Architecture Evaluation Matrix (`references/evaluation-matrix.md`):** An objective 1–5 scoring rubric across six core pillars (Security & Server Authority, Memory & Lifecycle, CPU & Performance Budget, Network & Replication, Data Safety & Persistence, Code Structure & Maintainability) designed for developers and AI to audit systems under development in Roblox Studio.
-- **Parallel Luau & Actor Model Architecture (`references/performance.md`):** Comprehensive concurrency guide detailing thread safety classifications (`ReadParallel` vs `Unsafe`), the 5-step Parallel Compute → Batch Serial Write execution pattern (`workspace:BulkMoveTo` in serial phase), and anti-pattern mitigations against *chatty sync/desync* and *thread contention*.
-- **Muzzle / Raycast Origin Verification (`references/cases/combat.md` & `references/security.md`):** Added explicit validation of shot origins against attacker server character positions (`(origin - rootPart.Position).Magnitude <= MAX_MUZZLE_DISCREPANCY`) to prevent ghost shooting and shoot-through-walls exploits.
-- **Compiler Directives & Subtyping Guidance (`references/luau-language.md`):** Added `--!optimize 2` alongside `--!native` / `@native` for compute-heavy math/simulation, and reinforced precise optional dictionary typing (`{ [K]: V? }`).
+- Add `evaluation-matrix.md`, a 1 to 5 rubric across six dimensions.
+- Add the Parallel Luau parallel-compute, serial-write pattern to `performance.md`.
+- Validate shot origins against the attacker's server-side position in `cases/combat.md` and `security.md`.
+- Add `--!optimize 2` guidance and optional dictionary typing to `luau-language.md`.
 
 ### Changed
-- **NPC & AI at Scale (`references/cases/combat.md`):** Updated assembly recipes to distinguish single staggered loops from Parallel Luau Actor coordinators, and clarified batch transforms in the serial phase.
-- **Evaluations Migration:** Standardized all test fixtures and scenarios in `evaluations/` from `.lua` to modern `.luau`.
+- Separate staggered loops from Actor coordinators in the NPC recipe.
+- Rename evaluation fixtures from `.lua` to `.luau`.
 
 ## [1.17.1] - 2026-08-26
 
-**The verification procedure this skill added last release was itself wrong, and it was telling the agent to flag correct code.** 1.17.0 required every engine fact to name its source and made the Engine API Reference the authority. The rule was right; the procedure built on it was not. It instructed the agent to read absence from a reference page as proof a member does not exist — and create.roblox.com trails the engine by weeks. Nine rows were wrong as a result. This release fixes the procedure, then fixes everything downstream of it.
-
-### Fixed
-- **Existence and semantics are now two questions with two authorities.** *Does this member exist* is settled by the versioned API dump (`robloxapi.github.io/ref`, which carries the engine version each member was added in) or by an in-Studio probe. *What does it do* is settled by the Engine API Reference. `api-currency.md` states the split, the toolbox is reordered around it, and a closing rule makes it enforceable: an existence claim may only cite the dump, a probe, or a CLI dump — never a documentation page. Propagated to SKILL.md.
-- **Three shipped members were listed as fabrications.** `style-rules.md` and `false-positives.md` instructed the agent to flag `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier` (engine v734), `UIShadow.Mode` (v732), and `UIShadow.Inset`/`ShowBehindParent` (v733) as release-note names that never shipped. All three had shipped. A reviewer following 1.17.0 would have raised a confident false finding against correct code, citing this skill — the exact failure `false-positives.md` exists to prevent. The misremembered-API table now distinguishes *absent from the dump* (invented) from *absent from the docs* (undocumented), and `false-positives.md` gained a worked example of the latter.
-- **Five further rows were held at [Verify] while already present in the dump:** `PlayerControlState` (v735), `Player.FrustumStreaming` (v734), `MemoryStoreService:GetDistributedCounter` and its `MemoryStoreDistributedCounter` class (v733), the `WorldRoot` collision-group methods (v734), and `ViewportCamera`/`Logger` (v734). Promoted, with the downstream guidance in `device-performance.md` and `patterns/network.md` updated to match.
-- **`StyleQuery` was marked [UNVERIFIED] as "not present in the Engine API Reference".** It is present, fully documented, and in the dump. Promoted to [GA].
-- **Wrong member names corrected.** The `WorldRoot` setter is `CollisionGroupSetCollidable`, not `SetCollisionGroupsCollidable`; the row now names all eight v734 methods plus the two from v732. `UIShadow` gained its missing `Enabled` (v724) and `Mode` (v732). The unresolved "CollectionService tag signal methods" row is settled: the additions are the `TagAdded`/`TagRemoved` **events**, which fire per-place rather than per-instance — a distinction that is a real bug when confused with `GetInstanceAddedSignal`. `CollectionService:CreateCollection` promoted to [GA].
-- **`TeleportService:ReserveServer` was the skill's recommendation in four files and has been deprecated since engine v702.** Replaced throughout with `TeleportAsync` plus `TeleportOptions.ShouldReserveServer`, or `ReserveServerAsync` where the access code is needed up front, including the note that `ShouldReserveServer` and `ReservedServerAccessCode` are mutually exclusive. `TeleportToPlaceInstance`, `TeleportToPrivateServer`, and `TeleportPartyAsync` were deprecated at v735 and are now listed; plain `Teleport` is not deprecated and is not listed.
-- **README:** two reference-map entries pointed at files that do not exist (`security-monetization.md`, `ui-ux-testing.md`), and eleven references were missing from the map entirely. The map is now complete and the file count corrected from 22 to 36.
+_The 1.17.0 verification procedure read absence from a reference page as proof a member did not exist, and nine rows were wrong as a result._
 
 ### Added
-- **A `[Undocumented]` maturity tag** — confirmed present in the API dump with a known engine version, but with no reference page. Previously this state was folded into `[Verify]`, which also meant "exists upstream in Luau, confirm Studio" and "a release note mentioned a name". Three different risks under one tag is what let the wrong rows sit unexamined. Documented in SKILL.md and applied across `api-currency.md`.
-- **A section on conditional styling in `ui-crossplatform.md`.** `StyleQuery` resolves screen size, aspect ratio, input preference, text size, display class, and reduced-motion declaratively, replacing hand-rolled Luau branching — three of its six conditions are accessibility settings, which makes it the cheapest correct answer to supporting them. Includes the full condition table and the warning that an invalid condition name fails silently rather than erroring.
-- **"In the dump but not yours to call"** in `api-currency.md`. `ScriptScannerService` carries `RobloxSecurity` on every member; `IntentService` and `BranchService` define zero members of their own. Existence, accessibility, and usefulness are three separate questions, and the maintenance workflow now checks all three before a row is written.
-- New engine rows: `Player:GetGlobalUserId` (v734), `Player:GetFriendsInUniverseAsync` (v735), `AudioWindSynthesizer` (v734), Terrain water flow methods (v735). `EditableMesh` thread-safety promotion confirmed at v734 and moved to [GA].
-- **Luau 0.735** (22 August 2026): `LOP_FASTPCALL` roughly halves `pcall`/`xpcall` overhead — recorded with the standing rule that a protected call is never removed for cost. The Script Editor autocomplete and generic-stringification changes moved from the Engine table to the Luau table, where they belong.
+- Add the `[Undocumented]` maturity tag for members in the API dump with no reference page.
+- Add conditional styling with `StyleQuery` to `ui-crossplatform.md`.
+- Add an "In the dump but not yours to call" section to `api-currency.md`.
+- Add new engine rows and Luau 0.735.
 
 ### Changed
-- **`api-currency.md` documents its own failure.** The maintenance section names the three members wrongly declared unshipped, the versions that prove otherwise, and the reasoning error behind them, because the next maintenance pass needs to know why the authority order is written the way it is. Engine rows gained their own promotion path (`release note → [Undocumented] → [GA]`), distinct from the Luau path, and the refresh workflow now forbids demoting a row on documentation absence: only the dump can retire a member.
-- **README rewritten** for structure and readability: installation moved above the feature tour, the eight uniform bold-led paragraphs replaced with a summary table plus four sections that earn their prose, supervision levels documented with the `argument-hint` invocation added in 1.17.0, and the reference map split into Authoring / Blueprints / Patterns / Depth / Process.
-- Snapshot basis moved to 26 August 2026: Luau **0.735**, engine **735** (`v0.735.0.7351131`).
+- Record in `api-currency.md` how the 1.17.0 error happened, and forbid demoting a row on documentation absence.
+- Restructure the README and complete its reference map.
+- Move the snapshot to Luau 0.735 and engine 735.
+
+### Fixed
+- Settle existence with the API dump or a probe, and semantics with the Engine API Reference.
+- Stop flagging `GuiService:GetUIScaleMultiplier`, `UIShadow.Mode`, and `UIShadow.Inset` as unshipped. All three shipped.
+- Promote five rows held at [Verify] that the dump already confirmed, and `StyleQuery` to [GA].
+- Correct the `WorldRoot` collision-group method names and the `CollectionService` tag events.
+- Replace `TeleportService:ReserveServer`, deprecated since engine 702, with `TeleportAsync` and `ShouldReserveServer`.
+- Quote the `SKILL.md` description so the frontmatter parses as YAML.
+- Fix two README links to files that did not exist.
 
 ## [1.17.0] - 2026-08-22
 
-**Comments move out of function bodies, and every engine fact now has to name its source.** Two changes with one cause: a note beside a statement and an API recalled from memory go stale the same way, and neither carried a check. The verification discipline added here immediately falsified ten claims the previous release stated as fact.
+_Comments move out of function bodies, and every engine fact names its source._
+
+### Added
+- Add "How to verify (the toolbox)" to `api-currency.md`.
+- Add a misremembered-API table to `style-rules.md`.
+- Add severity calibration and cold-path carve-outs to `false-positives.md`.
+- Add an invocation argument for the supervision level (`argument-hint: "[ask|bal|go]"`).
+- Add `workflow.md` and `runtime-rules.md`, which hold session setup and the runtime rules in full.
 
 ### Changed
-- **In-body comments are banned in delivered code.** `section-layout.md` reverses the previous allowance: self-documenting code is the primary standard (rename, extract a named helper, hoist a magic value to an `UPPER_SNAKE_CASE` constant, return early), and contract-level *why* moves into the Documentation Comment above the function. Propagated through SKILL.md, `style-rules.md`, `review-checklist.md`, `templates.md`, `adaptive-mode.md`, `luau-language.md`, and the `patterns/` files, whose examples lost their step-label comments.
-  - **Existing comments in code the skill did not write stay put** — removal is proposed once, as Advisory, never performed. A project whose established style documents inside bodies keeps doing so; the ban binds this skill's default output, not someone else's convention.
-- **Descriptions are capped at 3 lines as well as 250 characters.** Both are ceilings, not targets; a contract that does not fit means the function is doing too much.
-- **Every engine fact stated to the user must name its basis** — an `api-currency.md` tag, a live docs check, an API dump, or an in-Studio probe. Absent one of those, the claim is labeled unverified and names the check that would settle it. Added to SKILL.md and to the review checklist, alongside a new Invariant Card row requiring `SignalBehavior`, `StreamingEnabled`, rig type, and the file's strictness header to be read once per session rather than assumed.
-- `verification.md` documents the Studio CLI properly: `--runScriptFile`, `--placeId`/`--universeId`/`--localPlaceFile`, `--outputFile`, `--quitAfterExecution`, and the `--api`/`--fullApi`/`--apiV2` dumps.
-- `studio-mcp.md` matches the shipped tool set — `script_search`/`script_grep`, `get_studio_state`, `start_stop_play`, `run_as_job`, `store_image`/`upload_image`, and `set_active_studio` marked as build-dependent rather than assumed.
-- `community-libraries.md` states maintenance status: Knit is **archived** and must not be recommended for new projects, BridgeNet is unmaintained, Roact is superseded by React-lua.
-
-### Added
-- **`api-currency.md` gained "How to verify (the toolbox)"** — six procedures, cheapest first, the second of which does most of the work: appending `.md` to any Engine API Reference URL serves raw markdown, so grepping the class page settles whether a member exists without Studio running. A five-step refresh workflow closes the file, requiring release-note evidence to be reconfirmed against the reference before any row is promoted.
-- **`style-rules.md` gained a misremembered-API table** — `Humanoid:LoadAnimation`, `Part.Velocity`, `player:GetMouse()` as an input plan, invented members, wrong service names, made-up enum members, and `BindToRenderStep` in server code. Binding in both directions: verify before writing one, never flag the correct form.
-- **`false-positives.md` gained severity calibration** — six near-miss pairs whose severity follows context rather than shape (attribute state, `SetAsync`, per-spawn connections, deprecated APIs, missing validation, `task.wait` loops) — plus carve-outs for cold paths (`PlayerAdded`, purchase handlers, round setup are never hot), `pcall` demanded around calls that cannot yield or throw, the explicitly permitted `workspace` global, deliberate legacy choices, and enterprise ceremony retrofitted onto small projects.
-
-### Added
-- **Invocation argument for the supervision level.** `argument-hint: "[ask|bal|go]"` in the frontmatter makes the `/` menu show `/roblox-best-practices [ask|bal|go]`, and `workflow.md` defines how the argument resolves: it outranks an inline `!ask`/`!bal`/`!go` token, accepts the bare word or the token form, is case-insensitive, and takes the long names too. An empty or unrecognized argument is **Balanced** — never an error, and never a reason to ask the user which level they want.
-
-### Restructured
-**SKILL.md brought under the 5k-token Level 2 budget without dropping a rule.** It sat at ~7,170 tokens; it is now ~4,984. Nothing was deleted — process content moved behind two new reference files, and the passages that restated the Invariant Card were cut back to the card.
-
-- **`workflow.md` (new)** — how to resolve the five session-setup decisions, the two modes, the supervision levels and their confirmation matrix, advisory invocation, the review severity gate, and the System Design Preflight. SKILL.md keeps every decision's **safe default**, so a compacted context still behaves correctly without the file.
-- **`runtime-rules.md` (new)** — the seven Non-Negotiable Runtime Rules in full, each with the scope that keeps it from being over-applied and a link to its domain file. The rules themselves stay in SKILL.md as Invariant Card items 3-8, which is the copy required to survive compaction.
-- **Card duplication removed.** The Script Section Layout section no longer restates the three-section block or the Documentation Comment rule; both are Card items already in context. The five-level header hierarchy lives only in `section-layout.md`, where it always had a copy.
-- **Reference Routing became a list.** Same thirty-odd destinations and the same trigger keywords, without the two-column table repeating each path twice.
+- **Breaking:** Ban in-body comments in code the skill writes. Existing comments stay, and their removal is only proposed.
+- Cap Documentation Comment descriptions at 3 lines as well as 250 characters.
+- Require every engine fact to name its basis, or be labelled unverified.
+- Document the Studio CLI flags, and match `studio-mcp.md` to the shipped tool set.
+- Record that Knit is archived, BridgeNet unmaintained, and Roact superseded by React-lua.
+- Bring `SKILL.md` from about 7,170 to about 4,984 tokens without dropping a rule.
 
 ### Fixed
-Verified against the Engine API Reference; each of these was wrong in 1.16.1.
-- **`GuiService:GetUIScaleMultiplier()` never shipped.** `ui-crossplatform.md` now reads `GuiService.PreferredTextSize` and `GuiService.ViewportDisplaySize`, both confirmed present.
-- **`UIShadow.ApplyShadowMode`/`Mode` and the `UIScaleMultiplier` setters** were release-note names absent from the reference; recorded as such rather than as API.
-- **StyleQueries downgraded to [UNVERIFIED]** and withdrawn from the recommendations in `performance.md` and `ui-crossplatform.md`.
-- **`InstanceHandle:Wait()` is unconfirmed** — `patterns/world.md` re-reads `Get()` at the point of use or tracks the instance with a tag signal instead.
-- **`GroundController.MoveSpeedFactor` is inherited from `ControllerBase`**, not defined on `GroundController`; `GroundOffset` is.
-- **`math.phi`, `sqrt2`, `e`, `nan`, `tau` are [GA]**, not RFC-only; only the 64-bit integer type remains unimplemented.
-- **The `vector` library includes `floor`, `ceil`, `abs`, `sign`, `clamp`, `lerp`, `max`, `min`** beyond the previously listed set.
-- **Require-by-string is not universally inapplicable** — `require("@rbx/PlayerModule")` exists for experiences opted into the Input Action System path; only the standalone `@self` alias never arrives.
-- **The Input Action System is [GA]** and mandatory under Server Authority, no longer "verify availability".
-- **`BanAsync`'s 24-hour device block is [Verify]** — the duration is not stated in the API reference.
-- Snapshot basis moved to 21 August 2026, engine release notes 735; added `PlayerControlState` [Verify], the prediction-introspection members (`RunService.Misprediction`, `Rollback`, `GetPredictionStatus`, `SetPredictionMode`, `Instance.PredictionMode`) as [GA], and acoustic Occlusion/Reverb subcategories as [Verify].
+- Correct ten claims stated as fact in 1.16.1, including the `math` constants, the `vector` library members, require-by-string, and the Input Action System status. Three of these corrections were themselves reversed in 1.17.1.
+- Move the snapshot to engine release notes 735.
 
 ## [1.16.1] - 2026-08-18
 
-**Dates now live in one file, enforced by the validator.** The last open item from the Agent Skills audit: guidance that carries a date goes stale silently, and a date copied into eight files is eight things to remember when a status changes.
-
-### Changed
-- **Every date and year removed from all files except `api-currency.md`** — sixteen occurrences across `luau-language.md`, `limits-budgets.md`, `false-positives.md`, `security.md`, `server-authority.md`, `style-rules.md`, `studio-mcp.md`, and both split `patterns/` files. Each now carries the maturity tag it always should have (**[GA]**, **[Beta]**, **[Verify]**) and links to the row in `api-currency.md` holding the evidence.
-- `luau-language.md` no longer says the old type solver "remains available through 2026" — a sentence with an expiry date built in. It now says the migration window is open and tells the reader to confirm it still is.
-- `api-currency.md` gained a **"Dates live here, and only here"** section stating the rule and its reason, and extending it to "new", "recent", and "coming soon" — descriptions that stay attached long after they stop being true.
+_Dates live in one file, enforced by the validator._
 
 ### Added
-- **A seventh validator check:** any four-digit year outside `api-currency.md` fails. Verified by reintroducing one on purpose. It immediately caught an occurrence in `studio-mcp.md` that a manual grep had missed, because the grep filtered on link text rather than file path.
+- Add a validator check that fails on any four-digit year outside `api-currency.md`.
+
+### Changed
+- Remove 16 dates from eight files and replace each with a maturity tag linked to its evidence.
 
 ## [1.16.0] - 2026-08-18
 
-**Structural pass: one session-setup procedure, and three bundled files split by domain.** Nothing was rewritten as guidance; the same rules are grouped so an agent loads only the domain it is working in, and runs the once-per-session decisions as one procedure instead of four scattered reminders.
-
-### Changed
-- **`## Session Setup (decide once, then cache)`** replaces the separate Supervision Level and Mode Selection sections. The four one-time decisions — supervision level, Default vs Adaptive, community libraries, Server Authority — now sit in one table with how to resolve each and what to assume when it cannot be resolved. Scattered one-time checks are the ones that get half-skipped; as one procedure they are read together.
-- **`ui-ux-testing.md` split.** UI construction and cross-platform work became `ui-crossplatform.md`; the testing, testable-architecture, and telemetry halves folded into `verification.md`, which already owned that domain. Two files competing for one topic was the next duplication waiting to happen.
-- **`security-monetization.md` split** into `security.md` (threat model, validation layers, movement sanity, text filtering, logging) and `monetization-policy.md` (purchases, `ProcessReceipt`, PolicyService). An anti-exploit question no longer loads receipt-processing rules.
-- **Description gained an anti-trigger clause** — not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or design discussion with no Luau involved — and was tightened to 803 characters to make room for it.
-- SKILL.md carries a version marker, so a stale installed copy is identifiable from the file itself.
+_One session-setup procedure, and two bundled references split by domain._
 
 ### Added
-- **Grep hints for the lookup-style references** (`limits-budgets.md`, `genres.md`, `edge-cases.md`), which are tables rather than narratives and should be searched for one row rather than read whole.
-- **Two more validator checks:** tables of contents must match their file's headings, and the frontmatter must stay inside the spec's `name` and `description` limits. Both verified by breaking them on purpose — the description overran 1,024 characters while this entry was being written, and the check caught it.
+- Add grep hints for the table-style references.
+- Add validator checks for table-of-contents accuracy and frontmatter limits.
+- Add a version marker to `SKILL.md`.
+
+### Changed
+- Merge the supervision and mode sections into one Session Setup table.
+- Split `ui-ux-testing.md` into `ui-crossplatform.md` and `verification.md`.
+- Split `security-monetization.md` into `security.md` and `monetization-policy.md`.
+- Add an anti-trigger clause to the description.
 
 ### Fixed
-- The function-ordering rule appeared in both SKILL.md and `section-layout.md` after the 1.15.0 split; it now lives only where the detail is.
+- Keep the function-ordering rule only in `section-layout.md`.
 
 ## [1.15.0] - 2026-08-18
 
-**Audited against Anthropic's Agent Skills authoring spec, and restructured to match it.** The skill's architecture already followed the spec; its density and its testing did not. Nothing was deleted — heavy reference material moved out of the always-loaded file and into routed reference files.
+_Restructured to match Anthropic's Agent Skills authoring guidance._
 
 ### Added
-- **Evaluation fixtures**, so all five scenarios run: `review-target.lua` (four real defects plus deviations that must return Advisory), `correct-but-odd.lua` (entirely shapes carved out in `false-positives.md`; must return zero findings), and `existing-project/` (a small codebase with its own conventions and two deliberate non-negotiable conflicts).
-- **`references/patterns/`** — the pattern set split by domain: `data.md` (ownership, persistence, failure policy, locks), `network.md` (remotes, cross-server, streaming), `lifecycle.md` (cleanup, character, pooling), `world.md` (binding, input, anti-patterns). `patterns.md` becomes a four-row index; a task about remotes reads ~1.4k tokens instead of ~7.1k.
-- **Tables of contents in all thirteen reference files over 100 lines.** The spec requires this because agents preview long files with partial reads (`head -100`) and cannot see past the cut without one. Files under 100 lines are left alone.
-- `references/section-layout.md` — the full three-section specification, header hierarchy, subsection contents, and the complete Documentation Comment rules with worked rejections, moved out of SKILL.md.
-- `references/style-rules.md` — the complete Language & Style set, including the full deprecated-API list and `const` guidance.
-- `references/review-checklist.md` — the completion gate, now read at the end of a task instead of loaded at the start of every one.
-- `evaluations/` — five scenarios with explicit `expected_behavior` lists (remote-handler authoring, player data persistence, review triage, false-positive resistance, adaptive mode) plus notes on running them across models. The spec treats evaluations, not prose, as the source of truth for skill effectiveness; there were none.
-- `scripts/validate-skill.py` — structural checks that were previously done by hand: every link and anchor resolves, every reference is reachable one level from SKILL.md, SKILL.md stays within its line and token ceilings, and long references carry a table of contents. Neither directory ships in the npm package.
+- Add `evaluations/` with five scenarios and their fixtures.
+- Add `scripts/validate-skill.py`.
+- Split the pattern set into `patterns/data.md`, `network.md`, `lifecycle.md`, and `world.md`.
+- Add `section-layout.md`, `style-rules.md`, and `review-checklist.md`.
+- Add tables of contents to every reference over 100 lines.
 
 ### Changed
-- **SKILL.md cut from ~12,300 to ~7,100 tokens (259 lines).** It now holds only what every task needs: the Invariant Card, the routing table, authority and supervision, mode selection, the environment rules, the non-negotiables, the preflight, and compact summaries pointing at the moved detail. The spec's 500-line ceiling was already met; its ~5k Level 2 token budget was not, and the remainder is decision-making content whose removal would cost capability rather than tokens.
-- Server Authority detection detail moved into `server-authority.md`; review-mode finding procedure moved into `false-positives.md`. SKILL.md keeps the trigger list, the default-off rule, the severity vocabulary, and the gate.
-- Three routing rows added so every moved file is reachable directly from SKILL.md; inbound links across five files repointed to the moved anchors.
+- Cut `SKILL.md` from about 12,300 to about 7,100 tokens by moving detail into references.
 
 ### Fixed
-- **Duplicated review guidance in `false-positives.md`** — the moved block restated the confidence gate sitting 200 lines above it, in different words. It now covers only what happens to a finding once the gate has passed it.
-- `server-authority.md` crossed 100 lines during the move and lost its table of contents; the validator caught it on first run.
-- Link labels reading `patterns.md` while pointing into `patterns/` corrected across 18 files.
+- Remove a duplicated confidence gate from `false-positives.md`, and correct link labels in 18 files.
 
 ## [1.14.0] - 2026-08-18
 
-**Object reuse, navigable performance guidance, and three design rules the skill kept assuming.** Four areas that were referenced far more often than they were specified: pooling appeared in five files but was defined in nine lines, `performance.md` was a flat rule list with no way to choose between its rules, and state ownership, failure policy, and per-owner locks were each invoked by name in the case recipes without ever being written down. Every new rule ships with its matching carve-out in `false-positives.md`.
+_Object reuse, navigable performance guidance, and three design rules the recipes assumed._
 
 ### Added
-- `edge-cases.md` gains a **"Pooled and reused objects"** section: double-return, use-after-return, incomplete reset, per-use connections accumulating, stale attributes and tags, `Destroy()` on a parked object, unbounded growth, and a drained pool. The finishing pass becomes seven questions, the new one asking what a reused object still carries from its last use.
-- `patterns.md` → Object Pooling gains a **pool ceiling with overflow destruction** (an uncapped pool is a memory leak shaped like an optimization), a **full reset table** covering transform/physics, appearance, collision, per-use connections, attributes and tags, and children added during use, plus notes that `Parent = nil` frees nothing, that a parked object is never destroyed in place, and that tables pool the same way as Instances.
-- A lower bound on when to pool at all: below roughly once per second, `Clone`/`Destroy` is simpler and the pool is pure complexity.
-- `performance.md` gains **"Start here: find what is actually slow"** — a symptom-to-cause triage table (client FPS flat vs. scaling with entities, server-wide lag, memory climbing across a session, a spike at one moment, low-end-only, network-triggered stutter), each routed to the section that actually owns the cost. Measurement is promoted from an appendix to the file's stated entry point.
-- `performance.md` gains **"Physics queries and contact detection"**, the gap most likely to produce a laggy server: `Touched` framed as a coarse trigger rather than a hit test, spatial queries and shapecasts as the deliberate alternative, `RaycastParams`/`OverlapParams` reuse (with the detail that assigning `FilterDescendantsInstances` copies the table), engine-side filtering and `MaxParts` over post-filtering in Luau, broadphase opt-out flags, Humanoid state-machine cost on the server, and the rule that a client-side cast is a prediction the server re-runs.
-- **Which side pays** is now stated: rendering and input cost the client, physics and replication fan-out cost the server, and the rules that error when misplaced are marked rather than left to inference.
-- `performance.md` gains **"What costs what (relative, not measured)"** — eight orderings (table field vs. property read vs. replicating write, cached reference vs. per-frame path resolution, pooled reuse vs. `Instance.new`, one fat remote vs. ten thin ones, distance check vs. raycast, `table.clear` vs. reallocation, `table.concat` vs. loop concatenation) stated explicitly as orderings rather than benchmarks, plus the rule to order guards cheapest-first.
-- A **post-optimization discipline** in the Measurement section: record the number first, change one thing, re-measure on the target device rather than in Studio, revert what did not move, and report the measurement rather than the intent.
-- Animation and effect churn added to Memory: load an `Animation` once per `Animator` and keep the track, prefer `:Emit()` on a persistent emitter and a reused `Sound` over cloning per hit, and note that emitter cost scales with `Rate` × `Lifetime`.
-- Two Review Checklist items: private per-player state never travels by attribute, and no performance claim without a before/after number.
-- `patterns.md` gains **"One Owner Per Fact"**: one writing owner per piece of state, every other copy a view updated after the fact and never read back to decide anything, derived values recomputed rather than stored twice, and the settling test — *if these two copies disagreed right now, which is right?*
-- `patterns.md` gains **"Failure Policy (what happens after the last retry)"**: every guarded call states its behavior on final failure as **fail closed** (money, permissions, policy — an unavailable check is not a passing check), **fail open** (cosmetics, telemetry), or **fail loud** (persistence). The fail-loud case is spelled out because it is the expensive one: a failed load falling through to defaults produces an empty profile whose next autosave destroys the real history.
-- `patterns.md` gains **"Serialized Operations (per-owner locks)"**, the pattern two recipes already demanded by name but no file defined. Includes the lock released on every path including errors, cleared on `PlayerRemoving`, scoped per owner rather than globally, and explicitly not a replacement for post-yield re-validation.
-- `false-positives.md` gains the matching carve-out for all three: a second copy of a value is not automatically a divergence bug, fail-open is a valid policy rather than a missing guard, a missing lock needs a named yield and two concurrent callers before it is a finding, a global lock is never the proposed fix, and a small project lacking all three is not defective. The one shape that clears the bar alone stays Blocker: a failed load falling through to defaults on a path that later saves.
-- Three Review Checklist items covering failure policy, single ownership, and lock release on every path.
-
-### Fixed
-- **Parallel Luau was missing its precondition:** the script must be a descendant of an `Actor` or `task.desynchronize()` does nothing useful — the most common way that feature is written wrong.
-- **An attribute is a broadcast, and the old rule did not say so.** "Prefer attributes for state" is now bounded to genuinely public state; per-player data an exploiter could read — inventory, currency, cooldowns — goes through a targeted remote. Choosing an attribute for private state was a security decision disguised as a performance one. Paired with a note that rewriting a property to its current value neither replicates nor fires a change signal, so a compare-before-write guard removes the traffic outright.
-- The `Touched` guidance is scoped for review as well as authoring: an existing trigger is not a finding on its own, only one with a concrete failure behind it.
+- Add pool ceilings, a full reset table, and pooled-object edge cases.
+- Add a symptom-to-cause triage table, physics query guidance, relative costs, and a measurement discipline to `performance.md`.
+- Add One Owner Per Fact, Failure Policy, and Serialized Operations to the patterns, with matching false-positive carve-outs.
+- Add five review checklist items.
 
 ### Changed
-- The pooling snippet gains its Configuration constants and Documentation Comments in the current style; the remote-handler and cleanup-bag snippets in the same file were carried to that style too.
-- `performance.md` pooling bullet now points at both the ceiling/reset rules and the reuse edge cases.
-- SKILL.md: System Design Preflight step 3 now asks who owns each fact, not just the server/client split; the reference-routing rows name physics queries, state ownership, failure policy, locks, and reused state, and the finishing-pass checklist item covers state carried over by a pooled object.
+- Ask who owns each fact in System Design Preflight step 3.
+
+### Fixed
+- State that Parallel Luau needs the script to be a descendant of an `Actor`.
+- Bound attributes to public state; per-player private state uses a targeted remote.
 
 ## [1.13.1] - 2026-08-18
 
-**API currency refreshed to Luau 0.734 and engine 734.** A maintenance pass over `api-currency.md` plus the three references the new APIs touch.
+_API baseline refreshed to Luau 0.734 and engine 734._
 
-### Changed
-- **Snapshot moved from 29 July to 18 August 2026**: Luau releases through **0.734** (14 August), Roblox engine release notes through **734** (10 August).
-- **No new Luau language features in 0.732–0.734.** The three releases carry type-solver fixes, `table.move` performance, `export` keyword optimizations, and cyclic-module infrastructure. One row added: `pcall`/`xpcall` are now allowed inside user-defined `type function` (0.734, **[Verify]**, new solver only). `class` syntax and the 64-bit integer type remain **RFC merged only** — re-confirmed, not assumed.
-- **Eight engine rows added, all [Verify]** — released too recently for this skill to confirm in Studio: `Player.FrustumStreaming` + `FrustumStreamingMode`, `MemoryStoreService:GetDistributedCounter`, CollectionService tag signal methods, `WorldRoot` collision groups, `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier`, `ViewportCamera`/`Logger`, `UIShadow` properties, and the EditableMesh Unsafe→Safe promotions.
-- `AdGui.OnAdEvent` added to the deprecated list (734).
-- `patterns.md` → Cross-Server Communication: the distributed counter is named as the primitive for cross-server totals, with the read-modify-write race it avoids and the sorted-map fallback.
-- `device-performance.md` → Engine levers: frustum streaming documented with its trade-off (content behind a fast-turning camera) and the low-end test it requires.
-- `ui-ux-testing.md`: read the player's UI scale from `GuiService` rather than inferring it from viewport size.
+### Added
+- Add `pcall` and `xpcall` inside user-defined type functions, and eight engine rows at [Verify].
+- Add the distributed counter for cross-server totals, and frustum streaming.
+
+### Deprecated
+- Record `AdGui.OnAdEvent` as deprecated.
 
 ## [1.13.0] - 2026-08-11
 
-**Documentation Comments: official terminology, Moonwave tag syntax, and style flexibility restored.** The comment rules are re-grounded in what Roblox and the Luau ecosystem actually document, and they go back to adapting to the project instead of overriding it.
+_Documentation Comments use official terminology and Moonwave tags, and adapt to the project again._
 
 ### Changed
-- **"UDD" is gone; the terms are now Luau Comments and Documentation Comments.** The old label appeared in no Roblox or Luau source. The rules are now stated as this skill's default style layered on [Roblox's own comment guidance](https://create.roblox.com/docs/luau/comments) (block comment above the item, single-line notes in-line, explain why not what).
-- **Comment style adapts to the project again.** It returns to the adaptable column in `adaptive-mode.md`, replacing "Comments never adapt" with "Comments follow the project". A project that documents with Moonwave keeps documenting with Moonwave. What does not adapt is the content discipline: implementation-agnostic and free of volatile content in any style. When the user asks which style to use or asks for a restyle, this skill's default is the recommendation, offered rather than imposed.
-- **Moonwave tag syntax adopted:** `@param <name> <type> -- <description>` and `@return <type> -- <description>`, each repeatable, type omissible where the signature declares it. The previous `@param name description` form parsed incorrectly under Moonwave and luau-lsp. Every example across `templates.md`, `security-monetization.md`, and `device-performance.md` updated.
-- **Block form: `--[[ ... ]]` stays the default, `--[=[ ... ]=]` and `---` are now equally correct** where they are the project's style — and are the forms tooling actually parses. Mixing two forms in one file remains wrong.
-- **Description limit raised from 100 to 250 characters**, and the one-sentence requirement dropped. The limit is a ceiling, not a target.
-- Em dashes, double-hyphen dashes used as punctuation, and emoji remain out; the `--` separator inside a Moonwave tag is explicitly exempt as a separator, not punctuation. English moves from "only" to "preferred as the universal language".
-- **Both description rules now bind in-line notes too**, with a new escape valve: where a detail cannot be stated agnostically, state it at the most general level that stays true after the body changes.
-- Review severities in `false-positives.md` updated — a house comment style in any block form is not a finding, and neither is the presence of an in-line note.
+- Rename "UDD" to Luau Comments and Documentation Comments.
+- Let comment style follow the project's own.
+- Adopt Moonwave tag syntax: `@param <name> <type> -- <description>` and `@return <type> -- <description>`.
+- Accept `--[=[ ]=]` and `---` blocks where they are the project's style.
+- Raise the description limit from 100 to 250 characters.
 
 ### Removed
-- **The in-body comment prohibition.** In-line notes are allowed again, subject to the same two content rules and to explaining *why* rather than restating the code, matching Roblox's own recommendation of `--` for in-line remarks. The `≤ 75 characters` cap and the "narrow exception" framing are gone; "never delete an existing comment" stays.
-- **The two-permitted-outcomes rule** (a compliant block or nothing) and the "outranks Adaptive mode" precedence, both superseded by style flexibility.
+- Remove the in-body comment prohibition and the two-permitted-outcomes rule from 1.12.2.
 
 ## [1.12.2] - 2026-07-29
 
-**Code economy, device scalability, edge-case robustness, and non-negotiable comment rules.** Teaches the agent to write less code without writing less software, to fit a frame budget on weak hardware, and to walk a Roblox-specific edge-case list before calling a function done. Comment rules become mandatory and stop adapting to the project.
+_Writing less code without delivering less, fitting a frame budget, and walking edge cases before calling a function done._
 
 ### Added
-- `references/minimal-code.md` — the reuse-and-restraint discipline. A seven-rung ladder (does it need to exist, does the project have it, stdlib, engine API, installed library, one line, then the minimum), a catalog of eighteen things agents routinely hand-roll in Roblox alongside what already provides them, a search-the-project procedure, density rules (guard clauses over nesting, no forwarding wrappers, no abstraction without a caller), and the two cases where reimplementation is justified.
-- **Three precedence rules** at the head of that file, guarding the failure modes minimalism invites: brevity never reduces **what gets delivered** (a function short because it does less than asked has failed), never costs **readability** (one statement per line, descriptive names, blank lines and section headers intact, no clever one-liners — "less code" means less work, not less whitespace), and never removes a **requirement** (validation, cleanup, layout, UDD, `pcall` coverage are not YAGNI candidates). All three are mirrored onto the Session Invariant Card so they survive compaction.
-- **Ponytail** documented as an optional agent-side overlay: detected by its commands or rule files, deferred to for minimalism when present including the user's intensity setting, and fully replaceable by this skill when absent. Recorded as an AI-agent plugin, explicitly not a Roblox plugin or a Luau library, and never a prerequisite.
-- `references/device-performance.md` — fitting the frame and the weakest device. Frame budget arithmetic (16.6 ms at 60 FPS, 33.3 ms at 30, of which scripts get a few), a time-slicing pattern that budgets in time rather than item count, device tiers with the rule against inferring power from `TouchEnabled`, a fixed six-rung degradation ladder that never touches gameplay-critical visuals, adaptive quality with asymmetric hysteresis, per-player bandwidth budgeting, and the low-end memory ceiling ordered by what breaches it first.
-- `references/edge-cases.md` — a Roblox-specific catalog of the states production actually produces, grouped by trigger (player lifetime, character lifetime, instance lifetime, numbers, collections, timing and ordering, network and client input, data and schema), each naming the failure and its guard, closing with a six-question finishing pass. Non-Negotiable #7 is referenced rather than restated.
+- Add `minimal-code.md` with a reuse ladder, a catalogue of commonly hand-rolled helpers, and three precedence rules that brevity never breaks.
+- Document Ponytail as an optional agent-side overlay.
+- Add `device-performance.md`: frame budgets, time-slicing, device tiers, a degradation ladder, and per-player bandwidth.
+- Add `edge-cases.md` with a six-question finishing pass.
 
 ### Changed
-- System Design Preflight step 4 broadened from "Does a library own this concern?" to **"Does this already exist?"**, checking the project's own modules, the standard library, and the engine API before reaching a library.
-- Language & Style gained a reuse-and-density rule carrying the completeness guarantee.
-- `performance.md` and `device-performance.md` state their split explicitly: one makes the code cheap, the other makes it fit. The `ui-ux-testing.md` performance-tiers bullet became a pointer.
-- `community-libraries.md` scoped to Luau libraries the project runs, with agent-side tooling routed elsewhere so Ponytail is never expected in a `wally.toml`.
-- Four Review Checklist items added, covering reuse, delivered-in-full, frame budgeting, and the finishing pass.
-- **UDD now outranks Adaptive mode.** Doc-comment style moved out of the adaptable column in `adaptive-mode.md` and into the non-negotiable one. Adaptive mode adapts section headers, naming, ordering, and file organization; it never adapts comments. A new "Comments never adapt" section states the rule at the point where an agent would otherwise inherit a house style.
-- **Exactly two permitted outcomes per authored function:** a UDD block written exactly as specified, or no doc comment at all. A third style, a half-compliant block, or a partial carry-over of the project's habit are all forbidden. The reasoning is stated where the rule lives: a missing comment costs one function's worth of context, while a wrong one misleads a reader into a bug.
-- **The project's comment style applies only on an explicit user instruction** naming it. Detecting a house style during codebase analysis is a finding to report, not a convention to adopt, and Adaptive mode being active is not an instruction. Step 1 and the Step 2 summary template in `adaptive-mode.md` now say so.
-- **Descriptions are one sentence, hard-capped at 100 characters.** The previous "~50 words for the rare two-clause case" escape hatch is gone; it contradicted the 100-character limit it sat beside.
-- Comments are now the documented exception to the file-matching rule in Adaptive Step 3: an authored doc comment follows the skill or is omitted regardless of the surrounding file's style.
+- **Breaking:** Make Documentation Comment rules mandatory, with no project adaptation.
+- Cap descriptions at one sentence and 100 characters.
+- Broaden System Design Preflight step 4 to "Does this already exist?".
 
 ### Removed
-- **In-body comments are no longer written at all.** The previous allowance (≤ 75 characters and ≤ 25 words, explaining why) is replaced by a prohibition with a narrow exception: a constraint the reader cannot recover from the code, such as an engine quirk, an externally imposed ordering requirement, a deliberate deviation that will read as a mistake, or a deliberately swallowed failure. Even then it is one line and ≤ 75 characters. Two standing prohibitions accompany it: never add commentary to code being edited, and never delete a comment that already exists.
-- The "≤ 25 words" cap is gone from every file, having no remaining rule to qualify.
+- Remove in-body comments except for constraints the code cannot show.
 
 ### Fixed
-- **Contradiction:** `adaptive-mode.md` listed doc-comment style as adaptable while SKILL.md treated the UDD rules as mandatory. The two now agree.
-- **Contradiction:** the SKILL.md heading "The two description rules" introduced three numbered items. The in-body rule is now its own section and the heading is accurate.
-- **Contradiction:** a description was capped at "≤ ~100 characters" and simultaneously allowed "~50 words", which is roughly triple that limit.
-- **Contradiction:** `cases/combat.md` instructed the agent to "document the number" for a lag tolerance, which the volatile-content rule forbids in a description. It now directs the value into a named Configuration constant instead.
-- The skill's own examples were brought in line with the rule they teach: the in-body comment in the SKILL.md `applyDamage` example and the placeholder comment in the server-script template were removed, and the template's newly referenced module is now declared in its Modules subsection.
-- `luau-language.md` and `patterns.md` framed the ignorable-`pcall` comment as general guidance; both now name it as one of the few cases that earn an in-body comment and carry the length cap.
-- Review guidance in `false-positives.md` makes the authoring-versus-review asymmetry explicit: the UDD mandate binds what the agent writes and is never a standard for judging existing code. Existing in-body comments and house comment styles are explicitly not findings.
-- New false-positive carve-outs so the additions cannot become review noise: a project is not flagged for lacking device tiers, a hand-written helper is Advisory rather than a violation, a missing edge-case guard still needs a concrete failure scenario, and code is never flagged merely for being longer than the reviewer would have written it.
-
-### Verified against current documentation
-
-Every performance and edge-case claim was checked against Roblox's own sources before shipping, which confirmed six figures and corrected one of this skill's own statements:
-
-- **16.67 ms per frame at 60 FPS** is Roblox's published figure, not an estimate.
-- **Under 1,000 draw calls and under 1,000,000 triangles** is the published baseline-device budget.
-- **`Workspace.EnableSLIMAvatars`** and **`Model.LevelOfDetail = SLIM`** added, including the constraint that `EnableSLIMAvatars` cannot be set from a script and that R6, NPCs, and custom proportions are excluded.
-- **Recommended streaming values for low-end devices** recorded (`ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamingMinRadius`, `StreamingTargetRadius`, `StreamOutBehavior`).
-- **Partial transparency forces overdraw**; use `0` or `1` only. Built-in materials conserve memory over custom textures.
-- **Studio's device emulator inflates memory readings** by running server and client in one process, so memory conclusions come from real hardware.
-- **Correction:** the character-lifetime entry claimed descendants may be missing at `CharacterAdded`. The `Humanoid` and body parts *do* exist then; what is missing is appearance (accessories and clothing take seconds), and the character is not yet parented to Workspace. Split into three accurate entries with `CharacterAppearanceLoaded` as the appearance guard.
-- The **degradation ladder is labelled a practical default rather than doctrine**, since Roblox publishes no official cut order.
+- Resolve four contradictions between `SKILL.md`, `adaptive-mode.md`, and `cases/combat.md`.
+- Correct the character-lifetime entry: body parts exist at `CharacterAdded`, appearance does not.
+- Verify frame, draw-call, and triangle figures against Roblox's own documentation.
 
 ## [1.10.6] - 2026-07-29
 
-**Compaction-durable invariants, stricter comment discipline, and the late-July Luau refresh.** Makes the skill's core rules survive a summarized session, tightens what a description is allowed to say, and brings the language baseline up to Luau 0.731 / engine 731.
+_Rules that survive a summarised session, and the late-July Luau refresh._
 
 ### Added
-- **Session Invariants card** in SKILL.md — a compact, verbatim-quotable block holding the section layout, the UDD rules, the seven runtime non-negotiables, and user authority. Carries two standing obligations: reproduce it verbatim in any summary or handoff, and re-read SKILL.md before writing Luau whenever the card is not visible in context. Long sessions get compacted, and a summary that silently drops these rules downgrades every file written afterwards.
-- **`const` bindings** [GA in Studio, April 2026] — contextual keyword valid wherever `local` is; freezes the binding, not the value. Documented with the `table.freeze` distinction, where to use it (Services, Modules, Configuration) and where not (State Management, and existing files without being asked).
-- **`export` value semantics** [Verify] — upstream Luau 0.723; exported values are `const` by default. Studio availability explicitly unconfirmed.
-- **Read-only table members** `{ read x: T }` / `{ read [K]: V }` and the `write` mirror [Verify] — upstream 0.721.
-- **Yielding inside custom iterators** [Verify] — upstream 0.722, with the Non-Negotiable #7 consequence spelled out.
-- **`declare extern type`** [Verify] — replaces `declare class` / `extern class`, removed upstream in 0.727.
-- **Attributes section** in `luau-language.md` — `@native` (not recursive into nested functions) and `@deprecated` (`use`, `reason`), with the standing fact that attributes are not user-definable.
-- **Upstream-vs-Studio state model** in `api-currency.md` — a three-state promotion path (RFC merged → upstream released → live in Studio) with a Studio column on every Luau row, plus maintenance instructions to track the Luau release number and the engine release number separately.
-- Doc-comment review guardrails in `false-positives.md`: a factually wrong description is Correctness, everything else about comments is Advisory, and comments are never deleted to satisfy a length cap.
+- Add the Session Invariants card to `SKILL.md`.
+- Add `const` bindings, `export` value semantics, read-only table members, yielding iterators, `declare extern type`, and the `@native` and `@deprecated` attributes.
+- Add an upstream-versus-Studio state model to `api-currency.md`.
 
 ### Changed
-- **UDD rules restructured into three explicit tests.** The description must be *implementation-agnostic* (names no API, algorithm, collaborator, or internal data structure) and *free of volatile content* (no numbers, thresholds, Configuration constant names, or renameable feature names), with a one-line check: if retuning a constant or rewriting the body would require editing the comment, the comment is wrong. Added a rejected-descriptions table showing four distinct failure modes for the same function.
-- **In-body comments are now capped at 75 characters and 25 words**, must explain why rather than what, and are never allowed to grow into paragraphs or line-by-line narration.
-- Review Checklist split the single doc-comment item into three: block/format, the two description tests, and the in-body cap.
-- `api-currency.md` snapshot moved to 29 July 2026; sources now name the Luau RFC repository and the engine release-notes number.
-- Language & Style Rules gained the `const` entry and now reference the volatile-content and in-body length rules.
+- Restructure description rules into implementation-agnostic and no-volatile-content tests.
+- Cap in-body comments at 75 characters and 25 words.
+- Move the snapshot to 29 July 2026.
 
 ### Fixed
-- **Current engine release-notes version is 731 (24 July 2026)**, replacing the `[UNVERIFIED]` row that told the agent no version number could be cited. The docs pages render client-side; the DevForum Release Notes category is the readable source.
-- Two doc comments in the skill's own examples violated the rules they illustrate: the rate-limiter in `security-monetization.md` and the tag-binding example in `patterns.md` used single-line `--` comments instead of `--[[ ]]` blocks, and both described the mechanism (one naming a parameter, one naming a tag literal) rather than the contract. Both rewritten at contract level.
-- Four code-block comments in `SKILL.md`, `templates.md`, and `false-positives.md` exceeded the new 75-character cap and were shortened, so the skill no longer visibly contradicts its own rule — agents pattern-match on examples more reliably than on prose.
-- New Luau features added to the "do not flag as nonexistent" catalog (`const`, `read`/`write` members, yielding iterators, `declare extern type`, `@deprecated`), plus an explicit carve-out that a project using `local` throughout is correct and must never be pushed to adopt `const`.
-- 64-bit integers, `math` constants, and `class` syntax are now recorded as **RFC merged only** with no confirmed implementation, closing the gap where an accepted design could be mistaken for a shipped API.
+- Record engine release notes 731 as current.
+- Fix doc comments in the skill's own examples that broke its rules.
+- Record 64-bit integers, `math` constants, and `class` syntax as RFC only.
 
 ## [1.9.9] - 2026-07-25
 
-**2026 engine refresh, case playbook, and MCP safety.** Brings the skill in line with the July 2026 Roblox engine and Luau state, adds implementation blueprints for common systems, and teaches the agent to operate a Studio MCP connection without destroying work or wasting tokens.
+_A 2026 engine refresh, implementation blueprints, and Studio MCP safety._
 
 ### Added
-- **Case playbook** — `references/cases/` with 22 system blueprints across 7 domain files (data-economy, monetization, progression, combat, session-flow, world-interaction, client-infra). Each recipe gives recognition cues, assembly order, case-specific failure modes, budget, and verification, and delegates the general rules to the existing references rather than restating them.
-- `references/server-authority.md` — Server Authority [GA, 9 July 2026] as a first-class architecture mode: the five settings `AuthorityMode = "Server"` forces, the predict-and-reconcile model, a with-SA vs without-SA comparison for input, simulation stepping, camera, anti-cheat, attributes and animation, known limitations, adoption trade-offs, and review discipline.
-- `references/studio-mcp.md` — operating a Roblox Studio MCP connection. Built around capabilities rather than fixed tool names so it survives any MCP variant: ground-truth rules (the connected tool list always wins, never assert a tool does not exist), session-cached variant identification (official built-in, standalone Rust lineage, community forks), a decision tree for unfamiliar or missing tools that separates "older build" from "different server", a capability map carrying the safety and token rule for each operation, a four-step preflight before the first write, the irreversible-operation list (play-mode discard, wrong Studio instance, mistyped paths creating scripts, no-undo Luau execution, backdoored assets), the Edit-context VM trap, and token discipline.
-- `references/limits-budgets.md` — platform ceilings in one place: DataStore size and request budgets, MemoryStore, messaging, attributes, animation tracks, Luau runtime, network payload, server compute.
-- **Server Authority confirmation gate** in SKILL.md — SA is never assumed. A trigger list (movement, physics, input, camera, animation timing, `BindToSimulation`, network ownership, movement anti-cheat) requires detection or a one-time user confirmation, cached per session, defaulting to OFF.
-- **System Design Preflight** — five ordered steps before implementing any non-trivial system: match the case, check ceilings, fix the server/client split, check for a library overlay, decide verification.
-- **Maturity tags** ([GA] / [Beta] / [Verify] / [UNVERIFIED]) with a standing rule that a [Beta] feature is never made the default in production code.
-- Character Controller Library [GA] as a documented choice alongside `Humanoid`, which is not deprecated.
-- New verification levers: Studio CLI (`--task RunScript`, `--openScriptPath`) and `ScriptDebuggerService` [Beta].
+- Add 22 system blueprints in `references/cases/`.
+- Add `server-authority.md`, `studio-mcp.md`, and `limits-budgets.md`.
+- Add a Server Authority confirmation gate and the System Design Preflight.
+- Add maturity tags ([GA], [Beta], [Verify], [UNVERIFIED]).
 
 ### Changed
-- Reference routing regrouped into four blocks (Authoring, Implementing a known system, Deepening a concern, Checking yourself) to keep on-demand loading precise as the reference set grows.
-- Project environments expanded from two to three: Studio-native, Rojo/filesystem, and Studio Script Sync.
-- `api-currency.md` rewritten to a July 2026 baseline with per-row maturity tags, and honest [UNVERIFIED] markers where confirmation was not possible.
-- New type solver documented as [GA] and default for `nocheck`/`nonstrict`, opt-in for `strict`, configured via `UseNewLuauTypeSolver` and `LuauTypeCheckMode`.
-- Luau standard-library section extended with 2026 compiler behavior (inlined immediately invoked lambdas, refinements preserved across loops) and an explicit list of Luau features that do **not** apply to Studio.
+- Regroup reference routing, and expand project environments to Studio-native, Rojo, and Script Sync.
+- Rewrite `api-currency.md` to a July 2026 baseline.
 
 ### Fixed
-- **Attributes can hold Instance references** via `InstanceHandle` [Beta]; the previous blanket "no Instance references" was wrong. Documented with its handle semantics, streaming behavior, and the `GetAttributeChangedSignal` caveat.
-- **`BindToSimulation` guidance is now conditional** rather than a blanket prohibition: forbidden for general gameplay without Server Authority, required for custom gameplay logic under it.
-- Server Authority described as [GA] and off-by-default, replacing "opt-in and still evolving".
-- DataStore limits updated for the unified in-game/Open Cloud request budget and raised storage, with the effective date marked.
-- Added the InputContext/InputAction camera replication deprecation.
-- New false-positive carve-outs so 2026 features are not flagged as nonexistent, a project is not flagged for declining Server Authority, and a quiet `--!nonstrict` file is not treated as a gap.
+- Allow Instance references in attributes through `InstanceHandle` [Beta].
+- Make `BindToSimulation` guidance conditional on Server Authority.
+- Update DataStore limits for the unified request budget.
 
 ## [1.7.7] - 2026-07-22
 
-**False-positive hardening and engine/Luau currency refresh.** Systematizes the anti-false-positive guidance so reviews stay objective, and refreshes the skill against the then-current engine and Luau feature set.
+_False-positive hardening, an API baseline, and installer hardening._
 
 ### Added
-- `roblox-best-practices/references/false-positives.md` — the "what NOT to flag" catalog: the three-tier severity taxonomy (Blocker / Correctness / Advisory), the four-step confidence gate, category guardrails (hot-loop definition, not-a-leak list, not-a-trust-boundary list, complete-handler note, streaming, typing, deprecated-vs-discouraged), and a regression set of correct snippets that must review clean.
-- `roblox-best-practices/references/api-currency.md` — a dated baseline of confirmed engine/Luau APIs (Luau Recap 2025, engine release notes through v728) so the verify-first rule stops re-litigating already-shipped APIs; also lists gated features (new type solver, require-by-string) and newly deprecated APIs.
-- `patterns.md`: a centralized **Streaming (StreamingEnabled)** section (`ModelStreamingMode`, `RequestStreamAroundAsync`, tag signals) and **DataStore version history** guidance (`ListVersionsAsync`/`GetVersionAsync`/`ListKeysAsync`).
-- `security-monetization.md`: an engine-level **Server Authority** section (Input Action System, attribute replication budget, `GetCameraState`).
-- `performance.md`: deeper **Parallel Luau** guidance (`task.synchronize`/`desynchronize`, `SharedTable`).
-- `luau-language.md`: a standard-library refresh (`vector` library, `math.map`/`lerp`/`isnan`/`isinf`/`isfinite`, `buffer.readbits`/`writebits`) and expanded user-defined type functions (`keyof`, `issubtypeof`, the `types` library).
+- Add `false-positives.md` with the Blocker, Correctness, and Advisory severities and a four-step confidence gate.
+- Add `api-currency.md`, a dated baseline of confirmed engine and Luau APIs.
+- Add streaming and DataStore version history to `patterns.md`, Server Authority to `security-monetization.md`, and Parallel Luau to `performance.md`.
+- Add `bin/agents.txt` as the single agent list for all three installers.
+- Limit the version menu to the bundled release and the five newest tags, with manual entry for older ones.
 
 ### Changed
-- **Type safety is now opt-in.** `--!strict` is no longer added on the skill's own initiative; it requires an explicit user request or an existing project convention to match.
-- Doc-comment (UDD) rules tightened: one terse technical sentence (≤ ~100 characters), contract-level, English, no em dashes or emoji, and no line-count bloat.
-- Review mode reframed around the Blocker/Correctness/Advisory severity vocabulary and the false-positives gate; missing doc comments on trivial private helpers are Advisory, not violations.
-- Reference Routing table extended with `false-positives.md` and `api-currency.md`; streaming, Server Authority, and DataStore versioning surfaced in existing rows.
+- **Breaking:** Make type safety opt-in. `--!strict` is no longer added unasked.
+- Read the bundled version from `package.json`, and clear the destination before each install.
+
+### Deprecated
+- Record `Player:GetRankInGroupAsync` and `GetRoleInGroupAsync` as deprecated in favour of `GroupService:GetRolesInGroupAsync`.
 
 ### Fixed
-- `Instance.new(class, parent)` recategorized from "deprecated" to a discouraged performance choice (Advisory), correcting a mislabel that produced false findings.
-- Added the `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` -> `GroupService:GetRolesInGroupAsync` deprecation.
+- Class `Instance.new(class, parent)` as discouraged (Advisory), not deprecated.
+- Pass printf data as an argument in `install.sh`, not as the format string.
 
-## [1.5.1] and earlier
+### Security
+- Validate `--tag` and call git, curl, unzip, and PowerShell with argument arrays, so a crafted tag cannot run as a shell command.
 
-See the git history.
+## [1.5.1] - 2026-07-18
+
+_Two new references and broader guidance._
+
+### Added
+- Add `luau-language.md`: typing, task scheduling, deferred events, error handling, time APIs, and native codegen.
+- Add `verification.md`: proving a change works, and tracing before flagging in review.
+- Add runtime rule 7: re-validate after every yield.
+- Add Tower Defense and Battlegrounds to `genres.md`.
+- Add serializable DataStore shapes, attribute limits, character lifecycle, and cross-server communication to `patterns.md`.
+- Add memory attribution with `debug.setmemorycategory`, text filtering, and PolicyService.
+- Detect agent folders in the home directory, and add Gemini CLI and Codex targets.
+
+## [1.1.7] - 2026-07-09
+
+_Rule scoping and an installer with version selection._
+
+### Added
+- Read toolchain files (`stylua.toml` and others) first in Adaptive mode.
+- Add a version selection menu and `--tag` to the installer.
+
+### Changed
+- Scope runtime rules 3 and 4 to avoidable garbage and to polling state that has a signal.
+- Rewrite the purchase rate limiter in the templates as a time window.
+
+### Fixed
+- Pass `--allow-git=all` to npx on npm 12 and later.
+
+## [1.0.0] - 2026-07-09
+
+_First release._
+
+### Added
+- Add the `roblox-best-practices` skill: the three-section script layout, naming and style rules, the runtime rules, supervision levels, Default and Adaptive modes, and a review checklist.
+- Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
+- Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
+
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.2...v2.0.0
+[1.19.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.1...v1.19.2
+[1.19.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.0...v1.19.1
+[1.19.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.18.2...v1.19.0
+[1.18.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.18.1...v1.18.2
+[1.18.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.18.0...v1.18.1
+[1.18.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.17.2...v1.18.0
+[1.17.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.17.1...v1.17.2
+[1.17.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.17.0...v1.17.1
+[1.17.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.16.1...v1.17.0
+[1.16.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.16.0...v1.16.1
+[1.16.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.15.0...v1.16.0
+[1.15.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.14.0...v1.15.0
+[1.14.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.13.1...v1.14.0
+[1.13.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.13.0...v1.13.1
+[1.13.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.12.2...v1.13.0
+[1.12.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.10.6...v1.12.2
+[1.10.6]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.9.9...v1.10.6
+[1.9.9]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.7.7...v1.9.9
+[1.7.7]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.5.1...v1.7.7
+[1.5.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.1.7...v1.5.1
+[1.1.7]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.0.0...v1.1.7
+[1.0.0]: https://github.com/andrian-syh/roblox-best-practices-skill/releases/tag/v1.0.0
