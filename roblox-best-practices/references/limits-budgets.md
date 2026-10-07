@@ -24,7 +24,7 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 |---|---|---|
 | Value size per key | **4 MB** (4,194,304 characters) | The real constraint on inventory and progress blobs |
 | Data store name / key name / scope | **50 characters** each | |
-| User-defined metadata | **250 characters** | |
+| User-defined metadata | **250 characters** per value, **300 characters** across all key-value pairs | |
 | Storage per experience | **500 MB + 1 MB × lifetime user count** | Only latest versions count, measured compressed |
 | Value shape | JSON-serializable only | No userdata, no mixed/sparse keys, no NaN/inf, no cycles ([patterns/data.md](patterns/data.md#data-persistence)) |
 
@@ -50,6 +50,7 @@ Ordered data stores carry the same experience-level numbers; their per-server wr
 
 - `GetAsync` serves a **local cache for four seconds**. Cached reads cost no budget and no throughput, and they can return a value the backend no longer holds. Set `DataStoreGetOptions.UseCache = false` when the answer must be authoritative — above all when checking whether a failed write actually landed before retrying or refunding.
 - Overwritten versions are retained **30 days**; the latest version never expires. **Multiple writes to the same key within one UTC hour overwrite each other permanently**, so a tight autosave loop destroys its own version history.
+- **Each request type queues at most 30 requests.** While a request waits its call keeps yielding; past 30 the request is dropped with a throttle error (`301`-`306`, one per request type), so a burst of saves fails rather than waits.
 - `ListKeysAsync` with **key prefixes** is the current way to organize a store. Legacy scopes still work; prefixes are what new work should use.
 
 Consequences for design:
@@ -72,15 +73,19 @@ Consequences for design:
 
 MemoryStore is ephemeral coordination (queues, session locks, live leaderboards), never a database. Wrap calls in `pcall` with backoff exactly like DataStore.
 
-**Exceeding the memory quota fails writes** until items expire or are removed — it does not evict for you, so a structure with a long TTL and no cleanup path degrades into a wall of failures. **Per-partition throttling is separate from the quota**: a single hot key or one oversized structure throttles while the experience-wide quota still looks healthy, and the exact partition limit is not published. The fix is spreading load, not asking for more ([patterns/network.md](patterns/network.md#cross-server-communication)).
+**Exceeding the memory quota fails writes** until items expire or are removed — it does not evict for you, so a structure with a long TTL and no cleanup path degrades into a wall of failures. **Per-partition throttling is separate from the quota**: a single hot key or one oversized structure throttles while the experience-wide quota still looks healthy. The memory stores page gives estimates rather than guarantees: roughly 30,000 request units per minute for one partition, about 5,000 write and 15,000 read units per minute for one hash map key, and 100,000 units per minute for one data structure. The fix is spreading load, not asking for more ([patterns/network.md](patterns/network.md#cross-server-communication)).
 
 ## Messaging
 
 | Limit | Value |
 |---|---|
-| Message size | **1,024 characters** (1 KB) |
+| Message size | **1 KB** |
 | Topic name | **80 characters** |
-| Throughput and subscriptions | Scale with players and active servers; there are per-server caps on both subscriptions and subscribe requests |
+| Messages sent per server | **600 + 240 × players** per minute |
+| Messages received per topic | **40 + 80 × servers** per minute |
+| Messages received per experience | **400 + 200 × servers** per minute |
+| Subscriptions per server | **20 + 8 × players** |
+| Subscribe requests per server | **240** per minute |
 | Delivery | **Best-effort** (a lost message must be recoverable) |
 
 Send ids and references, not data blobs; receivers re-read authoritative state from DataStore/MemoryStore. Open Cloud publishing shares the same quotas as the in-engine service.
@@ -112,10 +117,10 @@ Layered animation designs (base locomotion + upper body + facial + emote + ...) 
 | General outbound requests | **500 per minute per server** |
 | Open Cloud requests | **2,500 per minute per server**, counted separately |
 | Protocol | **HTTPS only** |
-| Ports | Below 1024 rejected, except **80** and **443** |
+| Ports | Below 1024 rejected, except **80** and **443**; **1194** also rejected |
 | Paths | `..` is rejected |
 
-`HttpService` is off until *Allow HTTP Requests* is enabled in experience settings, and it is server-only. Exceeding the Open Cloud ceiling stalls calls for roughly 30 seconds before erroring, so a burst is worse than a queue. Credentials belong in the **secrets store**, never in a script ([security.md](security.md#threat-model-assume-all-of-these-exist)).
+`HttpService` is off until *Allow HTTP Requests* is enabled in experience settings, and it is server-only. Open Cloud calls accept only the `x-api-key` and `content-type` headers, and `x-api-key` must be a `Secret`. Exceeding the Open Cloud ceiling stalls calls for roughly 30 seconds before erroring, so a burst is worse than a queue. Credentials belong in the **secrets store**, never in a script ([security.md](security.md#threat-model-assume-all-of-these-exist)).
 
 ## Secrets
 
@@ -139,7 +144,18 @@ Layered animation designs (base locomotion + upper body + facial + emote + ...) 
 
 ## Network payload
 
-No single hard cap to design against, but the cost order is fixed: **numbers are cheap; strings and nested tables are not.** For bulk or high-frequency data use `buffer` serialization, send deltas rather than whole states, and prefer attribute/tag replication over custom remotes for state clients merely display ([performance.md](performance.md#network)).
+| Limit | Value |
+|---|---|
+| Client-to-server remote calls | **~500 per second, per client**, shared across every remote of the same type |
+| `UnreliableRemoteEvent` payload | **1000 bytes**; anything larger is **dropped**. Studio logs how many bytes it went over; the docs describe no signal outside Studio |
+| `RemoteEvent` overload | Buffers a large number of events, then throws `Remote event invocation discarded` |
+| `buffer` size | **1 GB**, as above |
+
+**The rate limit is per type, not per object.** Splitting one busy `RemoteEvent` into five raises nothing, because all five draw on the same allowance. The way under the ceiling is fewer calls carrying more each, which is what per-frame batching does ([performance.md](performance.md#network)).
+
+**The unreliable cap fails quietly, and only Studio says so.** An oversized payload is dropped rather than erroring: Studio prints how far over the limit it went in the Output window, and the docs describe no signal on a live client, so a payload that grew after release goes missing in production with no signal. Buffers are also compressed before the size is judged, so measuring the payload before firing does not prove it will arrive. Design unreliable messages small enough that the question never arises, and treat the Studio log line as the only warning you will get.
+
+Beyond those, the cost order is fixed: **numbers are cheap; strings and nested tables are not.** For bulk or high-frequency data use `buffer` serialization, send deltas rather than whole states, and prefer attribute/tag replication over custom remotes for state clients merely display ([performance.md](performance.md#network)).
 
 ## Server compute
 

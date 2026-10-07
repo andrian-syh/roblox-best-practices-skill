@@ -1,6 +1,6 @@
 # False-Positive Guardrails — What NOT to Flag
 
-The anti-false-positive filter for review/refactor mode. This file collects the carve-outs that are otherwise scattered across the skill (the scoped exceptions in the Non-Negotiable Runtime Rules, "trace before flag" in [verification.md](verification.md), the review-mode softening in [SKILL.md](../SKILL.md#reviewrefactor-mode)) and adds the specific cases that most often produce wrong findings.
+The anti-false-positive filter for review/refactor mode. This file collects the carve-outs that are otherwise scattered across the skill (the scoped exceptions in the Non-Negotiable Runtime Rules, "trace before flag" in [verification.md](verification.md), the review-mode softening in [workflow.md](workflow.md#reviewrefactor-mode)) and adds the specific cases that most often produce wrong findings.
 
 Read this **before reporting any finding**. A rule in this skill says what good code does; every such rule has a matching set of shapes that *look* like violations but are correct. Reporting those erodes trust faster than missing a real issue.
 
@@ -92,7 +92,7 @@ Cold paths are exempt entirely: a `GetChildren()` scan, a table build, or a deep
 Non-Negotiable #2 requires a teardown for everything created. These already have one:
 
 - Connections on an Instance you later `Destroy()` — destroying disconnects them.
-- `:Once()` listeners — they self-disconnect after firing.
+- `:Once()` listeners — the connection is dropped *before* the handler runs, so there is nothing left to disconnect and nothing to re-enter.
 - Connections made **on the character's own instances** — they die with the character model; only connections held elsewhere that merely *reference* the character need explicit teardown.
 - Anything added to a trove/maid/janitor or a connection bag that has a teardown path.
 - A `task.delay`/`task.spawn` whose handle is `task.cancel`ed in the owner's teardown.
@@ -206,6 +206,7 @@ Full comparison of both paths: [server-authority.md](server-authority.md).
 - Do not add or demand `--!strict` — it is opt-in per [SKILL.md](../SKILL.md#language--style-rules); requiring it is a user decision, and forcing it can surface false type errors against loosely-typed engine APIs.
 - **A quiet `--!nonstrict` file is not a gap.** The new solver's nonstrict mode reports only *definite* runtime errors by design; silence means it found none, not that type checking is missing. Likewise `--!nocheck` is a valid project choice, not a safety violation.
 - Never flag `pairs`/`ipairs`, nor `Heartbeat` vs `PostSimulation` naming — both forms are valid.
+- **A new strict-mode error inside a generic function body is the analyzer catching up, not the code rotting.** Luau tightened checking of generic function bodies, so a body that uses a type parameter in a way the signature never promised — `f(nil)` where the parameter is `(T) -> T` — now errors where it once passed ([luau-language.md](luau-language.md#compiler-and-analysis-changes-worth-knowing)). When a user reports that untouched scripts started failing after an engine update, **do not report the error as a defect the author introduced, and do not suppress it with a cast.** Name the unsound assumption and fix the signature. The same update made deprecation warnings fire through union and intersection types, so a previously quiet file can light up with real deprecations that were always there.
 
 ### Deprecated vs. discouraged — do not conflate them
 
@@ -218,6 +219,9 @@ Only the **deprecated** column is a Correctness (or Blocker) finding. The **disc
 | `Humanoid:LoadAnimation`, `Part.Velocity`/`RotVelocity` | `RemoteFunction` client→server (fine with a timeout mindset) |
 | `SetPrimaryPartCFrame`/`GetPrimaryPartCFrame`, `Camera.CoordinateFrame` | `pairs`/`ipairs` (never a finding) |
 | `Player:GetRankInGroupAsync`/`GetRoleInGroupAsync` → `GroupService:GetRolesInGroupAsync` | |
+| `GuiObject:TweenPosition`/`TweenSize`/`TweenSizeAndPosition` → `TweenService:Create`, `GuiObject.Transparency` → `BackgroundTransparency`/`TextTransparency` | |
+
+The `GuiObject` row carries a caveat worth stating in the finding itself: those four are tagged deprecated in the **API dump** but are not yet in the published deprecated index ([api-currency.md](api-currency.md#deprecated-report-as-findings)). Report them, and say the tag comes from the dump — an author who checks the index and finds nothing is not wrong, only reading the slower source.
 
 ### Style / layout — propose, never report
 
@@ -226,7 +230,7 @@ Section-header deviations, subsection ordering, naming casing, module require or
 Two more shapes that look like violations:
 
 - The `workspace` global is explicitly allowed ([SKILL.md](../SKILL.md#language--style-rules)) — flagging it as service-indexing is simply wrong.
-- A deliberate legacy choice (classic chat where `TextChatService` would fit, `ContextActionService` in a project that never adopted the Input Action System) is a design decision. Mention the modern alternative once as Advisory if genuinely useful, then drop it — never as a violation.
+- A deliberate legacy choice (`ContextActionService` in a project that never adopted the Input Action System) is a design decision. Mention the modern alternative once as Advisory if genuinely useful, then drop it — never as a violation. Legacy chat is not such a choice: it was removed, and Roblox auto-migrated unmigrated experiences to `TextChatService` or disabled their chat ([DevForum](https://devforum.roblox.com/t/-/3237100)), so code that customizes it is dead code, a valid Advisory.
 
 ### Documentation Comments — one real finding, the rest Advisory
 
@@ -364,8 +368,8 @@ GuiService:GetPropertyChangedSignal("PreferredTextSize"):Connect(applyScale)
 -- Shipped but undocumented: present in the API dump, absent from create.roblox.com.
 -- Not a fabrication, not a finding. Confirm against the dump before ever calling a
 -- member nonexistent -- the docs site trails the engine by weeks.
-local multiplier = GuiService:GetUIScaleMultiplier()
 shadow.Inset = true
+shadow.ShowBehindParent = false
 ```
 
 ## Review mode: what happens to a finding once it is real

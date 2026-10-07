@@ -105,6 +105,9 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | Re-entrant fire chains | Depth-limited, then dropped silently | Restructure as a queue |
 | A yield splits check from use | Everything validated before the yield may now be false | Non-Negotiable #7 |
 | Pending `task.delay` after teardown | Fires against a destroyed owner | Keep the handle and `task.cancel` it |
+| Teardown by `Destroy()` while handlers are queued | The queued handlers still run, against state the teardown has already dismantled; only `Disconnect()` drops them | `Disconnect()` first where it matters ([luau-language.md](luau-language.md#deferred-engine-events)) |
+| `BindableFunction:Invoke` with no `OnInvoke` set | The invoking thread never resumes — no error, no timeout | Set the callback before anything can invoke, or use a `BindableEvent` and stop needing the reply |
+| `BindableEvent:Fire` and its listeners | Each listener runs on a thread of its own: `Fire` returns before they finish even if one yields, and a listener that errors reaches neither the firer nor the other listeners | Never treat the line after `Fire` as "the listeners have run" |
 | Shutdown mid-flow | Partial work persists, or nothing does | Make the persist step the last step |
 
 ## Network and client input

@@ -31,6 +31,7 @@ Taking money correctly and staying inside platform rules. The validation layers 
 | Subscription | Recurring benefits | Check status on join + `UserSubscriptionStatusChanged`; always handle lapse |
 | Paid access / Managed Pricing | Whole-experience monetization | Managed Pricing (regional + optimization) is platform-side; don't hardcode price displays — read from `GetProductInfo` |
 
+- **Prices vary by region.** Passes, avatar items and opted-in developer products can sell below their default price in some regions (up to 70% lower, never higher), so never compare against or display a hardcoded Robux amount: read `PriceInRobux` from `MarketplaceService:GetProductInfo` (or `GetDeveloperProductsAsync`) at display time ([DevForum](https://devforum.roblox.com/t/-/3971235), [api-currency.md](api-currency.md#engine)).
 - Never trust a client claim of ownership — verify server-side, cache the result, invalidate on purchase-finished events.
 - Prompt purchases from the client (`PromptProductPurchase` etc. work there), but *effects* only ever originate from server-side verification.
 

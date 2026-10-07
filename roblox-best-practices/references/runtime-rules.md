@@ -1,6 +1,6 @@
 # Non-Negotiable Runtime Rules
 
-The expansion of Invariant Card items 3-8. SKILL.md carries the card, which is the version that must survive compaction; this file carries each rule's full statement and the scope that keeps it from being over-applied.
+The expansion of Invariant Card items 3-7, plus network budgeting (rule 6), which the card leaves to this file. SKILL.md carries the card, which is the version that must survive compaction; this file carries each rule's full statement and the scope that keeps it from being over-applied.
 
 These hold through every mode, every supervision level, and every community library. Only the user can override one, and then only after the risk has been stated once ([SKILL.md](../SKILL.md#user-authority)).
 

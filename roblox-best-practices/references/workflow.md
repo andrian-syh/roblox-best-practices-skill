@@ -19,11 +19,11 @@ Five decisions govern every later task. Resolve each **once**, cache the answer 
 
 | Decision | How to resolve | Default when unresolved | Detail |
 |---|---|---|---|
-| **Supervision level** | Invocation argument (`/roblox-best-practices ask`) > inline token (`!ask`/`!bal`/`!go`) > session declaration in any words ("awasi penuh", "jangan banyak tanya") > default | **Balanced** — never ask which level the user wants; absence *is* the answer | [below](#supervision-levels) |
+| **Supervision level** | Invocation argument (`/roblox-best-practices ask`) > inline token (`!ask`/`!bal`/`!go`) > session declaration in any words ("watch every step", "stop asking, just go") > default | **Balanced** — never ask which level the user wants; absence *is* the answer | [below](#supervision-levels) |
 | **Default vs Adaptive mode** | Obey an explicit statement; otherwise ask once if an existing codebase has visible conventions | **Default** for new files; for edits, match the file being edited and note the assumption | [adaptive-mode.md](adaptive-mode.md) |
 | **Community libraries** | Ask once, or detect from `require()`s and `wally.toml` | **None** — use the built-in patterns | [community-libraries.md](community-libraries.md) |
-| **Server Authority** | Read `Workspace.AuthorityMode`, or scan for `AuthorityMode`/`BindToSimulation`; ask once at the first task touching movement, physics, input, camera, animation timing, network ownership, or hit registration | **OFF** — most places are not server-authoritative, and assuming otherwise produces confidently wrong code | [server-authority.md](server-authority.md) |
-| **Environment facts** | On the first task touching signals, streaming, rigs, or typing: read `Workspace.SignalBehavior`, `StreamingEnabled`, the rig type, and the file's strictness header once; cache for the session like everything else here | Do not assume any of them — each inverts correct guidance between values | [luau-language.md](luau-language.md#deferred-engine-events) · [patterns/network.md](patterns/network.md#streaming-streamingenabled) |
+| **Server Authority** | Scan for `AuthorityMode`/`BindToSimulation`, and ask once at the first task touching movement, physics, input, camera, animation timing, network ownership, or hit registration. **Reading `Workspace.AuthorityMode` is not a reliable check** — from the command bar, a plugin, or MCP `execute_luau` it throws `lacking capability RobloxScript`. Wrap it in the `probe` helper, and treat a failure as *unknown*, which means ask ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)) | **OFF** — most places are not server-authoritative, and assuming otherwise produces confidently wrong code | [server-authority.md](server-authority.md) |
+| **Environment facts** | On the first task touching signals, streaming, rigs, or typing: read `Workspace.SignalBehavior`, `StreamingEnabled`, the rig type, and the file's strictness header once; cache for the session like everything else here. Probe rather than read bare — `StreamingEnabled` comes back fine, but sibling `Workspace` properties that exist in the dump are unreadable at tool security | Do not assume any of them — each inverts correct guidance between values. A read that fails means **unknown**, never a default | [luau-language.md](luau-language.md#deferred-engine-events) · [patterns/network.md](patterns/network.md#streaming-streamingenabled) |
 
 **Never migrate a project to Server Authority on this skill's initiative** — recommend, explain the cost, let the user decide.
 
@@ -37,9 +37,9 @@ Only stylistic and structural conventions adapt. The Non-Negotiable Runtime Rule
 
 ## Supervision levels
 
-Set the level at invocation — `/roblox-best-practices bal` — or with an inline token anywhere in a message. The argument accepts the bare word or the token form (`ask` and `!ask` are the same thing), is case-insensitive, and the long names `supervised`/`balanced`/`autonomous` work too. **An empty or unrecognized argument is Balanced**; never ask the user to pick one, and never treat an unrecognized argument as an error — take the default and carry on.
+Set the level at invocation — `/roblox-best-practices bal` — or with an inline token anywhere in a message. The argument accepts the bare word or the token form (`ask` and `!ask` are the same thing), is case-insensitive, and the long names `supervised`/`balanced`/`autonomous` work too. **Precedence, highest first:** an inline token in the current message, then the invocation argument, then **Balanced**. An unrecognized argument counts as no argument and falls through to the next tier; never ask the user to pick one, and never treat it as an error.
 
-Invoking with no argument at all is [advisory invocation](#advisory-invocation-no-specific-task): acknowledge that the standards are active, at Balanced, and stop.
+Invoking with an empty argument, or none, is [advisory invocation](#advisory-invocation-no-specific-task): acknowledge that the standards are active, at the level the precedence above resolves to, and stop.
 
 | Level | Token | Behavior |
 |---|---|---|
@@ -62,7 +62,7 @@ No level authorizes an unrequested refactor. `!go` removes questions, never the 
 
 ## Advisory invocation (no specific task)
 
-Users may invoke this skill purely as a standing reminder — "use best practices", "ikuti skill ini mulai sekarang" — without a concrete coding task. In that case:
+Users may invoke this skill purely as a standing reminder — "use best practices", "follow this skill from now on" — without a concrete coding task. In that case:
 
 - **Do not** start codebase analysis or ask the mode/library setup questions yet. Briefly acknowledge that the standards are now active, and stop.
 - Hold these rules as active guidance for all subsequent Luau work in the session.

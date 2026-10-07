@@ -7,7 +7,7 @@ How to prove a change actually works — in the running engine, not just by read
 - **Drive the affected flow end-to-end.** A change to a purchase path is verified by executing a purchase in a live session and observing the result. A clean typecheck or a passing pure-logic unit test is necessary, not sufficient, for anything that touches Instances, replication, or scheduling.
 - **Condition-driven waits, not blind sleeps.** Test code waits for the observable condition with a bounded timeout (`repeat task.wait(0.1) until done or os.clock() > deadline`) instead of a fixed `task.wait(3)` — fixed sleeps make tests both slow and flaky. (Polling is legitimate *in test code*; the no-polling rule targets production code.)
 - **Assert through observable markers.** Emit structured, greppable lines (`print("[TEST] key=", value)`) at the assertion points and read them from console output — a verification whose pass/fail can't be seen from the log wasn't a verification.
-- **Replication needs multiple clients.** Anything involving remotes, replication timing, or StreamingEnabled gets a multi-client session (Team Test / Start Server+Players) — a single-Play session hides every networking bug.
+- **Replication needs multiple clients.** Anything involving remotes, replication timing, or StreamingEnabled gets a multi-client session (**Server & Clients**, up to eight clients; Team Test is a shared session for collaborators, not a multi-client harness) — a single-Play session hides every networking bug.
 - **Leave no residue.** Test scripts, tags, and instances created for verification are removed when done; prefer mechanisms that clean themselves up (see play-mode note below).
 
 ## Studio-native / MCP environments
@@ -22,7 +22,7 @@ How to prove a change actually works — in the running engine, not just by read
 Confirm availability in the target environment before relying on these ([api-currency.md](api-currency.md)).
 
 - **Studio CLI** — officially documented (`create.roblox.com/docs/studio/command-line-interface`). `--task RunScript --runScriptFile <path>` executes a `.luau` file, optionally against `--placeId`/`--universeId` or `--localPlaceFile`, with `--outputFile` capturing output and `--quitAfterExecution` exiting when done; `--openScriptPath` opens a specific script; and `--api` / `--fullApi` / `--apiV2` write the installed engine's API surface as JSON — the strongest offline check for whether an API exists in your target build. CLI scripts run at command-bar permission, so the command-bar VM caveat above still applies.
-- **`ScriptDebuggerService` [Beta]** — programmatic debugging from Luau: conditional breakpoints, logpoints, call-stack and variable inspection, and execution control. Useful for pinpointing a failure that logging alone cannot localize. Being Beta, it is a debugging aid, not something to build a permanent test harness on.
+- **`ScriptDebuggerService` [Beta]** — programmatic debugging from a plugin (every member is PluginSecurity): conditional breakpoints, logpoints, call-stack and variable inspection, and execution control. Useful for pinpointing a failure that logging alone cannot localize. Being Beta, it is a debugging aid, not something to build a permanent test harness on.
 - **Studio Script Sync** — scripts edited as files in an external editor with bidirectional sync. Verification still happens in a Studio session; the editor is only the authoring surface, and **the Studio debugger cannot be driven from it** ([external-editors.md](external-editors.md#studio-script-sync--the-official-one)).
 
 ## Rojo / filesystem environments
@@ -46,11 +46,11 @@ Once a finding passes all four steps, assign it a severity — **Blocker**, **Co
 
 ## Studio testing workflow
 
-- **Multi-client testing:** Studio's multi-client Team Test / Start Server+Players for anything involving replication — single-Play sessions hide every networking bug. Server-script breakpoints during Team Test where available.
+- **Multi-client testing:** Studio's **Server & Clients** mode for anything involving replication — single-Play sessions hide every networking bug. Server-script breakpoints during Team Test where available.
 - **Network conditions:** Advanced Network Simulation (Studio Settings → Network) — test remotes and prediction at 100–200 ms latency with loss *before* shipping; it always works on localhost.
 - **Profiling:** MicroProfiler/ScriptProfiler workflow and memory-leak watching per [performance.md](performance.md#measurement-never-optimize-blind).
 - **Cloud paths need the right session.** DataStore access is off in Studio until enabled, and **secrets resolve only in live servers and Team Test** — a local playtest silently takes the failure branch of any code that reads one. Drive save, load, and purchase flows in a session where those calls actually reach the backend, and force a shutdown mid-session to test the flush path.
-- **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall below.
+- **Change verification:** prove a change works by driving the affected flow in a live session and asserting observable results — full workflow, condition-driven waits, and the command-bar VM-isolation pitfall above.
 
 ## Performance & memory verification (proof of performance)
 

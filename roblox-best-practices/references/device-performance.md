@@ -68,7 +68,7 @@ end
 
 ## Device tiers
 
-Assume a wide spread of hardware and design for the bottom of it. The demographics and budgets below are Roblox's own published figures.
+Assume a wide spread of hardware and design for the bottom of it. The demographics and the low-tier draw-call and triangle budgets are Roblox's own published figures; the client RAM figure and the mid-tier row are this skill's heuristics ([api-currency.md](api-currency.md)), to plan with but never to quote as a limit.
 
 | Tier | Reality & Demographic | Hard Budgets & Ceilings |
 |---|---|---|
@@ -100,6 +100,8 @@ Roblox ships settings that buy more headroom than most script optimization, and 
 | `StreamingMinRadius` | `64` (default) | Maximizes scaling headroom for low-end devices |
 | `StreamingTargetRadius` | `1024` (default) | Balances visibility against memory |
 | `StreamOutBehavior` | `Opportunistic` / `LowMemory` | Aggressive client-side collection, lower memory |
+
+**Adaptive streaming radius** (`Workspace.StreamingAdaptiveRadius`) lets the engine move the radius itself in response to the client's conditions, instead of holding the fixed `StreamingMinRadius`/`StreamingTargetRadius` pair above for every device. It is a **boolean**, and unlike the Studio-only settings in the table above it both reads and writes from code ([api-currency.md](api-currency.md#engine)). What it is **not** is documented: no reference page says how the engine picks a radius once it is on, so it is a switch to measure rather than a recommended default. Turn it on, profile on a low-end device, and keep the fixed radii if the measurement does not improve.
 
 **Frustum streaming** (`Player.FrustumStreaming`, with the `FrustumStreamingMode` enum) streams by what the camera can see rather than by radius alone, which cuts loaded content sharply in experiences with a mostly forward-facing camera. It is **[Undocumented]** ([api-currency.md](api-currency.md#engine)) — shipped, with no reference page to read, so its exact enum values come from a probe rather than from docs — and it trades against fast camera turns: content behind the player may need to stream in when they spin. Test that case on a low-end device before enabling it, and keep gameplay-critical anchors persistent regardless.
 

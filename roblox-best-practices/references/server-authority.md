@@ -43,6 +43,9 @@ The client predicts its own inputs instantly so play feels responsive, the serve
 - **Prediction is cosmetic until the server confirms it.** Never let a predicted outcome grant currency, damage, or items on the client.
 - **Mispredictions are normal, not errors.** Reconcile them quietly; do not surface them to players as glitches or rollback messages.
 - **Debug the loop, don't guess at it.** `RunService.Misprediction` reports per-instance predicted-vs-authoritative values, `RunService.Rollback` lets non-replicated custom state rewind before resimulation, and `Instance.PredictionMode` controls per-instance participation ([api-currency.md](api-currency.md#engine)).
+- **`RunService:SetPredictionMode()` needs no `IsClient()` guard.** On the authoritative server the call is a no-op. It once logged a spurious warning — `RunService:setPredictionMode() should not be called on the server.` — when reached from code shared between client and server, which pushed people into wrapping it in `RunService:IsClient()`. That warning is gone. **Do not add the guard, and do not flag shared code for lacking it.**
+- **`PredictionMode = Off` now actually means off.** A part or character set to `Off` was still being simulated locally while inside the local player's simulation region, so it drifted from the server-authoritative position — the visible symptom being a character dropping to the ground instead of staying where the server put it. Parts explicitly set to `Off` are no longer predicted through that path. Contact simulation is unchanged: an `Off` object that physically touches a locally-simulated object still interacts. If a report describes this drift, establish the client's engine version before treating it as a code bug.
+- **Destroying or reparenting an `InputContext` is safe again.** Doing so could previously stop the client's input reaching the server for the rest of the session, with only a session restart to recover. Fixed and live. A "my input died mid-session" report against an older client is this, not a lifecycle mistake in the code.
 
 ## Writing code: with SA vs without SA
 
@@ -102,7 +105,7 @@ Engine-level **Server Authority** is [GA], but **Roblox does not enable it by de
 **Trigger topics.** The first time a task touches any of these, resolve the mode before writing or flagging anything: character movement or physics · input handling · camera control · animation timing · `BindToSimulation` · network ownership · hit registration or lag compensation · movement anti-cheat.
 
 **Procedure:**
-1. **Detect first.** Read `Workspace.AuthorityMode` where the environment allows it, or scan the project for `AuthorityMode`, `BindToSimulation`, and Input Action usage.
+1. **Detect first.** Read `Workspace.AuthorityMode` where the environment allows it, or scan the project for `AuthorityMode`, `BindToSimulation`, and Input Action usage. Expect the read to fail from tooling: the command bar, plugins, and MCP `execute_luau` all throw `The current thread cannot read 'AuthorityMode' (lacking capability RobloxScript)`. That failure says **nothing** about the mode, so it sends you to step 2, never to a default.
 2. **If undetermined, ask once:** *"Does this place have Server Authority enabled (`Workspace.AuthorityMode = "Server"`)? It changes how input, camera, and the gameplay loop must be written."*
 3. **Cache the answer for the session**, exactly like the community-library check. Do not re-ask per file.
 4. **Default assumption is OFF.** Never write Server Authority-only advice as if it were universal.

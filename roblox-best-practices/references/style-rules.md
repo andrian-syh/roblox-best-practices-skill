@@ -35,6 +35,9 @@ Placement is a correctness decision before it is an organizational one: the cont
 
 - **`Script.RunContext` is the modern control**, with values `Legacy` (run only where a server Script legitimately runs), `Server`, and `Client`. A `Script` with `RunContext = Client` is how client code lives outside the Starter containers, in `ReplicatedFirst` or `ReplicatedStorage`. `LocalScript` has no `RunContext` and is client-only by definition; it is **not deprecated**, and a project built on LocalScripts is correct — never flag it.
 - **Anything in a replicating container is readable by an exploiter**, including scripts that are disabled or never run ([security.md](security.md#threat-model-assume-all-of-these-exist)). Secrets, enforcement lists, and loot tables live server-side, and the split is a project decision made at the start rather than a cleanup later.
+- **On a filesystem project the suffix already answers the question.** `.server.luau` and `.client.luau` state which side a file runs on, and every sync tool in this space agrees on that meaning ([external-editors.md](external-editors.md)). Some members fail outright on the wrong side rather than behaving oddly: `Players.LocalPlayer` is nil on the server, `UserInputService` is client-only, and `DataStoreService`, `MessagingService`, `ServerStorage`, and `ServerScriptService` are unreachable from a client. **The checker reports these**, so a wrong-side member is caught before it runs rather than at the first playtest.
+
+**A `while true do` that never yields freezes its thread.** The loop starves the scheduler, and nothing else on that thread resumes — a server script takes the whole server with it. Every unbounded loop carries either a `task.wait()` (or another yielding call) or a condition that breaks; **the checker reports one that has neither**. A bounded loop that exits on a condition is ordinary and is left alone, and so is one whose yield comes from a signal `:Wait()` or a yielding web call.
 
 ## Commonly misremembered APIs (check before writing, before flagging)
 
@@ -49,7 +52,7 @@ These are repeatedly invented or misremembered. As author, verify a member you a
 | `player:GetMouse()` as the input plan | Legacy mouse object; prefer the Input Action System, else `UserInputService`/`ContextActionService` |
 | Invented members (`Script.Running`, `Player.IsPlaying`, ...) | Not real. A name absent from **the API dump** does not exist; absence from the reference page only means it is undocumented |
 | `UIShadow.ApplyShadowMode` | Never shipped under that spelling. `UIShadow.Mode` **is** real and is not a misremembering — see [api-currency.md](api-currency.md#engine) |
-| `GuiService:GetUIScaleMultiplier`/`SetUIScaleMultiplier` | **Real and shipped.** Undocumented, not fabricated. Never flag these |
+| `GuiService:SetUIScaleMultiplier` | **Real and shipped**, undocumented, not fabricated — but **RobloxScriptSecurity**, so shipped code cannot call it. `GetUIScaleMultiplier` was **removed** and is now genuinely gone; the getters that replaced it carry the same security. Read `GuiService.PreferredTextSize` instead ([api-currency.md](api-currency.md#engine)) |
 | `TeleportService:ReserveServer` | Deprecated — use `ReserveServerAsync`, or `TeleportOptions.ShouldReserveServer` with `TeleportAsync` |
 | `workspace.Players`, `game.CoreScriptService` | Wrong names; services come only from `game:GetService("...")` |
 | `UIFlexLayout` | **Not a class.** Flex lives on `UIListLayout` (`HorizontalFlex`/`VerticalFlex`/`ItemLineAlignment`) plus a `UIFlexItem` parented to the child that should flex ([ui-crossplatform.md](ui-crossplatform.md#layouts)) |

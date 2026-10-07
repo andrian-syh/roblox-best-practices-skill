@@ -51,7 +51,7 @@ Subsections in this fixed order (omit any that are empty):
 - **ModuleScripts** split functions into `-- | Private | --` (used only inside this script, `local function`) and `-- | Public | --` (exposed on the returned table). Private comes first.
 - **Scripts/LocalScripts** usually skip the Private/Public split — just list functions under the section header (use level-2 headers to group by topic if the script is large).
 
-#### Documentation Comments: the default style, and how it flexes
+### Documentation Comments: the default style, and how it flexes
 
 The official terms are **Luau Comments** (Roblox's own name for the `--` and `--[[ ]]` forms) and **Documentation Comments** (the comment block that documents an item). Roblox's own guidance is deliberately loose: use a block comment at the top of a file to describe its purpose, a block comment before a function or object to describe its intent, single-line comments for in-line notes, and focus on *why* rather than *what*. Everything below is this skill's default layered on that guidance — one part stricter: **this skill writes no prose comments inside function bodies**, because a name cannot drift from what it names while a note beside the code can. The tag syntax is borrowed from Moonwave, the de-facto standard for Luau doc comments.
 

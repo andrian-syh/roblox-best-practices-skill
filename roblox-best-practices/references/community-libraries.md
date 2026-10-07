@@ -6,6 +6,17 @@ For an unknown/in-house library: read 2–3 existing usages in the codebase befo
 
 **Scope note.** This file covers **Luau libraries the project runs**. Agent-side tooling that shapes how the agent writes code, such as the optional Ponytail overlay, is not a project dependency and is handled in [minimal-code.md](minimal-code.md#ponytail-optional-agent-side-overlay). Do not add it to the community-library check or expect it in a `wally.toml`.
 
+## Contents
+
+- [Data: ProfileStore / ProfileService](#data-profilestore--profileservice)
+- [Networking: Packet / ByteNet / Zap / BridgeNet](#networking-packet--bytenet--zap--bridgenet)
+- [Cleanup: Trove / Maid / Janitor](#cleanup-trove--maid--janitor)
+- [Events/Async: GoodSignal (Signal libs), Promise](#eventsasync-goodsignal-signal-libs-promise)
+- [Frameworks: Knit / Flamework](#frameworks-knit--flamework)
+- [UI: Fusion / React-lua / Roact](#ui-fusion--react-lua--roact)
+- [ECS: Jecs](#ecs-jecs)
+- [Precedence summary](#precedence-summary)
+
 ## Data: ProfileStore / ProfileService
 
 Replaces the raw DataStore patterns in [patterns.md](patterns.md) (`UpdateAsync`, manual retry, session locking) — the library handles all of that.
@@ -31,6 +42,20 @@ Skill rules become:
 - Use the library's unreliable variant for loss-tolerant high-frequency data, mirroring the `UnreliableRemoteEvent` rule.
 - Don't mix raw remotes and the library in the same feature; pick one transport per project.
 - **These libraries serialize for you**, so the raw-remote marshalling rules ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)) describe what the *engine* does, not what the library does. Read its own documentation for which types it packs; do not assume either that it fixes the mixed-table problem or that it inherits it.
+
+### Judging one, and judging the claims
+
+New networking libraries appear often, each with a headline multiplier. Four things decide whether one is worth adopting, and none of them is the multiplier.
+
+**Batching is where the win comes from, and it is not exotic.** Every one of these libraries collects the calls made during a frame and sends them as a single message, which cuts per-message overhead and pulls the whole feature under the shared client rate limit ([limits-budgets.md](limits-budgets.md#network-payload)). Buffer packing adds to that; it does not replace it. This is worth knowing before adopting anything, because a project that only needs batching can have it in a small module of its own and keep the rest of its transport unchanged.
+
+**Read what the benchmark measured.** The published figures for this class of library typically fire a message a thousand times per frame and report the frame rate that survives. That measures CPU under a synthetic flood — a real answer to a real question, but not the same question as latency, bandwidth, or how a game with ordinary traffic behaves. A multiplier quoted without its axis is not a number yet: one library's headline figure is a frame-rate ratio, its larger figure is a bandwidth ratio, and neither is a speed.
+
+**Weigh adoption against the claim.** A library carrying a striking benchmark and a handful of repository stars has not been read by many people. The strength of a claim and the number of independent readers who could have falsified it are separate facts, and only the second one protects you.
+
+**Check what the schema costs you.** The libraries split on whether packet shapes are declared up front. A declared schema packs tighter and type-checks at build time; a schemaless one adopts faster but leaves less on the table. Neither is wrong, and the choice is about the team, not the throughput.
+
+Whatever is chosen, the rules above still hold: the transport changes, the server-side validation does not.
 
 ## Cleanup: Trove / Maid / Janitor
 
@@ -67,6 +92,14 @@ Declarative UI component bodies have their own internal structure (state → der
 
 - Fusion: scope/`doCleanup` handles cleanup — treat the scope like a trove.
 - React-lua: effects clean up in their return function; never connect RBXScriptSignals outside `useEffect`.
+
+## ECS: Jecs
+
+Jecs (`Ukendio/jecs`, MIT) is an Entity Component System: data lives in components keyed by entity ids, and behavior lives in systems that query the world. Jecs ships the world, entities, components, relationships and queries, but no scheduler; the project brings its own. Adapt to it rather than wrapping it in Services:
+
+- The section layout applies to each system or component-definition file; a system's body is the FUNCTIONS section, and its registration with the project's scheduler the INITIALIZATION.
+- Systems query the world instead of holding Instance references, so cleanup means deleting the entity (and any Instance it owns), not disconnecting per-object connections.
+- Replication is the project's own choice; server systems still validate every client input before writing components.
 
 ## Precedence summary
 

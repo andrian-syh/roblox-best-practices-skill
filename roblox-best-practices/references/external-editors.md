@@ -25,11 +25,11 @@ Roblox code can be authored in VS Code, Neovim, or any editor, through several t
 | **Studio Script Sync** | the DataModel | n/a (in-process) | yes, with a conflict dialog |
 | **Rojo** | the filesystem | 34872 | `rojo syncback`, a deliberate command; live two-way is experimental |
 | **Argon** | configurable (`Initial Sync Priority`) | 8000 | yes, but **off by default** |
-| **Azul** | the DataModel, **exclusively** for hierarchy | configurable | Studio to files is continuous; files to Studio only via `azul build`/`azul push` |
+| **Azul** | the DataModel, **exclusively** for hierarchy | configurable | Studio to files is continuous; since 2.0 file creates, renames, moves, and deletes also reach Studio during a live session; before 2.0 only via `azul build`/`azul push` |
 
 Two consequences the agent must act on:
 
-- **Never assume a write to disk has reached the place.** Say which side you wrote to and what the user must do for the other side to see it. Under Rojo that is "the serve session will push it"; under Script Sync it is "Studio should already show it — confirm before you playtest"; under Azul a script body carries over but **a new or renamed file does not**, and needs `azul build` or `azul push`.
+- **Never assume a write to disk has reached the place.** Say which side you wrote to and what the user must do for the other side to see it. Under Rojo that is "the serve session will push it"; under Script Sync it is "Studio should already show it — confirm before you playtest"; under Azul 2.0 and later a file created, renamed, moved, or deleted during a live session reaches Studio too, while before 2.0 only script bodies carry over and structure needs `azul build` or `azul push`.
 - **Never start, stop, or reconfigure a sync session on your own initiative.** A `--destructive` flag, a `syncback`, or flipping `Keep Unknowns` can delete instances that exist only in the place. Those are the user's calls ([studio-mcp.md](studio-mcp.md#irreversible-operations) applies the same principle to MCP writes).
 
 ## Detecting the environment from disk
@@ -76,6 +76,10 @@ Other limits worth stating before a user commits to it:
 - **Team Create:** indicators show who else is syncing, and duplicate names auto-increment. Never let two people sync *and* edit the same script; each will overwrite the other.
 - Conflicts open a resolution dialog itemizing what would be added, modified, or deleted on each side. Read it; do not click through it for the user.
 
+**Ask the sync what it thinks, rather than inferring it.** `InstanceFileSyncService:GetStatus(instance)` returns an `InstanceFileSyncStatus`: `SyncedAsRoot`, `SyncedAsDescendant`, `NotSynced`, `Errored` (this instance is a sync root that stopped), or `AncestorErrored` (its root stopped, so it is no longer syncing either). `GetSyncedInstance(filePath)` maps the other direction, and `GetAllInstances()` lists everything tracked. The two error states are the ones worth checking, because a stopped sync looks exactly like a working one from the file side — which is the whole reason for the rule above about never assuming a write reached the place.
+
+These carry **PluginSecurity**: they run from the command bar, a plugin, or an MCP `execute_luau` call, and they raise from a delivered `Script` or `LocalScript`. Use them to verify, never as a line of shipped code.
+
 For a full IDE experience the official answer is Script Sync plus the **Luau LSP** VS Code extension and its **Studio companion plugin** — not Rojo. That plugin supplies DataModel information for instances outside any build and exposes the endpoint the language server uses to map Script Sync's files.
 
 ## Rojo
@@ -104,7 +108,7 @@ The plugin's live **Two-Way Sync** setting is a separate, long-standing experime
 
 `rojo sourcemap --watch default.project.json --output sourcemap.json` produces the file the language server needs. `rojo build` produces an `.rbxl`/`.rbxm`.
 
-Two documented workflows: **partially managed** (Rojo owns the scripts, Team Create owns everything else — each programmer working in their own place) and **fully managed** (Rojo owns the whole game, enabling hermetic builds and continuous deployment). The partial one is what most existing games adopt first.
+Two documented workflows: **partially managed** (Rojo owns the scripts, Team Create owns everything else — each programmer working in their own place) and **fully managed** (Rojo owns the whole game, enabling hermetic builds and continuous deployment). The partial one is what most existing games adopt first. Both sections of that page are still `TODO`, so the process around either — the daily order, who owns which tree, what merges and what cannot — is in [team-workflow.md](team-workflow.md).
 
 ## Argon
 
@@ -134,7 +138,7 @@ For plugin development, Argon's docs pair `--plugin` with Studio's **File → St
 
 Studio-first: the DataModel is authoritative and Azul mirrors it into a local directory, so an existing place needs no conversion and no project file — connecting the plugin generates the file representation. A daemon plus a companion plugin, GPL-3.0, requiring Node.js. Install with `npm install -g azul-sync` and the **Azul Companion Plugin** (asset `79510309341601`) from the Creator Store; both are required. Update with `npm install -g azul-sync@latest` and, in Studio, **Plugins → Manage Plugins → Azul → Update**.
 
-**The asymmetry that decides how you use it.** Azul's docs state that Studio is the **exclusive** source of truth for instance creation, deletion, and renaming. Studio changes reach the filesystem automatically; doing the same to files in `syncDir` during a session **will not affect Studio**. Script *contents* are what flows both ways. So: **manage the hierarchy in Studio, edit script bodies locally**, and use `azul build` or `azul push` to import anything structural from disk. Creating a file and expecting an instance to appear is the mistake this tool invites.
+**Which side wins.** Studio stays the source of truth: the first sync mirrors Studio to disk, and Studio wins a conflict. Since **2.0** a live session also replicates filesystem actions into Studio (creating, renaming, changing type, deleting, reparenting; [Ransomwave/azul#34](https://github.com/Ransomwave/azul/issues/34), shipped in [#59](https://github.com/Ransomwave/azul/pull/59)); before 2.0 those actions on disk **did not affect Studio**, and only script contents flowed both ways. Check the installed version (`azul --version`) before deciding. On 2.0 and later, **deleting a file in `syncDir` deletes the instance in Studio**, so treat a delete or a bulk move on disk as a destructive Studio change. `azul build` and `azul push` remain the way to import a tree that is not already synced, such as Rojo projects and packages.
 
 **Files on disk** mirror the hierarchy into `syncDir` (default `./sync`): `sync/ServerScriptService/MyScript.server.luau`. `*.server.luau` is a `Script`, `*.client.luau` a `LocalScript`, and a **`ModuleScript` carries no suffix at all** unless `suffixModuleScripts` is on, which makes it `*.module.luau`. There is **no `init.luau` convention** — a script with children gets a sibling folder named after it, keeping the mapping one-to-one. Do not carry Rojo's filenames over.
 
@@ -192,7 +196,7 @@ None of these sync anything; they are what make an external editor worth using. 
   Registry policy worth relying on: packages are scoped to a GitHub user or organization, and a **published version can be yanked but not deleted**, so a pinned dependency does not vanish underneath a project. Full removal happens only for legal or conduct reasons. Registry ownership states who may modify a package — it is not a copyright claim.
 
   Wally is the most widely used option, is listed on Roblox's own third-party tools page, and its repository is active and unarchived. **pesde** is the notable alternative, and some tools argue against Wally in their own docs. Follow whatever the project already uses ([community-libraries.md](community-libraries.md)); never migrate a project's package manager unasked.
-- **Luau LSP** (`JohnnyMorganz.luau-lsp`) — the reason intellisense works outside Studio. It reads `sourcemap.json` to resolve the DataModel tree, and preloads current Roblox type definitions by default. Settings: `luau-lsp.sourcemap.enabled`, `.autogenerate`, `.rojoProjectFile`, `.sourcemapFile`, `.includeNonScripts`, `.generatorCommand` (for non-Rojo generators), plus `luau-lsp.types.definitionFiles`, `luau-lsp.types.documentationFiles`, and `luau-lsp.platform.type`. Its **Studio companion plugin** covers instances that no build knows about. A missing or stale sourcemap is the cause of most "the LSP says this doesn't exist" reports — regenerate it before treating the complaint as a real type error.
+- **Luau LSP** (`JohnnyMorganz.luau-lsp`) — the reason intellisense works outside Studio. It reads `sourcemap.json` to resolve the DataModel tree, and preloads current Roblox type definitions by default. Settings: `luau-lsp.sourcemap.enabled`, `.autogenerate`, `.rojoProjectFile`, `.sourcemapFile`, `.includeNonScripts`, `.generatorCommand` (for non-Rojo generators), plus `luau-lsp.types.definitionFiles`, `luau-lsp.types.documentationFiles`, and `luau-lsp.platform.type`. Its **Studio companion plugin** covers instances that no build knows about; since 1.66 its settings are `luau-lsp.studioPlugin.*` (the old `luau-lsp.plugin.*` names still work but are deprecated). Since 1.65 a built-in `@game` alias resolves string requires from the sourcemap root, and since 1.70 `luau-lsp.analyzeLuaFiles` controls whether plain `.lua` files are analyzed. A missing or stale sourcemap is the cause of most "the LSP says this doesn't exist" reports — regenerate it before treating the complaint as a real type error.
 - **StyLua** — the formatter. `stylua.toml` with `syntax = "Luau"`; defaults are `column_width = 120`, tabs, width 4. `stylua --check` in CI, `-- stylua: ignore` for a block, `.styluaignore` for paths. **Whatever it is configured to do outranks this skill's formatting preferences** for that project.
 - **selene** — the linter. `selene.toml` with `std = "roblox"` generates the Roblox standard library automatically and refreshes it periodically; `selene update-roblox-std` forces it, and `roblox-std-source = "pinned"` with `selene generate-roblox-std` freezes it for offline or reproducible builds. `std = "roblox+testez"` adds TestEZ globals.
 - **roblox-ts** — a TypeScript-to-Luau compiler with its own project layout. In a roblox-ts project the `.luau` files are **build output**: never edit them, and never review them as authored code. The sources are `.ts`.
@@ -218,7 +222,7 @@ None of this locks the project in: these tools produce ordinary places and model
 |---|---|---|
 | Edits on disk never appear in Studio | no serve session, plugin not connected, or the wrong place is open | check the connection before debugging the code |
 | Studio edits vanish on the next sync | filesystem-first tool with two-way sync off — the expected behavior | edit in files, or turn two-way sync on deliberately |
-| A file created, renamed, or deleted on disk changes nothing in Studio | a Studio-first tool: hierarchy is Studio's alone | do it in Studio, or import with `azul build`/`azul push` |
+| A file created, renamed, or deleted on disk changes nothing in Studio | Azul before 2.0, where hierarchy is Studio's alone | update Azul, do it in Studio, or import with `azul build`/`azul push` |
 | Instances disappear after connecting | `Keep Unknowns` off, `$ignoreUnknownInstances`, or a `--destructive` flag | restore from the saved place file; these are all opt-in destructive settings |
 | Tags or attributes lost on a script | Script Sync ignores both | keep tag-bound configuration off the script instance |
 | The language server flags real APIs as unknown | stale or missing `sourcemap.json` | regenerate it; this is not an engine-fact question ([api-currency.md](api-currency.md)) |

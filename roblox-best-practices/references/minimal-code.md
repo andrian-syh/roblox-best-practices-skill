@@ -4,15 +4,18 @@ The cheapest code is the code never written. This file governs **how much** code
 
 ## Contents
 
-- [Three precedence rules (read these before the ladder)](#three-precedence-rules-read-these-before-the-ladder)
+- [Four precedence rules (read these before the ladder)](#four-precedence-rules-read-these-before-the-ladder)
 - [The ladder](#the-ladder)
 - [Already exists — do not hand-roll these](#already-exists--do-not-hand-roll-these)
 - [Searching the project first](#searching-the-project-first)
 - [Density rules](#density-rules)
+- [What the pass leaves behind](#what-the-pass-leaves-behind)
+- [Marking a deliberate ceiling](#marking-a-deliberate-ceiling)
+- [The check that finishes the work](#the-check-that-finishes-the-work)
 - [When reimplementation is justified](#when-reimplementation-is-justified)
 - [Ponytail (optional agent-side overlay)](#ponytail-optional-agent-side-overlay)
 
-## Three precedence rules (read these before the ladder)
+## Four precedence rules (read these before the ladder)
 
 ### 1. Minimalism never reduces what gets delivered
 
@@ -60,8 +63,16 @@ The ladder asks "does this need to exist?", and the answer is always **yes** for
 - The three-section layout and the Documentation Comment on each function
 - `pcall` coverage on yielding external calls
 - Re-validation after a yield
+- Error handling on the paths that lose player data
+- The accessibility settings the engine already exposes, where the feature touches them ([ui-crossplatform.md](ui-crossplatform.md#the-styling-system))
 
 These are Non-Negotiable Runtime Rules ([SKILL.md](../SKILL.md#non-negotiable-runtime-rules)). Deleting one is not a simplification; it is a defect that happens to be short. Trim mechanism, never guarantees.
+
+### 4. Minimalism never precedes understanding
+
+The ladder shortens the solution, never the reading. Walk it **after** tracing what the change touches: the callers, the remote on the other side, the place the state actually lives. A small diff in the wrong place is not lazy, it is a second defect wearing the shape of efficiency.
+
+This binds hardest on a fix. A report names a **symptom**, and the first plausible file is rarely the cause. Before editing a shared function, find every caller — a single guard inside the function is a smaller diff than one guard per call site, and patching only the path the report names leaves every sibling caller broken. Where the cause is not yet known, that work belongs to [diagnosis.md](diagnosis.md) and finishes before this file applies.
 
 ## The ladder
 
@@ -129,10 +140,44 @@ These target code volume, never structure. The three-section layout, the doc blo
 - **No abstraction for a single caller.** Generalize at the second caller, not in anticipation of one.
 - **Do not re-derive what is already in scope.** Pass the value rather than recomputing or re-looking-up the instance.
 - **One concept per function.** A function that needs "and" in its description is two functions, and its doc comment will say so.
+- **Fewest ModuleScripts.** A module holding one small function that only one script calls belongs in that script. Split when a second consumer appears.
+- **No new dependency for what a few lines cover.** A Wally package earns its place by owning a concern, not by saving a helper ([community-libraries.md](community-libraries.md)).
+- **Same size, take the correct one.** Where two engine or standard-library routes are equally short, pick the one that holds on the edge cases. Writing less code never means picking the flimsier algorithm.
 
 Anti-goal: code that looks substantial. Length is not evidence of quality, and a long function is harder to verify, slower to read, and more likely to hide an edge case.
 
 Two opposite anti-goals matter just as much. **A function that is short because it does less than it was asked to** has failed, and so has **a function that is short because it was compressed past readability.** Every density rule above removes ceremony, never capability and never clarity. When they pull against each other, completeness and readability win, and the extra lines are the correct price.
+
+## What the pass leaves behind
+
+The density rules govern what gets written. These govern what is still there when the work is handed over, which is a different failure and the one an agent is most prone to: the measured signature of machine-written code is not bad logic, it is **leftovers** — dead bindings, redundant branches, and scaffolding that outlived its purpose.
+
+- **No unused bindings.** A local, a parameter, a `require`, or a function nothing calls is dead the moment it ships. Delete it rather than leaving it for the linter (`LocalUnused`, `FunctionUnused`, `ImportUnused` — [luau-language.md](luau-language.md#the-linters-vocabulary)). Deleting an unused *parameter* changes a signature: check the callers first.
+- **No placeholders in delivered code.** `-- TODO`, `-- implement this`, an empty function body standing in for logic, a hard-coded id or sample table meant to be replaced. Either build it or say plainly that it is not built; a stub that looks finished is worse than a gap the user can see.
+- **No leftover debug output.** `print` calls added while working come out before the hand-off. Logging that the feature genuinely needs is a deliberate line with context, not a bare value ([performance.md](performance.md#measurement-never-optimize-blind)).
+- **No second version of the same thing.** The older function, the commented-out block, the variant kept "just in case" — a reader cannot tell which one is live. Version control holds the previous version already.
+
+Applies to code this pass wrote. Leftovers already in the file belong to whoever wrote them: report them, never silently sweep them up ([SKILL.md](../SKILL.md#user-authority)).
+
+## Marking a deliberate ceiling
+
+Some simplifications are correct now and will not stay correct. A single shared lock, a linear scan over a list that is small today, a heuristic standing in for a real calculation: each is the right call at the current scale and each has a scale where it stops being one. An unmarked ceiling is indistinguishable from an oversight, so the next reader either rewrites working code or trusts it past its limit.
+
+Name the ceiling and the way out **in the function's Documentation Comment**, at contract level, not as a note beside the statement — in-body prose comments stay banned ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)). One clause is enough: what the shortcut is, and what replaces it when the limit arrives.
+
+This applies only to a shortcut with a known ceiling. Ordinary short code needs no confession, and a ceiling that has already been reached is a defect to fix rather than a clause to write.
+
+## The check that finishes the work
+
+Non-trivial logic ships with the smallest thing that fails when the logic breaks. A branch, a loop, a parser, a currency path, or anything touching saved data earns one check; a one-line accessor earns none.
+
+What that check is depends on the project, and none of it means adding a framework the project does not run:
+
+- Pure logic in a ModuleScript is unit-testable as it stands, which is a reason to keep it pure ([verification.md](verification.md#unit-testable-architecture-framework-agnostic)).
+- Behaviour that only exists in a running place is proved in a playtest instead, by [verification.md](verification.md).
+- A project already running TestEZ or Jest-Lua gets its check in that project's idiom, not a second one.
+
+Untested logic is unfinished work, not lean work.
 
 ## When reimplementation is justified
 
@@ -147,7 +192,9 @@ Two cases, both requiring you to say so rather than deciding silently:
 
 [Ponytail](https://github.com/DietrichGebert/ponytail) is an **AI-agent plugin, not a Roblox plugin and not a Luau library.** It enforces exactly this concern through a seven-rung ladder, which is what the ladder above is adapted from.
 
+Everything this file takes from it is already written out above, translated into Roblox terms: the ladder, the reuse-before-writing rule, root cause over symptom, the density rules, the ceiling marker, the runnable check, and the list of things minimalism never touches. Its web-platform catalog has no bearing here; the engine table under [Already exists](#already-exists--do-not-hand-roll-these) is the Roblox equivalent. **Nothing on this page depends on having it installed.**
+
 - **Detect it** by its commands (`/ponytail`, `/ponytail-review`, `/ponytail-audit`) or its rule files in the repository.
 - **If present, it owns minimalism.** Follow its ladder, and respect whatever intensity the user has set (`lite`, `full`, `ultra`, `off`) rather than overriding it with this file. Its review and audit commands are the user's to invoke, not yours to run unprompted.
 - **If absent, this file is the equivalent.** The skill is complete without it and never requires installing it. Mention it at most once, as an option.
-- **All three precedence rules at the top of this file still apply.** No intensity setting, including `ultra`, authorizes dropping validation, cleanup, or any other Non-Negotiable; none authorizes delivering less than the user asked for; and none authorizes unreadable code.
+- **All four precedence rules at the top of this file still apply.** No intensity setting, including `ultra`, authorizes dropping validation, cleanup, or any other Non-Negotiable; none authorizes delivering less than the user asked for; and none authorizes unreadable code.

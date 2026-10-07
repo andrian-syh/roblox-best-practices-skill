@@ -66,7 +66,7 @@ The rules that silently produce wrong behavior rather than an error. None is exo
 
 ### The new type solver — what is on by default
 
-Reached **[GA] general release** ([api-currency.md](api-currency.md#luau-language-and-libraries)). It is a rewrite, not a tweak: better inference, fewer false positives, read-only table properties, refinements that track variable changes, type functions, and relaxed casting rules.
+Reached **[GA] general release** ([DevForum announcement](https://devforum.roblox.com/t/general-release-luau%E2%80%99s-new-type-solver/4084991), [api-currency.md](api-currency.md#luau-language-and-libraries)). It is a rewrite, not a tweak: better inference, fewer false positives, read-only table properties, refinements that track variable changes, type functions, and relaxed casting rules.
 
 - **Default for `--!nocheck` and `--!nonstrict`** for all users. Projects on those modes are already using it.
 - **`--!strict` stays on the old solver by default** and must opt in explicitly. The old solver remains available during the migration window; confirm it is still there before relying on it ([api-currency.md](api-currency.md#luau-language-and-libraries)).
@@ -121,13 +121,15 @@ Luau is not Lua 5.1 minus nothing. These are gone or restricted at the language 
 - **The global table, the library tables, and the string metatable are read-only.** Monkey-patching a built-in fails, whether by assignment, `rawset`, or `setmetatable`.
 - **`getfenv`/`setfenv` still exist** in Roblox for backwards compatibility, but using either forces the compiler into a slower dynamic path for the whole script and is banned here regardless.
 
-Rejected outright, so never suggested as a workaround: **`goto`**, **integer types and the `&`/`|` bitwise operators** (`bit32` is the answer — all numbers are doubles), **ephemeron weak tables**, and **`__gc` finalizers**. That last one matters: there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
+Rejected outright, so never suggested as a workaround: **`goto`**, **the `&`/`|` bitwise operators** (`bit32` is the answer), **ephemeron weak tables**, and **`__gc` finalizers**. That last one matters: there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
+
+A 64-bit integer type is an accepted RFC upstream, not a Roblox feature: no Roblox release confirms it, so every number is still a double and `bit32` stays the answer ([api-currency.md](api-currency.md#luau-language-and-libraries)).
 
 ## Standard library — recent additions
 
 Confirmed available per [api-currency.md](api-currency.md) — use them, and don't treat them as unknown.
 
-- **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`, plus the component-wise helpers `vector.floor`/`ceil`/`abs`/`sign`/`clamp`/`max`/`min`. **There is no `vector.lerp`** — the documented library has no interpolation function; `math.lerp` is the scalar one, and a vector lerp is `a + (b - a) * t`. Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
+- **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`, plus the component-wise helpers `vector.floor`/`ceil`/`abs`/`sign`/`clamp`/`max`/`min`. `vector.lerp(a, b, t)` interpolates between two vectors, beside the scalar `math.lerp`. The luau.org library page leaves it out, so that page cannot prove a function is absent ([api-currency.md](api-currency.md)). Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
 - **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns/data.md](patterns/data.md#data-persistence)).
 
@@ -136,6 +138,17 @@ Confirmed available per [api-currency.md](api-currency.md) — use them, and don
 - **Immediately invoked lambdas are now inlined** — the `(function() ... end)()` idiom no longer carries a call-overhead penalty, so use it freely where it improves scoping.
 - **Refinements survive loops** — a narrowed type stays narrowed across loop iterations, removing a common source of spurious "possibly nil" errors.
 - Improved inference for function arguments passed as table literals, and a `math.round` fix for negative zero.
+- **Generic function bodies are checked strictly now, and this breaks code that used to pass.** Analysis was previously too permissive inside the body of a generic function, so a body could use a generic parameter in ways the signature never promised. The canonical case:
+
+  ```lua
+  --!strict
+  local function call<T>(f: (T) -> T)
+      f(nil)  -- now an error: nil is not of type T
+  end
+  ```
+
+  `T` is chosen by the caller, so the body cannot assume it admits `nil`. The fix is to say what the body actually needs — `f: (T?) -> T` if `nil` is legitimate, or a non-generic signature if the function only ever handles one type. **This is a corrected false negative, not a regression:** the old behavior let unsound code through. A place that upgrades its engine can see fresh errors in untouched scripts for this reason ([false-positives.md](false-positives.md)).
+- **Deprecation warnings now fire through unions and intersections.** A deprecated member reached on a type like `A | B` or `A & B` used to pass the linter silently. Expect previously quiet scripts to start reporting real deprecations.
 
 Not applicable to Studio work, despite appearing in Luau release notes: the embedder **C API** additions (`lua_memorydump`, `lua_callhook`, and similar) and **double-precision vector** builds (a VM build-time option). Do not recommend these for a Roblox project. Require-by-string is the partial exception: string requires using the `@rbx` alias exist in Studio for experiences opted into the Input Action System path — see [api-currency.md](api-currency.md#luau-language-and-libraries) — while ordinary requires still resolve through Instances.
 
@@ -153,6 +166,9 @@ Not applicable to Studio work, despite appearing in Luau release notes: the embe
 - A connection made after a fire within the same resumption cycle does not receive that fire — connect before you cause the event.
 - Re-entrant fire chains are depth-limited (10) and then dropped — recursive fire-inside-handler designs fail silently; restructure them as queues.
 - `Instance.Destroying` handlers run after destruction has already completed — capture any state you need from the instance *before* it dies, not inside the handler.
+- **`Disconnect()` and `Destroy()` are not the same teardown.** By the time you tear down, handler invocations may already be queued. `Disconnect()` drops every pending one. **Any other route — `Destroy()` on the instance included — disconnects just as immediately but still runs the handlers already queued.** So a listener torn down by destroying its instance can fire once more, against state the teardown has already dismantled. Where that matters, disconnect explicitly first, or make the handler re-check that its owner is still alive ([patterns/lifecycle.md](patterns/lifecycle.md)).
+
+`AncestryDeferred` is a fourth value of the enum, not a typo: it defers only the events raised by ancestry changes and leaves everything else immediate. Treat a place set to it as Deferred for anything parenting-related and Immediate elsewhere.
 
 Code that follows the skill's normal rules (connect at setup time, react to events, no hidden ordering dependencies) is automatically safe under both behaviors — this section matters when reviewing code that isn't.
 

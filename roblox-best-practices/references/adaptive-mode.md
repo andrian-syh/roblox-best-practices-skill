@@ -74,7 +74,7 @@ Proceed with this convention? Anything to adjust?
 
 Wait for confirmation. Apply any corrections the user gives. If the user answers with adjustments, restate the final convention in one short block so there is a single source of truth in the conversation.
 
-**Supervision level modifies this step** (see SKILL.md → Supervision Level): under **Supervised** and **Balanced**, wait for explicit approval before coding. Under **Autonomous** (`!go`), present the same summary as a *report* — state the convention you will follow and the safe choice for each conflict — and proceed without waiting.
+**Supervision level modifies this step** ([workflow.md](workflow.md#supervision-levels)): under **Supervised** and **Balanced**, wait for explicit approval before coding. Under **Autonomous** (`!go`), present the same summary as a *report* — state the convention you will follow and the safe choice for each conflict — and proceed without waiting.
 
 ## Step 3 — Apply
 

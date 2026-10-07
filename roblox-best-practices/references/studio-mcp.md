@@ -41,8 +41,8 @@ Read the available tools and classify. Cache the result for the session, the sam
 
 | Variant | Signature tools | Treatment |
 |---|---|---|
-| **Official built-in Studio MCP** (assume this by default) | Scripts: `script_read`, `multi_edit`, `script_search`, `script_grep` · Exploration: `search_game_tree`, `inspect_instance`, `subagent` · Execution: `execute_luau` · Playtest: `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture` · Input: `character_navigation`, `user_keyboard_input`, `user_mouse_input` · Generation: `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image` · Reference: `http_get`, `skill` · Session: `list_roblox_studios`. The exact set varies by build — older ones lack some, newer ones add others | Full guidance below applies |
-| **Standalone Rust server** (`Roblox/studio-rust-mcp-server`, the older separate lineage) | `run_code`, `insert_model`, `run_script_in_play_mode`, `get_studio_mode` | Narrower capability set; map through the capability table |
+| **Official built-in Studio MCP** (assume this by default) | Scripts: `script_read`, `multi_edit`, `script_search`, `script_grep` · Exploration: `search_game_tree`, `inspect_instance`, `subagent` · Execution: `execute_luau` · Playtest: `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture` · Input: `character_navigation`, `user_keyboard_input`, `user_mouse_input` · Generation: `generate_mesh`, `generate_material`, `generate_procedural_model`, `generate_texture`, `segment_mesh`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image` · Reference: `http_get`, `skill` · Session: `list_roblox_studios`. The exact set varies by build — older ones lack some, newer ones add others | Full guidance below applies |
+| **Standalone Rust server** (`Roblox/studio-rust-mcp-server`, archived; Roblox recommends the built-in server) | `run_code`, `insert_model`, `run_script_in_play_mode`, `get_studio_mode` | Narrower capability set; map through the capability table |
 | **Community, custom, or fork** | A mix, or names outside both sets | Rely entirely on each tool's own schema |
 
 The official built-in server is the common case and the one Roblox recommends. Assume it, but verify against what you actually see.
@@ -53,7 +53,7 @@ The official built-in server is the common case and the one Roblox recommends. A
 |---|---|---|
 | An expected official tool is **absent** | Likely an **older build** of the official server, or a different variant | Do not conclude the setup is broken. Find another tool with the equivalent capability; if none exists, tell the user what you cannot do |
 | An **unknown tool** is present | Either an official tool **newer** than this snapshot, or a community server's own | Read its description and schema. **Never infer semantics from the name alone** |
-| Names match the **Rust standalone** lineage | The older separate server | Map through the capability table; do not expect the official tool set |
+| Names match the **Rust standalone** lineage | The archived standalone server | Map through the capability table; do not expect the official tool set. Suggest the built-in Studio MCP server once, since the archived one gets no fixes |
 | Nothing matches anything known | A custom server | Treat side effects as **unknown until the schema proves otherwise** |
 
 **Extra caution:** for any unfamiliar tool whose name suggests `publish`, `save`, `delete`, `clear`, `reset`, or `overwrite`, confirm with the user before calling it, regardless of how harmless the description sounds. These are the calls that cannot be walked back.
@@ -74,7 +74,8 @@ Attach the rules to the capability. Blank cells mean no dedicated tool is known 
 | Read console output | `get_console_output` | `get_console_output` | — | Capture around the action, not the whole session |
 | Capture the viewport | `screen_capture` | — | — | Images are costly. Use only when visual confirmation is genuinely required |
 | Insert an asset | `insert_asset`, `search_asset` | `insert_model` | **Free models can carry backdoor scripts** | — |
-| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished`, `run_as_job` | — | — | Each generation is a billed job. Iterate the prompt, do not spam generate; `run_as_job` runs one asynchronously and returns a job id |
+| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `wait_job_finished` | — | — | Each generation is a billed job. Iterate the prompt, do not spam generate; a generate tool that takes `async: true` returns a job id at once, and `wait_job_finished` collects the result |
+| Re-texture or split a mesh | `generate_texture`, `segment_mesh` | — | **`generate_texture` replaces the source mesh in place**; name it as irreversible before calling | `segment_mesh` leaves the source and inserts a new Model of up to 5 named parts beside it |
 | Convert local images to asset URIs | `store_image`, `upload_image` | — | Uploads leave the local machine | Only when a tool demands an `IMAGEID_<id>` argument |
 | Simulate input | `character_navigation`, `user_keyboard_input`, `user_mouse_input` | — | Drives the real session | — |
 | Fetch documentation | `http_get`, `skill` | — | — | Fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member for **semantics**. **Absence from a docs page never settles nonexistence** — the site trails the engine, so existence is settled by the API dump or an in-Studio probe ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)). `skill` returns Roblox's own guidance, which is a second opinion, not an override of the user's project conventions |

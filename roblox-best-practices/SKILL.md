@@ -1,7 +1,10 @@
 ---
 name: roblox-best-practices
 argument-hint: "[ask|bal|go]"
-description: "Framework-agnostic Roblox/Luau coding standards. Use when writing, reviewing, or refactoring any Luau code (Script, LocalScript, ModuleScript) in a Roblox project, or when the user asks to keep best practices in mind as standing guidance — enforces the VARIABLES/FUNCTIONS/INITIALIZATION layout, naming, performance, memory, networking, and security rules regardless of framework, folder structure, or genre. Two modes: Default (apply these conventions as-is) and Adaptive (study the project's existing style first, confirm, then apply). Adapts to community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...) and honors supervision levels (!ask / !bal / !go). Not for non-Roblox Lua, Studio UI or asset questions that do not touch code, or game design discussion with no Luau to write or review."
+description: "Roblox/Luau coding standards for writing, reviewing, and fixing game code. Use whenever the user asks to write, add, build, implement, fix, refactor, or review Luau (Script, LocalScript, ModuleScript) or a game system in a Roblox project - a shop, DataStore save, RemoteEvent, sprint, NPC spawner, UI - even when Roblox or Luau is never named, when a game symptom is reported with no file named, and when the user asks to keep best practices in mind as standing guidance. Enforces the VARIABLES/FUNCTIONS/INITIALIZATION layout, naming, performance, memory, networking, and security rules under any framework or genre, adapting to the project's style and community libraries (ProfileStore, Packet, Trove, Knit, Fusion, ...). Honors supervision levels (!ask / !bal / !go). Not for non-Roblox Lua or game design with no Luau to write or review."
+license: MIT
+metadata:
+  version: "2.0.0"
 ---
 
 # Roblox Game Development Best Practices
@@ -10,7 +13,7 @@ Framework-agnostic standards for writing clean, efficient, lightweight, and reso
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 1.19.2. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 2.0.0. If behaviour here contradicts a newer release, the installed copy is stale — check [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -51,10 +54,13 @@ ROBLOX LUAU SKILL - INVARIANT CARD
 3  Server is authoritative. Validate every remote arg: type, range, ownership, rate.
 4  Clean up everything created. Every connection has an owner and a teardown path.
 5  No avoidable per-frame garbage. Never poll what has a signal.
+   Cold paths are exempt, and periodic work on a timer is scheduling.
 6  UpdateAsync + backoff. Save on PlayerRemoving. Flush on BindToClose.
 7  Re-validate after every yield: player gone? instance dead? session changed?
+   Only where a yield sits between the check and its use.
 8  Never add --!strict unbidden. Never make a [Beta] feature the production default.
-9  Reuse before writing: project, then stdlib, then engine API. No wrapper or
+9  Reuse before writing: project, then stdlib, then engine API. Search, never
+   assume - no claim about a file you have not opened. No wrapper or
    abstraction without a caller. But brevity has two hard limits:
    - It NEVER reduces what was asked for. Short because it does less = failed.
    - It NEVER costs readability. One statement per line, descriptive names,
@@ -110,6 +116,8 @@ Everything below expands these; nothing below overrides them.
 - [verification.md](references/verification.md) — proving a change works: playtests, multi-client sessions, test injection, testable architecture, telemetry, the command-bar VM pitfall
 - [studio-mcp.md](references/studio-mcp.md) — Studio MCP connection: which tool, what is irreversible, how not to burn tokens
 - [external-editors.md](references/external-editors.md) — the project is edited outside Studio: Script Sync, Rojo, Argon, Azul, and the toolchain around them
+- [team-workflow.md](references/team-workflow.md) — more than one person on the project, or one person keeping it tidy: git alongside a place file, branch places, who owns which tree, the review gate, shipping
+- [diagnosis.md](references/diagnosis.md) — a reported symptom with no file named yet: narrowing, reproducing, and confirming the cause before any fix
 - [false-positives.md](references/false-positives.md) — reviewing code: whether a finding is real, how severe, what NOT to flag
 - [review-checklist.md](references/review-checklist.md) — **finishing any task**: the completion gate before calling work done
 - [evaluation-matrix.md](references/evaluation-matrix.md) — auditing a live project on request: how to scope it, gather the evidence, score 1–5 across security, lifecycle, and performance, and report it honestly
@@ -124,7 +132,7 @@ This skill is guidance, not a mandate — **full control always stays with the u
 
 - The user's explicit instructions override any convention in this skill. If an instruction conflicts with a Non-Negotiable Runtime Rule, state the risk once, briefly, then follow the user's decision.
 - Never take actions the user didn't ask for on the strength of this skill alone: no unrequested refactors, restructuring, file creation, or "while I'm here" cleanups. Recommend; don't act.
-- Invoked with no task ("use best practices", "ikuti skill ini mulai sekarang"): acknowledge that the standards are active and stop — no codebase analysis, no setup questions ([references/workflow.md](references/workflow.md#advisory-invocation-no-specific-task)).
+- Invoked with no task ("use best practices", "follow this skill from now on"): acknowledge that the standards are active and stop — no codebase analysis, no setup questions ([references/workflow.md](references/workflow.md#advisory-invocation-no-specific-task)).
 
 ## Session Setup (decide once, then cache)
 
@@ -143,6 +151,8 @@ Five decisions govern every later task. Resolve each **once**, cache it, never r
 ### Review/refactor mode
 
 One severity per finding (**Blocker / Correctness / Advisory**), after the confidence gate; Advisory is proposed, never forced, and unrelated code is never reformatted. Gate and calibration: [references/workflow.md](references/workflow.md#reviewrefactor-mode). What NOT to flag: [references/false-positives.md](references/false-positives.md).
+
+A reported symptom with no file named is diagnosed before anything is changed — reaching for the first plausible file produces a change that looks like a fix and leaves the defect in place: [references/diagnosis.md](references/diagnosis.md).
 
 ## Environment & Scale
 
@@ -175,7 +185,7 @@ The ones that apply on nearly every task:
 
 ## Non-Negotiable Runtime Rules
 
-Card items 3-8 are the rules themselves and are always in context. Full statements, the scope that keeps each from being over-applied, and the domain file behind each: [references/runtime-rules.md](references/runtime-rules.md).
+Card items 3-7 are the rules themselves and are always in context; network budgeting is the one rule the card leaves to the file. Full statements, the scope that keeps each from being over-applied, and the domain file behind each: [references/runtime-rules.md](references/runtime-rules.md).
 
 Server authority · cleanup with a teardown path · no per-frame garbage · react instead of poll · `UpdateAsync` with backoff and a `BindToClose` flush · batched, delta-shaped network traffic · re-validation after every yield.
 

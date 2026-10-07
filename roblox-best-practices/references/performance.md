@@ -80,8 +80,10 @@ From Luau's own performance documentation — these are properties of the implem
   - **Under Server Authority:** it is **required** for custom gameplay logic that must take part in the fixed simulation and client resimulation.
 
   Establish the mode before recommending or flagging either way ([server-authority.md](server-authority.md)).
+- **`RunService:BindToAnimation(...)`** is the sibling hook for fixed-frequency work that must land *before* animation updates — the phase where `Motor6D.Transform` writes are safe from being overwritten, expressed as a fixed-rate binding rather than a `PreSimulation` connection. Use it for procedural animation driven at a fixed rate; keep general gameplay on `PostSimulation`. Its maturity and exact signature are in [api-currency.md](api-currency.md#engine) — confirm both before writing it, because it is newer than the phase model above.
 - **Throttle naturally-slow work.** AI targeting, proximity scans, leaderboard sorts don't need 60 Hz. Accumulate `deltaTime` and run at 5–10 Hz, or stagger entities across frames (process `i % N == frame % N`).
 - **Use the right primitives:** `vector`/`Vector3` math over per-component arithmetic; `buffer` for binary data and large numeric arrays; `table.create(n)` when the final size is known; `table.clear()` to reuse tables instead of reallocating.
+- **`table.freeze` a metatable that is never mutated.** Beyond the immutability it already buys, a frozen metatable makes metamethod *lookup* substantially cheaper, which pays off exactly where metatable OOP is hottest — `__index` on a class table resolved once per method call. Freeze the class table after its methods are defined, not the instances. The same engine work cut general metamethod dispatch cost and made dynamic-key table access (`t[x]`) measurably faster in both directions, so a table keyed by a runtime value is less of a penalty than it used to be. Two consequences worth knowing: `table.create(N)` followed by a non-numeric key assignment no longer discards the pre-allocated array part, so mixed tables keep their reserve; and none of this changes what is correct, only what is cheap — do not restructure working code for it. Status, figures, and which of these are still pending: [api-currency.md](api-currency.md#luau-language-and-libraries).
 - **String building:** collect into a table and `table.concat`, or use interpolation backticks; never `..` in a loop.
 - **Native codegen & compiler optimization:** for genuinely compute-heavy ModuleScripts (procedural generation, pathfinding math, raycast batches), add `--!native` and `--!optimize 2` (or the `@native` function attribute for specific hot functions). Don't scatter `--!native` everywhere — native code generation increases code size and memory footprint.
 - **Client-side tweening mandate:** **never run `TweenService` on the server to animate part positions or visuals.** Server-side tweening replicates the interpolated property to every client at 60 Hz, creating massive network traffic and jittery movement under latency. The server sets or replicates the target state; the client executes the tween locally.
@@ -140,7 +142,20 @@ Contact detection is where a working feature turns into a lagging server, and th
 
 ## Network
 
+**Work the ladder in order.** Each rung costs more to build than the one above it and returns less, and the usual mistake is starting at the bottom.
+
+1. **Do not send it.** State only one side needs never crosses the boundary. Effects, tweens, and UI reactions are computed where they are seen.
+2. **Send it less often.** A value that changes every frame rarely needs to arrive every frame. Fix a send rate and hold to it, independent of framerate.
+3. **Send less of it.** Deltas instead of whole states, ids instead of objects, the fields that changed instead of the table that holds them.
+4. **Pack it.** `buffer` serialization, or a library that does it for you.
+
+Rungs 1 to 3 are free and are where nearly all of the win is. Rung 4 is the one that gets reached for first ([community-libraries.md](community-libraries.md#networking-packet--bytenet--zap--bridgenet)).
+
+**Three mistakes Roblox names in its own performance guidance:** replicating data every frame that does not need replicating, replicating on user input with nothing throttling it, and dispatching more data than the receiver uses. Each is a rung-1-to-3 failure that no amount of packing repairs.
+
 - **Server-authoritative always.** Client sends *intents*, server validates and executes. Validate every remote argument: `typeof` check, range clamp, ownership check, rate limit. Treat all client input as hostile.
+- **Never tween on the server.** `TweenService` running server-side replicates the tweened property **every frame** for the whole tween, which is both the traffic and the reason it looks jittery to the players watching it. Replicate the intent — the target, the duration, the easing — and let each client run the tween itself.
+- **Creating and destroying instances is network traffic.** Every change to the server's data model replicates, so a large hierarchy appearing at once is a spike, and a model cloned on a loop is a sustained cost. Build maps in pieces, and keep purely visual instances client-side where nothing else needs to see them.
 - **RemoteEvent hygiene:**
   - Batch: one `UpdateState` remote with a payload table beats ten tiny remotes per frame.
   - Delta, don't dump: send changed fields, not the whole state table.
@@ -188,7 +203,7 @@ Rendering cost is paid by the **client**; physics simulation of the same parts i
   | `WaitingHybridScriptJob` | Scripts resuming from `WaitForChild`/`wait` | Fewer waiting scripts, less work before the yield |
 
   **Threshold discipline:** the documentation publishes the frame bars and the 2.5 ms GPU-wait rule, not a per-tag millisecond budget. A tag is a finding when it is a large share of a frame that misses your target, not because it crossed a number someone made up. Compare a tag against its own baseline capture.
-- **Network view (inside a MicroProfiler capture).** The top row is received traffic, the bottom row is sent; stacked bars are colored **blue for physics, green for data, red for assets**. Verbosity is **High** (item-level batch contents, deserialization tasks, asset ids), **Low** (cheaper, more frames per dump), or **Off**. Right-click opens the Network events window with size, direction, and packet type. This is where a payload problem becomes visible as a specific event rather than a suspicion.
+- **Network view (inside a MicroProfiler capture).** Network data exists **only in saved frame dumps from Studio or the desktop client** — the live overlay never shows it, so a suspected network problem has to be captured and opened as HTML before it can be read at all. The top row is received traffic, the bottom row is sent; stacked bars are colored **blue for physics, green for data, red for assets**. Verbosity is **High** (item-level batch contents, deserialization tasks, asset ids), **Low** (cheaper, more frames per dump), or **Off**. Right-click opens the Network events window with size, direction, and packet type. This is where a payload problem becomes visible as a specific event rather than a suspicion.
 - **Scene Analysis (`Window` → `Performance Summary` → `Scene Analysis`)** compares client and server scenes during a play session as a treemap plus a searchable list, with right-click to jump to the instance in Explorer. Six views:
   - **Unparented Instances** — which scripts or modules still hold references to destroyed instances. The leak view.
   - **Script Memory** — Luau VM memory per Script/LocalScript/ModuleScript (tables and allocations, not asset memory).
@@ -202,6 +217,7 @@ Rendering cost is paid by the **client**; physics simulation of the same parts i
   - Monitor `LuaGarbageCollector` / `LuaHeap` (Luau allocations), `Signals` (active event listeners), `Instances`, and `PhysicsParts`; `PlaceMemory` labels attribute client memory to assets.
   - **Server heartbeat** is the server's frame rate: **Server Jobs → Heartbeat → Steps Per Sec**, capped at 60. Anything below means the server is not keeping up, and it surfaces to players as ping rather than as frame drops.
   - Use `debug.setmemorycategory("SystemName")` at the root of a subsystem to isolate memory growth.
+  - **Its Network tab is not remote traffic.** That tab counts **web calls** — `HttpService`, `DataStoreService`, and the rest — with their status codes and durations. Remote and replication bandwidth is not there and never was: read it from `Stats.DataSendKbps`/`DataReceiveKbps`, from Data Ping against Network Ping, or from a MicroProfiler capture's network view.
 - **Overlays:** **Performance Stats** (`Ctrl+Alt+F7`) for memory, CPU, GPU, network and ping; **Performance Summary** (`Ctrl+Shift+F5`) for the frame rate against the 60 FPS target; **Debug Stats** (`Shift+Ctrl+F1` summary, `F2` render, `F3` physics and Data Ping, `F5` memory).
 - **Network Simulation (`Alt+S`)** applies latency, jitter, and packet loss in Studio. Netcode that was only ever tested on localhost has not been tested.
 - **Performance Dashboard (Creator Dashboard)** carries live-session client crash rate, client and server memory, frame rate, average session time, and a `PlaceScriptMemory` breakdown, over a date range you choose. **Investigate a client crash rate above 2–3%.** This is the only tool that sees real players on real hardware, so it decides what is worth optimizing; the rest only explain it.

@@ -26,7 +26,7 @@ Consequences:
 - **Credentials belong in the secrets store, not in a script.** `HttpService:GetSecret(name)` returns a `Secret` object whose value can never be read from Luau — printing it shows `Secret(name)`, and the only operations are `AddPrefix`/`AddSuffix` to build a URL or header around it. Bind each secret to the narrowest domain that works (`api.example.com`, or `*.example.com`; `*` defeats the point), and remember secrets resolve only in live servers and Team Test, never a local playtest.
 - **Anything replicated to a client is readable.** LocalScripts, client-run Scripts, and ModuleScripts in ReplicatedStorage can be decompiled once they replicate, **including disabled or unused ones**. Server-only logic and any hardcoded key or list belongs in `ServerScriptService`/`ServerStorage`, which never replicate.
 - **`DragDetector` with `RunLocally = true` replicates nothing.** The default (`false`) routes the drag through the server; flipping it makes every resulting position a client claim that must come back over a validated remote ([ui-crossplatform.md](ui-crossplatform.md#interaction-objects)).
-- **Physics ownership is authority.** A client with network ownership of an assembly can set its position and velocity to anything and can suppress or forge its `Touched` events. Network ownership is automatically handed to nearby clients for unanchored parts, so this is the default state of the world, not an edge case: anchor what matters, or validate outcomes server-side ([server-authority.md](server-authority.md)).
+- **Physics ownership is authority.** A client with network ownership of an assembly can set its position and velocity to anything and can suppress or forge its `Touched` events. Network ownership is automatically handed to nearby clients for unanchored parts, so this is the default state of the world, not an edge case: anchor what matters, or validate outcomes server-side ([server-authority.md](server-authority.md)). The ownership mechanics behind this — the anchored rule, whole-mechanism assignment, and handing ownership back — are in [patterns/network.md](patterns/network.md#network-ownership).
 
 ## Design it out before detecting it
 
@@ -58,7 +58,10 @@ local function allowRate(player: Player, action: string, maxPerWindow: number, w
 	local now = os.clock()
 	local windowSize = window or 1
 	local playerBuckets = buckets[player]
-	if not playerBuckets then playerBuckets = {}; buckets[player] = playerBuckets end
+	if not playerBuckets then
+		playerBuckets = {}
+		buckets[player] = playerBuckets
+	end
 	local bucket = playerBuckets[action]
 	if not bucket or now - bucket.windowStart > windowSize then
 		playerBuckets[action] = {count = 1, windowStart = now}
@@ -117,7 +120,7 @@ Where design cannot remove an exploit, detect it server-side from behavior, and 
 Free models and toolbox assets are a live backdoor vector: a malicious script hides in something that looks ordinary and activates on a condition (a particular player joining, a chat command). Roblox moderates for these, with no guarantee.
 
 - **Inspect every inserted asset's descendants for scripts before playtesting it**, obfuscated code especially ([studio-mcp.md](studio-mcp.md#irreversible-operations)).
-- **Script capabilities are the structural answer.** With `Workspace.SandboxedInstanceMode` set to `Experimental`, a Model, Folder, or Script marked `Sandboxed` runs its scripts under a declared `Capabilities` set, and an action outside that set errors instead of executing. The capabilities that matter most to withhold are the ones backdoors need: **Network, DataStore, AssetRequire, CapabilityControl, and LoadString**.
+- **Script capabilities are the structural answer.** With `Workspace.SandboxedInstanceMode` set to `Experimental`, a Model, Folder, or Script marked `Sandboxed` runs its scripts under a declared `Capabilities` set, and an action outside that set errors instead of executing. The capabilities that matter most to withhold are the ones backdoors need: **Network, DataStore, LoadUnownedAsset (asset-id `require` and `LoadAssetAsync`), CapabilityControl, and LoadString**.
 - Nested containers inherit the more restrictive set, and a sandboxed script cannot fire events into a container with broader capabilities — `BindableEvent`/`BindableFunction` is the intended way across that boundary.
 - It is **experimental**: offer it, state its status, and never make it the production default on this skill's initiative ([SKILL.md](../SKILL.md#environment--scale)).
 
@@ -130,7 +133,7 @@ Any user-written text displayed to *any other player* — pet names, guild names
 - Filter **on the server** via `TextService:FilterStringAsync(text, fromUserId, context)`; the result object yields per-audience strings: `GetNonChatStringForBroadcastAsync()` for everyone, `GetNonChatStringForUserAsync(toUserId)` per recipient. Client-side filtering does not exist as a trust boundary.
 - Wrap the call in `pcall`; on failure **reject the text or fall back to a safe default** — never display the unfiltered original.
 - Store the raw original server-side and filter at display time (filters improve over time); cache the filtered result per session to avoid repeated calls for the same string.
-- Chat through `TextChatService` is filtered automatically — this section is about *custom* text surfaces you build yourself.
+- Chat through `TextChatService` is filtered automatically — this section is about *custom* text surfaces you build yourself. Legacy chat has been removed, so `TextChatService` is the only chat; a custom chat system must also gate chat with `TextChatService:CanUserChatAsync` and direct (1:1) chat with `CanUsersDirectChatAsync` ([DevForum](https://devforum.roblox.com/t/-/3237100)).
 
 ## Logging & response
 
