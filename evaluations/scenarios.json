@@ -2,7 +2,7 @@
   {
     "id": "authoring-remote-handler",
     "skills": ["roblox-best-practices"],
-    "query": "Buatkan server script untuk menangani permintaan pembelian item dari client.",
+    "query": "Write a server script that handles item purchase requests from the client.",
     "gap_it_covers": "Agents write remote handlers that trust client input and leak per-player state.",
     "expected_behavior": [
       "Produces the three top-level sections in order: VARIABLES, FUNCTIONS, INITIALIZATION",
@@ -17,7 +17,7 @@
   {
     "id": "authoring-player-data",
     "skills": ["roblox-best-practices"],
-    "query": "Tolong buat sistem save/load player data (coins dan level).",
+    "query": "Build a save/load system for player data (coins and level).",
     "gap_it_covers": "The highest-consequence system in most experiences; a failed load that falls through to defaults destroys real save data.",
     "expected_behavior": [
       "Loads once into a session cache on PlayerAdded and serves gameplay reads from the cache, never from the DataStore",
@@ -46,7 +46,7 @@
   {
     "id": "false-positive-resistance",
     "skills": ["roblox-best-practices"],
-    "query": "Review script ini, apakah ada masalah?",
+    "query": "Review this script. Are there any problems?",
     "input_files": ["fixtures/correct-but-odd.luau"],
     "gap_it_covers": "Over-firing reviews erode trust faster than missed findings.",
     "expected_behavior": [
@@ -61,7 +61,7 @@
   {
     "id": "adaptive-mode",
     "skills": ["roblox-best-practices"],
-    "query": "Tambahkan module baru untuk sistem quest, ikuti struktur project kami.",
+    "query": "Add a new module for a quest system, following our project's structure.",
     "input_files": ["fixtures/existing-project/"],
     "gap_it_covers": "Imposing this skill's conventions on a codebase that already has its own.",
     "expected_behavior": [
@@ -75,11 +75,11 @@
   {
     "id": "external-editor-environment",
     "skills": ["roblox-best-practices"],
-    "query": "Project saya pakai Azul, Studio-nya lagi kebuka. Tolong tambahkan module baru ItemShop di ReplicatedStorage beserta script servernya.",
+    "query": "My project uses Azul and Studio is open right now. Add a new ItemShop module in ReplicatedStorage along with its server script.",
     "gap_it_covers": "Agents write files to disk and assume Studio followed. Under a Studio-first tool whether a new file becomes an instance depends on the tool and its version, so unchecked work can silently not exist.",
     "expected_behavior": [
       "Establishes which side is the source of truth before writing anything, rather than assuming the filesystem is authoritative",
-      "Separates Azul versions: from 2.0 a file created during a live session reaches Studio, before 2.0 instance creation belongs in Studio or behind azul build / azul push, and either way confirms the instance exists before calling the task done",
+      "Separates Azul versions: from 2.0 a file created during a live session reaches Studio unless liveFsSync.enabled is false, before 2.0 instance creation belongs in Studio or behind azul build / azul push, and either way confirms the instance exists before calling the task done",
       "Does not run, restart, or reconfigure a sync session on its own initiative, and never proposes --destructive or --no-warn",
       "Uses Azul's file mapping rather than Rojo's: a ModuleScript carries no suffix unless suffixModuleScripts is set, and there is no init convention",
       "Still applies the three top-level sections, Documentation Comments, and server-side validation to the code it writes",

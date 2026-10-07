@@ -1,0 +1,27 @@
+{
+  "skill": "roblox-best-practices",
+  "should_trigger": [
+    "Write a server script that gives players coins when they touch a part.",
+    "My DataStore save sometimes loses player data when the server shuts down. Can you fix it?",
+    "Add a sprint to my game: hold Shift to run faster, with a stamina bar.",
+    "Review this LocalScript for memory leaks.",
+    "Players say their leaderstats reset after they rejoin. What is going on?",
+    "Build a shop UI that lets players buy swords with in-game cash.",
+    "How should I structure a ModuleScript for an NPC spawner?",
+    "Refactor this RemoteEvent handler so exploiters cannot spam it.",
+    "My Rojo project keeps overwriting the changes I make in Studio.",
+    "Keep these coding standards active for the rest of this session while I build my tycoon."
+  ],
+  "should_not_trigger": [
+    "Write a Neovim plugin in Lua that highlights trailing whitespace.",
+    "Make a LOVE2D platformer with a jumping player in Lua.",
+    "Write a Python script that downloads my Roblox group's member list from the web API.",
+    "Give me ten ideas for a horror game story. No code needed.",
+    "Explain how garbage collection works in Lua 5.4.",
+    "Write a Unity C# script for a first-person character controller.",
+    "Create a Defold game object script that spawns enemies.",
+    "Design the level progression curve for my mobile puzzle game in a spreadsheet.",
+    "Fix this World of Warcraft addon written in Lua.",
+    "Write a Discord bot in JavaScript that announces when my Roblox game updates."
+  ]
+}

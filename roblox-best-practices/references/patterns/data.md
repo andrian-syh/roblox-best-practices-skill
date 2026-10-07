@@ -14,7 +14,7 @@ Who owns each fact, how it is persisted, and what happens when a call finally fa
 
 Before any of the patterns below, settle **who owns each piece of state**. A fact has exactly one owner that writes it; every other copy is a **view**, derived after the authoritative change and never written back. Two writable copies of the same fact will diverge — not might, will — and the resulting bug reproduces only under timing you cannot reproduce on demand.
 
-- **Name the owner before writing either side.** This is step 3 of the System Design Preflight ([SKILL.md](../../SKILL.md#system-design-preflight)); the answer is a specific module or side, not "the server" in general.
+- **Name the owner before writing either side.** This is step 3 of the System Design Preflight ([workflow.md](../workflow.md#system-design-preflight)); the answer is a specific module or side, not "the server" in general.
 - **Views are written in one direction only.** `leaderstats`, attributes, UI labels, and client caches all display a fact; none of them is where it lives. Update them **after** the owner changes, never as the change itself ([cases/data-economy.md](../cases/data-economy.md#currency-and-transactions)).
 - **A client cache is a view even when it is convenient.** The client may hold a copy for rendering and prediction; the server never reads it back to decide anything.
 - **Two server modules writing the same field is the same bug.** If two systems both need to change a value, one of them owns it and exposes a function the other calls.

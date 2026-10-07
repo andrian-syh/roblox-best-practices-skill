@@ -1,8 +1,8 @@
 # Evaluations
 
-Six manual scenarios that check whether the skill still does its job. [Anthropic's skill authoring guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) treats evaluations, not the prose, as the measure of a skill, so these run before every release.
+Six manual behaviour scenarios and a trigger set that check whether the skill still does its job. [Anthropic's skill authoring guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) treats evaluations, not the prose, as the measure of a skill, so these run before every release.
 
-There is no automated runner. Run the scenarios by hand, or load [`scenarios.json`](scenarios.json) into your own harness.
+There is no automated runner. Run them by hand, or load [`scenarios.json`](scenarios.json) and [`triggers.json`](triggers.json) into your own harness.
 
 ## Scenarios
 
@@ -14,8 +14,6 @@ There is no automated runner. Run the scenarios by hand, or load [`scenarios.jso
 | `false-positive-resistance` | Correct code that looks wrong returns zero findings | `fixtures/correct-but-odd.luau` |
 | `adaptive-mode` | An existing project's conventions are studied and confirmed before code is written | `fixtures/existing-project/` |
 | `external-editor-environment` | The source of truth under a Studio-first sync tool (Azul) is settled before anything is written | None |
-
-Several queries are written in Indonesian on purpose. They check that the skill activates and applies in full when the request is not in English.
 
 ## Scenario format
 
@@ -39,10 +37,29 @@ Each entry in `scenarios.json` has these fields:
 
 Run the full set on every model you plan to use the skill with. Guidance that is enough for a stronger model is often under-specified for a faster one.
 
+## Compare against a baseline
+
+A scenario that passes proves little on its own: the model may pass it without the skill. For each scenario, also run the same query in a fresh session with the skill not installed, and score both runs against the same `expected_behavior` lines. Keep a line only if it separates the two runs; a line both runs meet tests the model, not the skill. If the skill run scores lower than the baseline on any scenario, treat it as a regression.
+
+## Trigger tests
+
+[`triggers.json`](triggers.json) checks the skill's `description`, which is the only part an agent sees before it decides to load the skill. It holds ten queries that must load the skill and ten near-misses that must not: plain Lua outside Roblox, other engines, and Roblox-adjacent work with no Luau in it.
+
+1. Start a fresh session with this skill and at least one unrelated skill installed.
+2. Send each query three times, each in a new session, and record whether the skill loaded.
+3. A `should_trigger` query passes when it loads in at least two of three runs. A `should_not_trigger` query passes when it loads in none.
+
+Rerun the set after any change to the `description`. A near-miss that starts to trigger is a false positive, and the fix belongs in the `description`, not in a narrower query.
+
+## Other languages
+
+Every query is in English. To check another language, translate the queries into it and run them as separate cases, both the scenarios and the trigger set. The skill should load and apply in full, and the reply should come back in the language of the query.
+
 ## When to run them
 
 - Before every release.
 - After a port from roblox-optimum, or after moving content between files. Routing regressions appear then.
+- After changing the `description`: run the trigger set.
 - After adding a rule. `false-positive-resistance` must stay at zero findings; a new finding there means the rule is over-applied.
 
 ## Fixtures
