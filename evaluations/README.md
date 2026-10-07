@@ -1,44 +1,56 @@
 # Evaluations
 
-Six scenarios that check whether the skill still does its job. They exist because
-[Anthropic's authoring guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices)
-treats evaluations, not the prose, as the source of truth for skill effectiveness.
+Six manual scenarios that check whether the skill still does its job. [Anthropic's skill authoring guidance](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices) treats evaluations, not the prose, as the measure of a skill, so these run before every release.
 
-There is no built-in runner. Run them by hand, or wire them into whatever harness you use.
+There is no automated runner. Run the scenarios by hand, or load [`scenarios.json`](scenarios.json) into your own harness.
 
-## How to run one
+## Scenarios
 
-1. Start a fresh session with the skill installed and nothing else in context.
-2. Paste the scenario's `query` (and attach its `input_files` if it has any).
-3. Score the response against every line of `expected_behavior`: met / partially met / missed.
-4. Record the misses. A miss is a skill defect until proven otherwise.
+| ID | Checks | Input |
+|---|---|---|
+| `authoring-remote-handler` | A remote handler validates client input, rate-limits, and cleans up per-player state | None |
+| `authoring-player-data` | Player data loads once into a cache and saves safely, and a failed load never falls through to defaults | None |
+| `review-triage` | Real defects are reported at the right severity and style deviations stay Advisory | `fixtures/review-target.luau` |
+| `false-positive-resistance` | Correct code that looks wrong returns zero findings | `fixtures/correct-but-odd.luau` |
+| `adaptive-mode` | An existing project's conventions are studied and confirmed before code is written | `fixtures/existing-project/` |
+| `external-editor-environment` | The source of truth under a Studio-first sync tool (Azul) is settled before anything is written | None |
 
-## What to run them against
+Several queries are written in Indonesian on purpose. They check that the skill activates and applies in full when the request is not in English.
 
-Run the full set on **every model you intend to use the skill with** — guidance that
-reads as sufficient on a stronger model often turns out to be under-specified on a
-faster one, and content that a stronger model finds redundant is worth trimming.
+## Scenario format
+
+Each entry in `scenarios.json` has these fields:
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable name, used when recording results |
+| `skills` | Skills that must be installed, always `roblox-best-practices` |
+| `query` | The exact message to send |
+| `input_files` | Optional. Files from `fixtures/` to attach |
+| `gap_it_covers` | The agent failure the scenario guards against |
+| `expected_behavior` | One line per behaviour the response must show |
+
+## Run a scenario
+
+1. Start a fresh session with only this skill installed and nothing else in context.
+2. Send the scenario's `query`, with its `input_files` attached if it has any.
+3. Score each line of `expected_behavior` as met, partly met, or missed.
+4. Record every miss. Treat a miss as a skill defect until shown otherwise.
+
+Run the full set on every model you plan to use the skill with. Guidance that is enough for a stronger model is often under-specified for a faster one.
 
 ## When to run them
 
-- Before releasing a version bump.
-- After moving content between files, which is when routing regressions appear.
-- After adding a rule, to confirm it did not raise the false-positive rate:
-  `false-positive-resistance` is the canary for that and should stay at zero findings.
+- Before every release.
+- After a port from roblox-optimum, or after moving content between files. Routing regressions appear then.
+- After adding a rule. `false-positive-resistance` must stay at zero findings; a new finding there means the rule is over-applied.
 
 ## Fixtures
 
-`fixtures/` holds the inputs the scenarios reference:
+- `review-target.luau` has four real defects: an unvalidated remote argument, a per-player table with no removal path, `wait()`, and a private balance published through an attribute. It also has style deviations that must come back as Advisory.
+- `correct-but-odd.luau` is correct code that looks wrong: a scheduled autosave loop, an allocation inside a `Touched` callback, a server-side bindable, a bare `WaitForChild` on `ReplicatedStorage`, and `pairs`. Each construct is covered in `false-positives.md`.
+- `existing-project/` is a small project with its own conventions (`--== SECTION ==--` headers, camelCase publics, Moonwave `---` comments, a central `Loader`, a `stylua.toml`) and two deliberate conflicts with the runtime rules for the agent to raise.
 
-- `review-target.luau` — four real defects (unvalidated remote argument, per-player table with
-  no removal path, `wait()`, private balance published through an attribute) alongside style
-  deviations that must come back Advisory rather than as violations.
-- `correct-but-odd.luau` — code that is correct as written and looks wrong: a scheduled autosave
-  loop, an allocation inside a `Touched` callback, a server-side bindable, a bare `WaitForChild`
-  on `ReplicatedStorage`, `pairs`. Every construct is carved out in `false-positives.md`.
-- `existing-project/` — a small project with its own conventions (`--== SECTION ==--` headers,
-  camelCase publics, Moonwave `---` comments, a central `Loader`, a `stylua.toml`) plus two
-  deliberate conflicts with the non-negotiables for the agent to surface.
+## Add a scenario
 
-When a real failure shows up in daily use, add it here rather than inventing a new one: the
-suite is worth most when it tests the failures that actually happened.
+Add scenarios from real failures seen in use, not invented ones. The suite is most useful when it tests failures that actually happened. Keep each `expected_behavior` line observable in a single response.
