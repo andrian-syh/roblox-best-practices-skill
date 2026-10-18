@@ -8,15 +8,11 @@ Roblox and Luau coding standards packaged as one Agent Skill for AI coding assis
 [![CI](https://github.com/andrian-syh/roblox-best-practices-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/andrian-syh/roblox-best-practices-skill/actions/workflows/ci.yml)
 [![skills.sh](https://skills.sh/b/andrian-syh/roblox-best-practices-skill)](https://skills.sh/andrian-syh/roblox-best-practices-skill/roblox-best-practices)
 [![standard](https://img.shields.io/badge/standard-Agent%20Skills-informational)](https://agentskills.io)
-[![executables](https://img.shields.io/badge/executables-0-success)](SECURITY.md)
 [![license](https://img.shields.io/github/license/andrian-syh/roblox-best-practices-skill?color=blue)](LICENSE)
 
 </div>
 
 The skill covers how each script is written, how game systems are assembled, and where the platform's real limits sit. It assumes nothing about your framework, folder layout, or genre. It works with Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Windsurf, Cline, Zed, and any other tool that reads the [Agent Skills](https://agentskills.io) format.
-
-> [!WARNING]
-> **This skill never asks you to download or run an executable.** It is plain Markdown, installed only from this repository. A copy that links to an `.exe`, a ZIP on a separate website, or a "release page" outside `github.com/andrian-syh` is not this project. Do not run it, and see [SECURITY.md](SECURITY.md#report-impersonation-or-malicious-copies).
 
 > [!TIP]
 > **Want the full toolkit?** [roblox-optimum](https://github.com/andrian-syh/roblox-optimum) ships this same standard plus separate review, diagnosis, and Studio-tooling skills, a Luau checker, an MCP server, and editor hooks for 11 agents. This repository stays available for anyone who wants the standard alone.
@@ -139,6 +135,9 @@ Issues and pull requests are welcome in the [issue tracker](https://github.com/a
 ## Security
 
 The skill is text only: `SKILL.md` and Markdown references. It contains no binaries, scripts that the agent runs, or network calls. The installer only copies that folder into skills directories, and downloads come only from this GitHub repository. [SECURITY.md](SECURITY.md) lists exactly what the installer does, the official sources, and how to report a vulnerability or a malicious copy.
+
+> [!WARNING]
+> **This skill never asks you to download or run an executable.** It is plain Markdown, installed only from this repository. A copy that links to an `.exe`, a ZIP on a separate website, or a "release page" outside `github.com/andrian-syh` is not this project. Do not run it, and see [SECURITY.md](SECURITY.md#report-impersonation-or-malicious-copies).
 
 ## Acceptable use and disclaimer
 
