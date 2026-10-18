@@ -4,6 +4,7 @@
 
 - [Supported versions](#supported-versions)
 - [Report a vulnerability](#report-a-vulnerability)
+- [Scope](#scope)
 - [What the skill contains](#what-the-skill-contains)
 - [What the installer does](#what-the-installer-does)
 - [Official sources](#official-sources)
@@ -26,7 +27,24 @@ Do not open a public issue for a security vulnerability.
 2. Select **Report a vulnerability** to open a private advisory.
 3. Include the skill version, your agent and operating system, and the smallest steps that reproduce the issue.
 
-You receive an acknowledgment within 72 hours and a triage update within 7 days. The report stays private until a fix is released.
+What happens next:
+
+- You receive an acknowledgment within 72 hours and a triage update within 7 days.
+- The report stays private until a fix is released.
+- The fix is announced in [CHANGELOG.md](CHANGELOG.md) and in a GitHub security advisory. You are credited in the advisory unless you ask not to be.
+
+## Scope
+
+In scope:
+
+- The installers: `bin/cli.js`, `install.ps1`, and `install.sh`.
+- The skill's text, where it could make an agent act against the user.
+
+Out of scope:
+
+- Guidance that is wrong or out of date. Report it as a normal [issue](https://github.com/andrian-syh/roblox-best-practices-skill/issues).
+- Vulnerabilities in an agent host, Roblox Studio, Node.js, or the `prompts` package. Report them to their vendor.
+- A copy of this skill that was not published from an [official source](#official-sources).
 
 ## What the skill contains
 

@@ -39,8 +39,8 @@ function formatPath(p) {
 }
 
 // Destinations already written in this run. Two targets can resolve to the same
-// folder — running from the home directory makes the workspace ".agents/skills"
-// and the global "~/.agents/skills" the same path — and installing twice would
+// folder (running from the home directory makes the workspace ".agents/skills"
+// and the global "~/.agents/skills" the same path), and installing twice would
 // delete the copy just made before writing it again.
 const installedDestinations = new Set();
 
@@ -194,7 +194,7 @@ function downloadVersion(tag) {
     const repoUrl = 'https://github.com/andrian-syh/roblox-best-practices-skill.git';
 
     if (hasGit) {
-      // Argument array (execFileSync) — no shell, so the tag can never be interpreted as a command.
+      // Argument array (execFileSync), no shell, so the tag can never be interpreted as a command.
       execFileSync('git', ['clone', '--depth', '1', '--branch', tag, repoUrl, tempDir], { stdio: 'ignore' });
     } else {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -209,7 +209,7 @@ function downloadVersion(tag) {
         execFileSync('unzip', ['-q', zipPath, '-d', tempDir], { stdio: 'ignore' });
       }
 
-      // Move extracted files up
+      // A GitHub archive unpacks into a folder named after the tag; lift its contents so the layout matches a git clone.
       const tagFolderSuffix = tag.replace(/^v/, '');
       const extractedDir = path.join(tempDir, `roblox-best-practices-skill-${tagFolderSuffix}`);
       if (fs.existsSync(extractedDir)) {
@@ -411,7 +411,6 @@ if (args.includes('--all') || args.includes('-a')) {
 
     selectedTag = versionResponse.version;
 
-    // Manual entry: prompt for a version tag and validate it.
     if (selectedTag === '__manual__') {
       const manualResponse = await prompts({
         type: 'text',
@@ -459,7 +458,7 @@ if (args.includes('--all') || args.includes('-a')) {
 
   const selectedAgents = response.selected || [];
 
-  // Download older version if required
+  // Any choice other than the bundled copy is downloaded from GitHub.
   let activeSkillDir = localSkillDir;
   let tempCleanDir = null;
 
