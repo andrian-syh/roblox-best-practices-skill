@@ -6,9 +6,10 @@
 #   curl -fsSL https://raw.githubusercontent.com/andrian-syh/roblox-best-practices-skill/main/install.sh | bash
 #   sh install.sh [--all] [--tag vX.Y.Z]
 #
-# With Node.js and npm present, runs the npx installer (bin/cli.js) and
-# forwards every argument to it. Otherwise downloads the newest release tag
-# (or main when no tag exists) with git, curl, or wget, and copies the skill
+# Resolves the newest release tag (or main when no tag exists). With Node.js
+# and npm present, runs the npx installer (bin/cli.js) from that tag and
+# forwards every argument to it. Otherwise downloads that tag with git, curl,
+# or wget, and copies the skill
 # into ./.agents/skills and into each detected agent you confirm. The agent
 # list is read from bin/agents.txt.
 #
@@ -29,28 +30,7 @@ echo "${BLUE}========================================================${NC}"
 echo "${BLUE}       Roblox Best Practices Skill Installer            ${NC}"
 echo "${BLUE}========================================================${NC}"
 
-if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
-  echo "Node.js detected. Launching NPM-based CLI installer..."
-  NPM_VERSION=$(npm --version 2>/dev/null || echo "0")
-  NPM_MAJOR=$(echo "$NPM_VERSION" | cut -d. -f1)
-  if [ -n "$NPM_MAJOR" ] && [ "$NPM_MAJOR" -ge 12 ]; then
-    npx --allow-git=all github:andrian-syh/roblox-best-practices-skill "$@"
-  else
-    npx github:andrian-syh/roblox-best-practices-skill "$@"
-  fi
-  exit 0
-fi
-
-echo "Node.js/NPM not found. Running shell fallback installer..."
-
-# Setup temporary directory
-TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'roblox_best_practices_skill')
-cleanup() {
-  rm -rf "$TEMP_DIR"
-}
-trap cleanup EXIT
-
-# Download the newest release tag rather than main, so a half-finished main never ships.
+# Both paths install the newest release tag rather than main, so a half-finished main never ships.
 REPO_URL="https://github.com/andrian-syh/roblox-best-practices-skill"
 latest_tag() {
   if command -v git >/dev/null 2>&1; then
@@ -61,6 +41,26 @@ latest_tag() {
 }
 TAG=$(latest_tag || true)
 REF_NAME=${TAG:-main}
+
+if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+  echo "Node.js detected. Launching NPM-based CLI installer ($REF_NAME)..."
+  PACKAGE="github:andrian-syh/roblox-best-practices-skill${TAG:+#$TAG}"
+  NPM_VERSION=$(npm --version 2>/dev/null || echo "0")
+  NPM_MAJOR=$(echo "$NPM_VERSION" | cut -d. -f1)
+  if [ -n "$NPM_MAJOR" ] && [ "$NPM_MAJOR" -ge 12 ]; then
+    exec npx --allow-git=all "$PACKAGE" "$@"
+  fi
+  exec npx "$PACKAGE" "$@"
+fi
+
+echo "Node.js/NPM not found. Running shell fallback installer..."
+
+# Setup temporary directory
+TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'roblox_best_practices_skill')
+cleanup() {
+  rm -rf "$TEMP_DIR"
+}
+trap cleanup EXIT
 echo "Downloading skill files ($REF_NAME)..."
 
 if command -v git >/dev/null 2>&1; then

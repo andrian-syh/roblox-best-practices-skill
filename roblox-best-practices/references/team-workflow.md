@@ -75,7 +75,7 @@ selene src
 stylua --check src
 ```
 
-Wire them as a pre-commit hook so it is not a habit anyone has to keep. The [roblox-optimum](https://github.com/andrian-syh/roblox-optimum) plugin adds a checker for this skill's own rules, when installed.
+Wire them as a pre-commit hook so it is not a habit anyone has to keep. Where [roblox-optimum](https://github.com/andrian-syh/roblox-optimum) is installed, add `npx roblox-optimum --check` for these standards' own rules.
 
 ## What git cannot merge
 
@@ -143,7 +143,7 @@ Roblox's own place model supports this directly. An experience holds multiple pl
 
 What must hold before a branch merges. Everything here runs without a human, which is the point — a gate a reviewer has to remember is a gate that lapses under deadline.
 
-- **The linter and the formatter.** `selene` and `stylua --check`, both named on Roblox's own tools page.
+- **The linter and the formatter.** `selene` and `stylua --check`, both named on Roblox's own tools page, plus `npx roblox-optimum --check` over the changed files where roblox-optimum is installed. Exit 1 blocks the merge.
 - **The type check**, where the project runs the language server in CI.
 - **The lockfile is honoured.** `wally install --locked` in CI, so a build cannot silently resolve a different dependency version than a developer had.
 

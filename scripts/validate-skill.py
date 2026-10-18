@@ -115,7 +115,7 @@ def main():
             continue
         doc = text.splitlines()
         start = next(i for i, l in enumerate(doc) if l.startswith("## Contents"))
-        end = next(i for i in range(start + 1, len(doc)) if doc[i].startswith("## "))
+        end = next((i for i in range(start + 1, len(doc)) if doc[i].startswith("## ")), len(doc))
         block = "\n".join(doc[start:end])
         listed = set(re.findall(r"\]\(#([^)]+)\)", block))
         nested = any(l.startswith("  - [") for l in doc[start:end])

@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # The workflow pins each action to a commit, and this keeps those pins current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # The installer's only runtime dependency, prompts, and its lockfile.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

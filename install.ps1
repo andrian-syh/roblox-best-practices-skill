@@ -3,9 +3,9 @@
     Installs the roblox-best-practices skill for AI coding agents.
 
 .DESCRIPTION
-    When Node.js and npm are present, runs the npx installer (bin/cli.js) and
-    forwards every argument to it. Otherwise downloads the newest release tag
-    (or main when no tag exists) and copies the skill into ./.agents/skills
+    Resolves the newest release tag (or main when no tag exists). When Node.js
+    and npm are present, runs the npx installer (bin/cli.js) from that tag and
+    forwards every argument to it. Otherwise downloads that tag and copies the skill into ./.agents/skills
     and into the global skills directory of each detected agent that you
     confirm. The agent list is read from bin/agents.txt.
 
@@ -24,15 +24,27 @@ Write-Host "========================================================" -Foregroun
 Write-Host "       Roblox Best Practices Skill Installer            " -ForegroundColor Blue
 Write-Host "========================================================" -ForegroundColor Blue
 
+# Both paths install the newest release tag rather than main, so a half-finished main never ships.
+$repoUrl = "https://github.com/andrian-syh/roblox-best-practices-skill"
+$tag = $null
+try {
+  $tag = (Invoke-RestMethod "https://api.github.com/repos/andrian-syh/roblox-best-practices-skill/tags" -UseBasicParsing).name |
+    Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
+    Sort-Object { [version]$_.Substring(1) } | Select-Object -Last 1
+} catch {}
+$refName = if ($tag) { $tag } else { "main" }
+
 # Prefer the npx installer; it supports --all and --tag.
 if ((Get-Command node -ErrorAction SilentlyContinue) -and (Get-Command npm -ErrorAction SilentlyContinue)) {
-  Write-Host "Node.js detected. Launching NPM-based CLI installer..." -ForegroundColor Green
+  Write-Host "Node.js detected. Launching NPM-based CLI installer ($refName)..." -ForegroundColor Green
+  $package = if ($tag) { "github:andrian-syh/roblox-best-practices-skill#$tag" } else { "github:andrian-syh/roblox-best-practices-skill" }
   $npmVer = (npm --version) -split '\.'
   if ([int]$npmVer[0] -ge 12) {
-    & npx --allow-git=all github:andrian-syh/roblox-best-practices-skill $args
+    & npx --allow-git=all $package $args
   } else {
-    & npx github:andrian-syh/roblox-best-practices-skill $args
+    & npx $package $args
   }
+  # return, not exit: under "irm | iex" exit would close the user's PowerShell window.
   return
 }
 
@@ -43,15 +55,6 @@ $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) ("roblox_skill_" + [Syste
 New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
 
 try {
-  # Download the newest release tag rather than main, so a half-finished main never ships.
-  $repoUrl = "https://github.com/andrian-syh/roblox-best-practices-skill"
-  $tag = $null
-  try {
-    $tag = (Invoke-RestMethod "https://api.github.com/repos/andrian-syh/roblox-best-practices-skill/tags" -UseBasicParsing).name |
-      Where-Object { $_ -match '^v\d+\.\d+\.\d+$' } |
-      Sort-Object { [version]$_.Substring(1) } | Select-Object -Last 1
-  } catch {}
-  $refName = if ($tag) { $tag } else { "main" }
   Write-Host "Downloading skill files ($refName)..."
   $srcRoot = Join-Path $tempDir "src"
 

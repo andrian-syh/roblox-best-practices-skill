@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Nothing here writes to the repository, so no job gets more than a read of it.
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Links, reachability, the SKILL.md budget, frontmatter limits, dates, and version drift.
+      - name: Validate the skill
+        run: python3 scripts/validate-skill.py
+
+      - name: Installer scripts parse
+        run: |
+          node --check bin/cli.js
+          bash -n install.sh
+
+      - name: Shipped changes require a version bump
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          base="origin/$BASE_REF"
+          changed=$(git diff --name-only "$base"...HEAD -- roblox-best-practices bin install.ps1 install.sh)
+          if [ -z "$changed" ]; then
+            echo "No shipped files changed."
+            exit 0
+          fi
+          old=$(git show "$base:package.json" | jq -r .version)
+          new=$(jq -r .version package.json)
+          echo "Changed:"; echo "$changed" | sed 's/^/  /'
+          echo "Version: $old -> $new"
+          highest=$(printf '%s\n%s\n' "$old" "$new" | sort -V | tail -n 1)
+          if [ "$old" = "$new" ] || [ "$highest" != "$new" ]; then
+            echo "::error::These files ship to users, so the version must be raised above $old."
+            exit 1
+          fi

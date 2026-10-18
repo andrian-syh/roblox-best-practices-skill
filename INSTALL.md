@@ -55,7 +55,7 @@ Each install replaces the destination folder, so files removed in a newer releas
 
 The installer exits with a non-zero code and prints `[FAILED]` if any file could not be copied.
 
-The fallback shell installers download the newest release tag, not the `main` branch.
+The one-line installers install the newest release tag, not the `main` branch, with or without Node.js. A bare `npx github:andrian-syh/roblox-best-practices-skill` runs from `main`; add `#vX.Y.Z` to pin a release.
 
 ## Agent-specific notes
 

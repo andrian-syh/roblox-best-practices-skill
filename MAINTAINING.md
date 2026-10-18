@@ -17,11 +17,7 @@ Guidance is written in [roblox-optimum](https://github.com/andrian-syh/roblox-op
    ```
 
    The script reads roblox-optimum and never writes to it. It replaces `roblox-best-practices/references/`, then lists every line that names a part only roblox-optimum has, and prints a summary of how the two `SKILL.md` files differ.
-4. Rewrite each listed line so it works standalone:
-   - A sibling skill (`code-review`, `diagnose`, `studio-ops`, `roblox-auditor`) becomes the local reference that holds the same guidance: `review-checklist.md`, `diagnosis.md`, `verification.md` or `studio-mcp.md`, `evaluation-matrix.md`.
-   - `roblox-optimum`'s checker or MCP tools are replaced with selene and StyLua, or mentioned once as an optional add-on.
-   - Plugin-only settings such as `${user_config.supervision}` are removed.
-   - `/roblox-optimum:best-practices` becomes `/roblox-best-practices`.
+4. Check each listed line. Since roblox-optimum 1.13.2 the shared references are written to work in both repositories, so a port copies them unchanged. A listed line is correct when it names a reference file rather than a sibling skill, and mentions roblox-optimum only as an optional add-on ("where installed"). Any other listed line is a regression: fix it in roblox-optimum first, then port again. Never keep a local rewrite in this repository, because the next port overwrites it.
 5. Merge `SKILL.md` by hand. Keep `name: roblox-best-practices`, keep the review, Studio MCP, and external-editor routing that roblox-optimum moves to sibling skills, and take every other change.
 6. Run `python scripts/validate-skill.py` until it passes.
 7. Run the [evaluations](evaluations/README.md) and update any scenario whose expected behaviour the port changed.

@@ -8,6 +8,33 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-18
+
+_Ported from roblox-optimum 1.13.2. Upgrade by running the installer again. No project changes are needed._
+
+### Added
+
+- Added `release-readiness.md`, the checklist before publishing a place: `BindToClose`, `ProcessReceipt` idempotency, `PolicyService` compliance, `TextChatService` migration, `StreamingEnabled` safety, telemetry gates, and Open Cloud rollback.
+- Added `SECURITY.md`, which states what the skill and the installer contain, write, and contact, lists the official sources, and explains how to report a vulnerability or a malicious copy.
+- Added an acceptable-use and disclaimer section to the README, and a warning that the skill never asks you to download or run an executable.
+- Added a skills.sh install badge to the README.
+- Added a CI workflow that validates the skill, checks that the installers parse, and fails a pull request that changes shipped files without a version bump. Actions are pinned to commits, and Dependabot keeps those pins and the npm lockfile current.
+
+### Changed
+
+- Changed `npm test` to run the skill validator instead of the npm placeholder that always failed.
+- Updated the engine and Luau baseline in `api-currency.md` to engine v742/v743 and Luau 0.743, and adopted a rolling window for its rows.
+- Listed `release-readiness.md`, lowercase `:connect`, and `SetPrimaryPartCFrame` in `SKILL.md`.
+- Matched the README badge style to roblox-optimum.
+- Shared references with roblox-optimum unchanged. They now name the reference file that holds each piece of guidance and mention roblox-optimum only where it is installed, so a port no longer needs local rewrites.
+- Renamed the installer's bundled option to say it installs the copy bundled with the installer, since that copy is not always the newest release.
+
+### Fixed
+
+- Fixed `api-currency.md` naming a validator and a sync command that only roblox-optimum has.
+- Fixed the one-line installers running the npx installer from `main` while the fallback path installed the newest release tag. Both paths now install the newest tag.
+- Fixed the installer's zip fallback on Windows failing when the temporary folder path contains an apostrophe.
+- Fixed the validator crashing when a `## Contents` section is the last section in a file.
 ## [2.1.0] - 2026-10-07
 
 This release is not a port. It aligns the skill with current skill-authoring guidance from the Agent Skills specification and vendor documentation, and corrects the Azul guidance in `external-editors.md` against Azul 2.3.0 and its documentation, as reported in [#1](https://github.com/andrian-syh/roblox-best-practices-skill/issues/1).
@@ -461,7 +488,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.2...v2.0.0
 [1.19.2]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.1...v1.19.2

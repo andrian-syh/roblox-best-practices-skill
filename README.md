@@ -2,15 +2,21 @@
 
 # roblox-best-practices-skill
 
-[![Version](https://img.shields.io/github/package-json/v/andrian-syh/roblox-best-practices-skill?label=version)](CHANGELOG.md)
-[![License: MIT](https://img.shields.io/github/license/andrian-syh/roblox-best-practices-skill)](LICENSE)
-[![Agent Skills](https://img.shields.io/badge/standard-Agent%20Skills-8a3ffc)](https://agentskills.io)
+Roblox and Luau coding standards packaged as one Agent Skill for AI coding assistants.
+
+[![version](https://img.shields.io/github/package-json/v/andrian-syh/roblox-best-practices-skill?color=CB3837&label=version)](CHANGELOG.md)
+[![CI](https://github.com/andrian-syh/roblox-best-practices-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/andrian-syh/roblox-best-practices-skill/actions/workflows/ci.yml)
+[![skills.sh](https://skills.sh/b/andrian-syh/roblox-best-practices-skill)](https://skills.sh/andrian-syh/roblox-best-practices-skill/roblox-best-practices)
+[![standard](https://img.shields.io/badge/standard-Agent%20Skills-informational)](https://agentskills.io)
+[![executables](https://img.shields.io/badge/executables-0-success)](SECURITY.md)
+[![license](https://img.shields.io/github/license/andrian-syh/roblox-best-practices-skill?color=blue)](LICENSE)
 
 </div>
 
-Roblox and Luau coding standards packaged as one Agent Skill for AI coding assistants.
-
 The skill covers how each script is written, how game systems are assembled, and where the platform's real limits sit. It assumes nothing about your framework, folder layout, or genre. It works with Claude Code, Cursor, Codex, Gemini CLI, Antigravity, Windsurf, Cline, Zed, and any other tool that reads the [Agent Skills](https://agentskills.io) format.
+
+> [!WARNING]
+> **This skill never asks you to download or run an executable.** It is plain Markdown, installed only from this repository. A copy that links to an `.exe`, a ZIP on a separate website, or a "release page" outside `github.com/andrian-syh` is not this project. Do not run it, and see [SECURITY.md](SECURITY.md#report-impersonation-or-malicious-copies).
 
 > [!TIP]
 > **Want the full toolkit?** [roblox-optimum](https://github.com/andrian-syh/roblox-optimum) ships this same standard plus separate review, diagnosis, and Studio-tooling skills, a Luau checker, an MCP server, and editor hooks for 11 agents. This repository stays available for anyone who wants the standard alone.
@@ -25,6 +31,8 @@ The skill covers how each script is written, how game systems are assembled, and
 - [Release cadence](#release-cadence)
 - [Development](#development)
 - [Contributing](#contributing)
+- [Security](#security)
+- [Acceptable use and disclaimer](#acceptable-use-and-disclaimer)
 - [License](#license)
 
 ## Which one to install
@@ -115,8 +123,10 @@ Corrections are recorded as corrections. When a pass finds the skill was wrong, 
 ## Development
 
 ```bash
-python scripts/validate-skill.py
+npm test
 ```
+
+`npm test` runs `scripts/validate-skill.py`. CI runs the same check on every pull request.
 
 The validator checks links and anchors, that every reference is reachable from `SKILL.md`, the `SKILL.md` size budget, tables of contents, frontmatter limits, that dates appear only in `api-currency.md`, and that every stated version matches `package.json`.
 
@@ -125,6 +135,23 @@ Manual evaluation scenarios live in [`evaluations/`](evaluations/README.md). The
 ## Contributing
 
 Issues and pull requests are welcome in the [issue tracker](https://github.com/andrian-syh/roblox-best-practices-skill/issues). Reports that the skill states something the engine no longer does are especially useful. Content fixes that also apply to roblox-optimum are best filed there, since this repository receives them on the next port.
+
+## Security
+
+The skill is text only: `SKILL.md` and Markdown references. It contains no binaries, scripts that the agent runs, or network calls. The installer only copies that folder into skills directories, and downloads come only from this GitHub repository. [SECURITY.md](SECURITY.md) lists exactly what the installer does, the official sources, and how to report a vulnerability or a malicious copy.
+
+## Acceptable use and disclaimer
+
+This skill teaches AI agents to write correct, secure, and policy-compliant Roblox games. Do not use it, or any modified copy, to:
+
+- build or distribute exploits, cheats, or tools that bypass Roblox security or anti-cheat systems;
+- collect credentials, cookies, or personal data, or deliver malware;
+- breach the [Roblox Terms of Use](https://en.help.roblox.com/hc/en-us/articles/115004647846) or [Community Standards](https://about.roblox.com/community-standards), or any law;
+- impersonate this project or its author, or redistribute it with harmful content added.
+
+The maintainer does not endorse, support, or accept responsibility for such use, or for any copy, fork, or package not published from the [official sources](SECURITY.md#official-sources). The software is provided "as is", without warranty of any kind, as stated in the [LICENSE](LICENSE). Output that an AI agent produces with this skill is the responsibility of the person who runs the agent: review it before you ship it.
+
+This project is not affiliated with, endorsed by, or sponsored by Roblox Corporation. Roblox is a trademark of Roblox Corporation.
 
 ## License
 

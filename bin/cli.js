@@ -158,6 +158,15 @@ function compareTagsDesc(a, b) {
 }
 
 /**
+ * Quotes a value as a PowerShell single-quoted string, so a path such as `C:\Users\O'Brien` stays one argument.
+ * @param {string} value Text to quote.
+ * @returns {string} The value wrapped in single quotes, with each inner quote doubled.
+ */
+function psQuote(value) {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+/**
  * Downloads a release tag into a temporary folder with git, or as a zip archive without it.
  * Exits the process with code 1 on an invalid tag or a failed download.
  * @param {string} tag Version tag, with or without the `v` prefix.
@@ -193,8 +202,8 @@ function downloadVersion(tag) {
       const zipPath = path.join(tempDir, 'archive.zip');
 
       if (process.platform === 'win32') {
-        execFileSync('powershell.exe', ['-NoProfile', '-Command', `Invoke-WebRequest -Uri '${zipUrl}' -OutFile '${zipPath}' -UseBasicParsing`], { stdio: 'ignore' });
-        execFileSync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -Path '${zipPath}' -DestinationPath '${tempDir}' -Force`], { stdio: 'ignore' });
+        execFileSync('powershell.exe', ['-NoProfile', '-Command', `Invoke-WebRequest -Uri ${psQuote(zipUrl)} -OutFile ${psQuote(zipPath)} -UseBasicParsing`], { stdio: 'ignore' });
+        execFileSync('powershell.exe', ['-NoProfile', '-Command', `Expand-Archive -LiteralPath ${psQuote(zipPath)} -DestinationPath ${psQuote(tempDir)} -Force`], { stdio: 'ignore' });
       } else {
         execFileSync('curl', ['-fsSL', zipUrl, '-o', zipPath], { stdio: 'ignore' });
         execFileSync('unzip', ['-q', zipPath, '-d', tempDir], { stdio: 'ignore' });
@@ -358,7 +367,7 @@ if (args.includes('--all') || args.includes('-a')) {
     const tags = await fetchGithubTags();
     
     const versionChoices = [
-      { title: `Latest (Local bundled v${bundledVersion})`, value: 'latest', description: 'Installs the latest version instantly' }
+      { title: `This installer's copy (v${bundledVersion})`, value: 'latest', description: 'Installs the copy bundled with this installer, with no download' }
     ];
 
     const RECENT_LIMIT = 5;

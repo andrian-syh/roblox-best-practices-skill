@@ -85,4 +85,4 @@ Wait for confirmation. Apply any corrections the user gives. If the user answers
 
 ## Persisting the result
 
-If the environment supports project memory or a conventions file (e.g., `CLAUDE.md`, `CONVENTIONS.md`), offer to save the confirmed convention there so future sessions skip re-analysis. Keep it as a diff against this skill's defaults ("same as roblox-best-practices except: ...") rather than a full copy.
+If the environment supports project memory or a conventions file (e.g., `CLAUDE.md`, `CONVENTIONS.md`), offer to save the confirmed convention there so future sessions skip re-analysis. Keep it as a diff against this skill's defaults ("same as the Roblox best-practices defaults except: ...") rather than a full copy.

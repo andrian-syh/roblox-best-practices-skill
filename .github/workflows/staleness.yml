@@ -1,0 +1,64 @@
+name: Staleness
+
+# Weekly check that the skill's engine and Luau baseline and its last port are still current.
+# It only opens an issue: a baseline row moves on evidence a person reviews, never automatically.
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compare the baseline with upstream
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Every upstream value is reduced to digits and dots before use, so no fetched text
+          # reaches the issue body or the shell.
+          num() { grep -oE '[0-9]+(\.[0-9]+)*' | head -n 1; }
+
+          engine=$(curl -fsSL --max-time 20 https://raw.githubusercontent.com/MaximumADHD/Roblox-Client-Tracker/roblox/version.txt | cut -d. -f2 | num)
+          luau=$(curl -fsSL --max-time 20 https://api.github.com/repos/luau-lang/luau/releases/latest | jq -r .tag_name | num)
+          optimum=$(curl -fsSL --max-time 20 https://api.github.com/repos/andrian-syh/roblox-optimum/tags | jq -r '.[].name' | sed 's/^v//' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+
+          snapshot=$(sed -n '/Snapshot basis/p' roblox-best-practices/references/api-currency.md)
+          have_engine=$(grep -oE 'v0\.[0-9]+\.0\.[0-9]+' <<< "$snapshot" | cut -d. -f2)
+          have_luau=$(grep -oE 'Luau releases through \*\*0\.[0-9]+' <<< "$snapshot" | grep -oE '0\.[0-9]+')
+          have_optimum=$(grep -oE 'Ported from roblox-optimum [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -n 1 | grep -oE '[0-9.]+$')
+
+          echo "engine  $have_engine -> $engine"
+          echo "luau    $have_luau -> $luau"
+          echo "optimum $have_optimum -> $optimum"
+
+          newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -n 1)" = "$2" ]; }
+
+          stale=""
+          if newer "$have_engine" "$engine"; then stale+="- Engine API dump: snapshot v$have_engine, upstream v$engine"$'\n'; fi
+          if newer "$have_luau" "$luau"; then stale+="- Luau: snapshot $have_luau, upstream $luau"$'\n'; fi
+          if newer "$have_optimum" "$optimum"; then stale+="- roblox-optimum: ported $have_optimum, released $optimum"$'\n'; fi
+
+          if [ -z "$stale" ]; then
+            echo "Baseline is current."
+            exit 0
+          fi
+
+          title="Port due: baseline behind upstream"
+          if gh issue list --state open --label staleness --search "in:title \"$title\"" --json number --jq '.[0].number' | grep -q .; then
+            echo "An open staleness issue already exists."
+            exit 0
+          fi
+
+          gh label create staleness --color FBCA04 --description "Baseline behind upstream" 2>/dev/null || true
+          printf 'The weekly check found the skill behind upstream:\n\n%s\nFollow the port and refresh steps in MAINTAINING.md.\n' "$stale" > body.md
+          gh issue create --title "$title" --label staleness --body-file body.md
