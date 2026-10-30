@@ -8,6 +8,27 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-10-31
+
+Ported from roblox-optimum 1.14.2. The Studio MCP reference now covers how the tools actually behave, so agents with small context windows or weaker reasoning can follow it step by step.
+
+### Added
+
+- Added fixed recipes to the Studio MCP reference for session start, reading, editing, bulk changes, playtests, and asset generation. Each recipe has a stop condition.
+- Added a list of Studio MCP calls that report success while nothing changed, such as `multi_edit` with `replace_all` reading `old_string` as a Lua pattern, with the read-back that catches each one.
+- Added a table of Studio MCP errors and when to stop, a table of which DataModel each call reaches, rules for running Luau through the tool, and guidance on Roblox Assistant skills over MCP.
+
+### Changed
+
+- Changed the Studio MCP tool snapshot to the live server of Studio 745, which lists 33 tools.
+- Changed the Studio CLI notes to the current docs address.
+
+### Fixed
+
+- Fixed the claim that Luau run through Studio MCP has no undo. A probe in Studio 745 showed that each `execute_luau` call is one undo step.
+- Fixed the client probe advice for a playtest already running: a LocalScript put in `StarterPlayerScripts` during play never runs.
+- Fixed the Open Cloud Luau Execution limit. It allows ten incomplete tasks per place.
+
 ## [2.3.0] - 2026-10-31
 
 _Ported from roblox-optimum 1.14.1. Upgrade by running the installer again. No project changes are needed._
@@ -579,7 +600,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...v2.1.0

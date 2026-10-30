@@ -4,7 +4,7 @@ argument-hint: "[ask|bal|go]"
 description: "Roblox and Luau game code standards. Writes, reviews, and fixes Script, LocalScript, and ModuleScript code and game systems such as shops, DataStore saves, RemoteEvents, combat, NPCs, and UI. Use when a request involves Luau code or a Roblox Studio project, even when Roblox is never named, when a game bug is reported with no file named, and when the user asks to keep these standards active. Also covers Rojo, Argon, Azul, Script Sync, Studio MCP, and community libraries such as ProfileStore, Knit, Trove, and Fusion. Applies to requests written in any language. Not for plain Lua outside Roblox (Neovim, LOVE, Defold, other engines) or for game design with no Luau to write or review."
 license: MIT
 metadata:
-  version: "2.3.0"
+  version: "2.3.1"
 ---
 
 # Roblox Game Development Best Practices
@@ -13,7 +13,7 @@ Framework-agnostic standards for clean, resource-frugal Luau. They govern *how e
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 2.3.0. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 2.3.1. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
