@@ -44,7 +44,7 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 | List | 300 + CCU × 2 | 5 + players × 2 |
 | Remove | 300 + CCU × 40 | 60 + players × 40 |
 
-Ordered data stores carry the same experience-level numbers; their per-server write and remove budgets are tighter at **30 + players × 5**. Read the remaining allowance at runtime with `DataStoreService:GetRequestBudgetForRequestType()` rather than guessing, and remember the budget is **shared with Open Cloud** — a batch job run from outside can starve live gameplay.
+Ordered data stores carry the same experience-level numbers; their per-server write and remove budgets are tighter at **30 + players × 5**. The per-server numbers are **defaults**: `DataStoreService:SetRateLimitForRequestType()` changes them per request type, and a new server gets a one-time startup burst on top. Studio Run mode uses separate static limits that can be lower, so test rate limits in Team Create. Read the remaining allowance at runtime with `DataStoreService:GetRequestBudgetForRequestType()` rather than guessing, and remember the budget is **shared with Open Cloud** — a batch job run from outside can starve live gameplay.
 
 **Caching and versions**, both of which change what a read means:
 
@@ -69,6 +69,7 @@ Consequences for design:
 | Key length | **128 characters** |
 | Value size | **32 KB per item** |
 | Sort key length | **128 characters** (sorted maps) |
+| One sorted map or queue | **1,000,000 items** and **100 MB**, keys included; past the size limit, writes fail with `DataStructureMemoryOverLimit` |
 | Quota traceback after a user leaves | **8 days** before their allowance is removed |
 
 MemoryStore is ephemeral coordination (queues, session locks, live leaderboards), never a database. Wrap calls in `pcall` with backoff exactly like DataStore.
@@ -128,7 +129,7 @@ Layered animation designs (base locomotion + upper body + facial + emote + ...) 
 |---|---|
 | Secrets per experience | **500** |
 | Secret value length | **1,024 characters** |
-| Availability | Live servers and Team Test only — **not local playtests** |
+| Availability | Live servers and Team Test read the game's secrets store. A local playtest cannot, and gets `Can't find secret with given key` unless the secret is also set under **Local Secrets** (File, Experience Settings, Security) |
 
 ## Raising a ceiling
 

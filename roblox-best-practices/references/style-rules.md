@@ -53,7 +53,7 @@ These are repeatedly invented or misremembered. As author, verify a member you a
 | Invented members (`Script.Running`, `Player.IsPlaying`, ...) | Not real. A name absent from **the API dump** does not exist; absence from the reference page only means it is undocumented |
 | `UIShadow.ApplyShadowMode` | Never shipped under that spelling. `UIShadow.Mode` **is** real and is not a misremembering — see [api-currency.md](api-currency.md#engine) |
 | `GuiService:SetUIScaleMultiplier` | **Real and shipped**, undocumented, not fabricated — but **RobloxScriptSecurity**, so shipped code cannot call it. `GetUIScaleMultiplier` was **removed** and is now genuinely gone; the getters that replaced it carry the same security. Read `GuiService.PreferredTextSize` instead ([api-currency.md](api-currency.md#engine)) |
-| `TeleportService:ReserveServer` | Deprecated — use `ReserveServerAsync`, or `TeleportOptions.ShouldReserveServer` with `TeleportAsync` |
+| `TeleportService:ReserveServer` | Deprecated — use `TeleportAsync` with `TeleportOptions.ReservedServerId`. `ReserveServerAsync` and `ShouldReserveServer` are deprecated too ([api-currency.md](api-currency.md#deprecated-report-as-findings)) |
 | `workspace.Players`, `game.CoreScriptService` | Wrong names; services come only from `game:GetService("...")` |
 | `UIFlexLayout` | **Not a class.** Flex lives on `UIListLayout` (`HorizontalFlex`/`VerticalFlex`/`ItemLineAlignment`) plus a `UIFlexItem` parented to the child that should flex ([ui-crossplatform.md](ui-crossplatform.md#layouts)) |
 | Made-up enum members (`Enum.Material.Whatever`) | Enums are closed sets — grep the enum's `.md` page instead of guessing |

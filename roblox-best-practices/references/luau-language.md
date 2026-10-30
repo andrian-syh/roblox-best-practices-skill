@@ -123,7 +123,7 @@ Luau is not Lua 5.1 minus nothing. These are gone or restricted at the language 
 
 Rejected outright, so never suggested as a workaround: **`goto`**, **the `&`/`|` bitwise operators** (`bit32` is the answer), **ephemeron weak tables**, and **`__gc` finalizers**. That last one matters: there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
 
-A 64-bit integer type is an accepted RFC upstream, not a Roblox feature: no Roblox release confirms it, so every number is still a double and `bit32` stays the answer ([api-currency.md](api-currency.md#luau-language-and-libraries)).
+A 64-bit integer type was accepted upstream and then withdrawn, so it is not coming: every number is a double and `bit32` stays the answer ([api-currency.md](api-currency.md#luau-language-and-libraries)).
 
 ## Standard library — recent additions
 
@@ -132,6 +132,8 @@ Confirmed available per [api-currency.md](api-currency.md) — use them, and don
 - **`vector` library** — a native, SIMD-backed vector value type: `vector.create(x, y, z)` (3 or 4 components), component access (`.x`/`.y`/`.z`), the `vector.zero`/`vector.one` constants, first-class operator support, `vector.magnitude`/`normalize`/`dot`/`cross`/`angle`, plus the component-wise helpers `vector.floor`/`ceil`/`abs`/`sign`/`clamp`/`max`/`min`. `vector.lerp(a, b, t)` interpolates between two vectors, beside the scalar `math.lerp`. The luau.org library page leaves it out, so that page cannot prove a function is absent ([api-currency.md](api-currency.md)). Prefer it for heavy vector math to cut GC pressure ([performance.md](performance.md#cpu)). It is distinct from the engine `Vector3` datatype; both coexist in Roblox.
 - **`buffer` library** — fixed-size mutable binary blocks for serialization and large numeric arrays ([performance.md](performance.md#memory)); recent engine versions add **`buffer.readbits`/`buffer.writebits`** for bit-level packing.
 - **`math` additions** — `math.map` (remap a value between two ranges), `math.lerp`, and the classifiers `math.isnan`/`math.isinf`/`math.isfinite` (clearer and cheaper than hand-rolled checks; pair `isnan`/`isinf` with the DataStore serialization guards in [patterns/data.md](patterns/data.md#data-persistence)).
+
+- **`coroutine.finally(co, callback)`** — runs `callback` once when the coroutine ends, with `"finished"` plus its return values, `"error"` plus the error, or `"cancelled"` after `coroutine.close` or `task.cancel`. It is cleanup for a thread, not a finalizer for an object, so the explicit-teardown rule above still stands. Do not register one on a coroutine you run through `coroutine.wrap`: when that coroutine ends, the wrapped call raises an error instead ([api-currency.md](api-currency.md#luau-language-and-libraries)).
 
 ### Compiler and analysis changes worth knowing
 

@@ -8,6 +8,33 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-31
+
+_Ported from roblox-optimum 1.14.1. Upgrade by running the installer again. No project changes are needed._
+
+### Added
+
+- Added a card rule: tool directives such as `--!strict`, `-- selene:`, and `-- stylua:` are not commentary. The agent never removes one, and never adds a suppression unless asked.
+- Added `coroutine.finally` as available in Studio, with its documented contract and the `coroutine.wrap` trap.
+- Added the TextChatService migration: code that reads chat message content stops working when a game moves to the updated chat.
+- Added the Device Trust API, with the rule that only the server reads it.
+
+### Changed
+
+- Updated the engine and Luau baseline in `api-currency.md` to engine 745 and Luau 0.744. Every change was checked against the engine API dump, the Engine API Reference, or a probe in Studio 745.
+- Changed the reserved server guidance to `TeleportAsync` with `TeleportOptions.ReservedServerId`, since `ReserveServerAsync` and `ShouldReserveServer` are deprecated too.
+- Changed the price-display rule to `MarketplaceService:GetProductInfoAsync`, and listed more deprecated calls with their replacements, such as `Player:LoadCharacter`, `Player:IsInGroup`, and `WorldRoot:FindPartOnRay`.
+- Changed the data store limits to say that per-server request limits are defaults that `SetRateLimitForRequestType` can change, and added the memory store limit of 1,000,000 items and 100 MB for one sorted map or queue.
+- Changed several references from undocumented to documented now that the Engine API Reference covers them, including `RunService:BindToAnimation`, `Player.FrustumStreaming`, and the `WorldRoot` collision group methods.
+- Moved the README warning into its Security section and removed the executables badge.
+
+### Fixed
+
+- Fixed the `Collection` entry, which listed members the engine does not document, and noted that `CreateCollection` raises "Collections are not enabled" in Studio 745.
+- Fixed the advice to run `wally install --locked` in CI. Stable Wally has no such flag.
+- Fixed the claim that secrets never work in a local playtest. Local Secrets in Experience Settings provide values for local testing.
+- Fixed the 64-bit integer type and exact table types being described as possible future features. Luau has withdrawn both.
+
 ## [2.2.0] - 2026-10-18
 
 _Ported from roblox-optimum 1.13.2. Upgrade by running the installer again. No project changes are needed._
@@ -552,7 +579,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v1.19.2...v2.0.0
