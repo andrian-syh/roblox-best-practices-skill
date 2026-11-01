@@ -1,10 +1,10 @@
 ---
 name: roblox-best-practices
 argument-hint: "[ask|bal|go]"
-description: "Roblox and Luau game code standards. Writes, reviews, and fixes Script, LocalScript, and ModuleScript code and game systems such as shops, DataStore saves, RemoteEvents, combat, NPCs, and UI. Use when a request involves Luau code or a Roblox Studio project, even when Roblox is never named, when a game bug is reported with no file named, and when the user asks to keep these standards active. Also covers Rojo, Argon, Azul, Script Sync, Studio MCP, and community libraries such as ProfileStore, Knit, Trove, and Fusion. Applies to requests written in any language. Not for plain Lua outside Roblox (Neovim, LOVE, Defold, other engines) or for game design with no Luau to write or review."
+description: "Roblox and Luau game code standards. Writes, reviews, and fixes Script, LocalScript, and ModuleScript code and game systems such as shops, DataStore saves, RemoteEvents, combat, NPCs, and UI. Use when a request involves Luau code or a Roblox Studio project, even when Roblox is never named, when a game bug is reported with no file named, and when the user asks to keep these standards active. Also covers Rojo, Argon, Azul, Script Sync, Studio MCP, community libraries such as ProfileStore, Knit, Trove, and Fusion, and taking a Roblox game public: store listing, discovery, age tiers, ads, and live ops. Applies to requests written in any language. Not for plain Lua outside Roblox (Neovim, LOVE, Defold, other engines) or for game design with no Luau to write or review."
 license: MIT
 metadata:
-  version: "2.3.1"
+  version: "2.4.0"
 ---
 
 # Roblox Game Development Best Practices
@@ -13,7 +13,7 @@ Framework-agnostic standards for clean, resource-frugal Luau. They govern *how e
 
 **Goals, in priority order:** correct → secure (server-authoritative) → efficient (CPU/memory/network) → readable → consistent.
 
-*Skill version 2.3.1. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 2.4.0. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -108,7 +108,8 @@ Everything below expands these; nothing below overrides them.
 - [patterns/world.md](references/patterns/world.md) — CollectionService binding and attributes, client input, anti-patterns to reject on sight
 - [patterns.md](references/patterns.md) — index of the four pattern files above
 - [security.md](references/security.md) — anti-exploit, remote validation depth, movement sanity checks, text filtering
-- [monetization-policy.md](references/monetization-policy.md) — `ProcessReceipt`, Developer Products and passes, PolicyService compliance
+- [monetization-policy.md](references/monetization-policy.md) — `ProcessReceipt`, Developer Products and passes, regional prices in trades, PolicyService, paid random items and odds, ads, the in-experience link ban
+- [growth-apis.md](references/growth-apis.md) — AnalyticsService funnels and events, player segments, experiments, experience notifications, referrals and invites
 - [server-authority.md](references/server-authority.md) — anything touching movement, physics, input, camera, animation timing, `BindToSimulation`, network ownership
 - [ui-crossplatform.md](references/ui-crossplatform.md) — UI construction, cross-platform and accessibility, input device handling
 - [genres.md](references/genres.md) — simulator, FPS, obby, RPG, racing, horror, social, tower defense, battlegrounds
@@ -125,6 +126,8 @@ Everything below expands these; nothing below overrides them.
 - [review-checklist.md](references/review-checklist.md) — **finishing any task**: the completion gate before calling work done
 - [evaluation-matrix.md](references/evaluation-matrix.md) — auditing a project on request: scope, evidence, a 1–5 score across security, lifecycle, and performance, and an honest report
 - [release-readiness.md](references/release-readiness.md) — shipping or publishing a place: the pre-publish gate
+- [publishing.md](references/publishing.md) — no Luau to write: discovery, the store listing, icons and thumbnails, maturity and age tiers, marketing the platform forbids, the launch checklist
+- [live-ops.md](references/live-ops.md) — the game is live: reading analytics, retention targets, falling impressions, Ads Manager, events and notifications, the first 90 days
 - [api-currency.md](references/api-currency.md) — whether a newer engine/Luau API is confirmed before relying on it or flagging it missing
 - [limits-budgets.md](references/limits-budgets.md) — platform ceilings: DataStore size/requests, MemoryStore, messaging, attributes, animation tracks
 

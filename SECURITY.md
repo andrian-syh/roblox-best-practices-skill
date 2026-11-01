@@ -16,8 +16,8 @@ Security fixes are released for the current minor version only.
 
 | Version | Supported |
 |---|---|
-| `2.3.x` | Yes |
-| `< 2.3.0` | No. Run the installer again to upgrade |
+| `2.4.x` | Yes |
+| `< 2.4.0` | No. Run the installer again to upgrade |
 
 ## Report a vulnerability
 

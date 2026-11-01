@@ -25,6 +25,7 @@ The performance figures and tooling in [performance.md](performance.md), [device
 - [Engine](#engine)
 - [Performance figures and where they come from](#performance-figures-and-where-they-come-from)
 - [Studio MCP tooling](#studio-mcp-tooling)
+- [Publishing platform state](#publishing-platform-state)
 - [Deprecated (report as findings)](#deprecated-report-as-findings)
 - [Dates live here, and only here](#dates-live-here-and-only-here)
 - [Maintaining this file](#maintaining-this-file)
@@ -245,6 +246,30 @@ Numbers are engine facts too, and the same rule binds them: state the basis. Eve
 ## Studio MCP tooling
 
 Tool names, limits, and variants are recorded in [studio-mcp.md](studio-mcp.md) as a **snapshot of 31 October 2026 only**, taken from `create.roblox.com/docs/studio/mcp` (updated 29 October 2026) and the live tool schemas of Studio 745. The live server listed 33 tools, 8 more than the docs page: `generate_texture`, `generate_scene`, `segment_mesh`, `auto_setup_avatar`, `generate_avatar` (prompt-to-avatar beta, 29 October 2026), `list_skills`, `create_skill`, and `edit_skill`. Since 19 August 2026 every call carries `studio_id`, and `set_active_studio` was removed. The weekly update of 21 September 2026 enabled external MCP clients to connect without opening the Assistant window first. The tools are implemented by Studio's built-in Assistant plugin, which updates over the air, so tool behaviour can change without an engine release. Probed in Studio 745 on 31 October 2026: each `execute_luau` call runs inside the tool's own change-history recording (`IsRecordingInProgress` is true, `TryBeginRecording` returns `nil`), and `ChangeHistoryService:Undo()` in the next call removed its change; a Script parented to `ServerScriptService` from the Server DataModel and a LocalScript parented to `PlayerGui` from the Client DataModel during play both ran, while a LocalScript parented to `StarterPlayerScripts` during play did not. The standalone `Roblox/studio-rust-mcp-server` was archived on 3 April 2026 in favor of the built-in server. Unlike engine APIs, the MCP surface has no single authority: the official built-in server, the older standalone Rust server, and community forks all expose different tools. **The connected tool list and each tool's own schema always override that file.** Never assert that an MCP tool does or does not exist based on this skill.
+
+## Publishing platform state
+
+The dates behind [publishing.md](publishing.md), [live-ops.md](live-ops.md), [growth-apis.md](growth-apis.md), and the policy sections of [monetization-policy.md](monetization-policy.md). **Snapshot of 1 November 2026**, read from Creator Hub, staff DevForum posts, and the Q2 and Q3 2026 shareholder letters. Platform policy moves faster than the engine and has no version dump, so re-read the linked page before quoting a number.
+
+| Fact | State | Source |
+|---|---|---|
+| Recommended for You looks at a 28-day window, up from 7 days, and deliberately favours retentive games | Since 15 June 2026 | [Roblox newsroom](https://about.roblox.com/newsroom/2026/06/optimizing-discovery-great-games-reach-millions-players-roblox) |
+| Deep play-through rate and 7-day qualified play sessions added as signals; "Not interested" feedback integrated | 9 and 26 March 2026 | [DevForum](https://devforum.roblox.com/t/-/4502571) |
+| Gameplay video autoplays in Recommended for You | Since 29 July 2026 | [DevForum](https://devforum.roblox.com/t/-/4502571) |
+| Roblox Kids (5 to 8), Roblox Select (9 to 15), and standard (age-checked 16+); a new game reaches 16+ only until it passes evaluation | Global since 16 June 2026, rollout from 19 May 2026 | [DevForum](https://devforum.roblox.com/t/-/4685717) |
+| Evaluation threshold: docs say 250 unique plays by highly engaged age-checked users in 60 days; the 16 June 2026 staff post says 500 Highly Engaged Players | **[Verify]** conflict, read the Audience Reach dashboard | [Kids and Select](https://create.roblox.com/docs/production/publishing/kids-and-select) |
+| Expedited review fee: docs say 50,000 Robux refundable; the staff post says 100,000 | **[Verify]** conflict | same |
+| Social media links visible only to age-checked users 16 and older | Since 30 June 2026 (13+ from 23 February 2026) | [DevForum](https://devforum.roblox.com/t/-/4685717) |
+| Links, handles, and invites inside experiences banned; `AllowedExternalLinkReferences` returns an empty list | From early 2026, announced 18 November 2025 | [DevForum](https://devforum.roblox.com/t/-/4079702) |
+| Chat needs an age check worldwide | Since January 2026 | [DevForum](https://devforum.roblox.com/t/-/4079702) |
+| Paid random items: per-item odds before purchase, numeric disclosure of luck boosts and pity | Clarified 26 May 2026 | [DevForum](https://devforum.roblox.com/t/-/4654622) |
+| Advertising integrations registered with Roblox 5 business days before going live, standard Studio label | Since 4 May 2026; revenue share for campaigns starting after 1 January 2027 | [DevForum](https://devforum.roblox.com/t/-/4527365) |
+| Ads Manager: one Home and Search flow, automatic bids, no keyword targeting; classic flow retired | 20 November 2025; classic ended January 2026 | [DevForum](https://devforum.roblox.com/t/-/4084863) |
+| Creator Rewards replaced Engagement-Based Payouts and Creator Affiliate | 24 July 2025 | [Creator Rewards](https://create.roblox.com/docs/creator-rewards) |
+| Roblox Plus replaced new Premium sign-ups | 30 April 2026 | [Roblox Plus](https://create.roblox.com/docs/production/monetization/roblox-plus) |
+| DevEx rate 0.0038 USD per Robux | Since 5 September 2025 | [DevEx](https://create.roblox.com/docs/production/monetization/developer-exchange) |
+| Thumbnail personalization keeps the current winner's traffic when it is included in a new test | Since 1 July 2025 | [DevForum](https://devforum.roblox.com/t/-/3793665) |
+| Retention benchmark: median D1 10.3%, D7 1.6%, D30 0.5%; top 1% D1 22.2% (games over 1M MAU, August 2025 to July 2026) | Third-party, read from a secondary summary | [GameDev Reports](https://gamedevreports.substack.com/p/gameanalytics-key-roblox-and-roblox) |
 
 ## Deprecated (report as findings)
 

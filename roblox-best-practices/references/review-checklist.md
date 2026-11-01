@@ -37,6 +37,9 @@ Before finishing any Luau code, verify:
 - [ ] Data bound for DataStores keeps a JSON-serializable shape (no mixed keys, NaN, userdata); user-generated text shown to other players goes through server-side filtering, **after submission rather than per keystroke**
 - [ ] No `UpdateAsync` transform callback yields; any read used to confirm a write took `UseCache = false`; player data is keyed by `UserId` so a deletion request can match it; no credential is hardcoded where the secrets store belongs
 - [ ] UI written against the player's `PlayerGui` copy, with `ResetOnSpawn` decided deliberately; nothing sets `Position`/`Size` on a child a layout owns; interactive elements sit inside the safe area
+- [ ] Paid random items (bought with Robux or purchased currency) disclose every outcome with odds summing to 100% before purchase, read the same odds table the roll uses, show boosted odds while a modifier is active, and branch on `ArePaidRandomItemsRestricted` and `IsPaidItemTradingAllowed` ([monetization-policy.md](monetization-policy.md#paid-random-items))
+- [ ] Ad units and rewarded offers check `AreAdsAllowed`; rewarded rewards are developer products granted through the single `ProcessReceipt`; no URL, handle, or invite appears in any in-experience string
+- [ ] AnalyticsService calls run on the server with low-cardinality custom fields; a `GetPlayerSegmentsAsync` result is used only after `HasData`; experiment configs are read with `GetConfigForPlayerAsync` at the feature, not on join ([growth-apis.md](growth-apis.md))
 - [ ] Works regardless of the project's framework — no assumptions about folder layout beyond standard Roblox services
 - [ ] Every engine fact stated to the user names its basis (api-currency tag, live docs check, API dump, or in-Studio probe); anything unverifiable is labeled unverified with the check that would settle it
 - [ ] The closing summary states what was verified and how, open uncertainties, and every assumption made

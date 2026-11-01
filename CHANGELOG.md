@@ -8,6 +8,26 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-11-02
+
+Ported from roblox-optimum 1.15.0. The skill now also answers questions about taking a Roblox game public, and the money and analytics references cover the platform rules that touch code.
+
+### Added
+
+- Added `publishing.md`: discovery, the store listing, icons and thumbnails, maturity and age tiers, the marketing Roblox forbids, and a launch checklist with stable IDs.
+- Added `live-ops.md`: the analytics dashboard, retention targets, falling impressions, Ads Manager, re-engagement tools, payouts, update cadence, and the first 90 days.
+- Added `growth-apis.md`: AnalyticsService events and limits, player segments, experiments, experience notifications, and referrals.
+- Added the full paid random items rules, rewarded and immersive ads, and regional price levels for trades and gifts to the monetization reference.
+- Added a publishing platform state table to the currency file.
+
+### Changed
+
+- Changed the skill description and index so that launch, store listing, and live-ops questions reach the new references.
+
+### Fixed
+
+- Fixed the advice to show the social links that `AllowedExternalLinkReferences` allows. The list is always empty, because links, handles, and invites inside an experience are banned for every player.
+
 ## [2.3.1] - 2026-10-31
 
 Ported from roblox-optimum 1.14.2. The Studio MCP reference now covers how the tools actually behave, so agents with small context windows or weaker reasoning can follow it step by step.
@@ -600,7 +620,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.1.0...v2.2.0

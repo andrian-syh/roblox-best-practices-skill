@@ -29,7 +29,9 @@ When a server shuts down or restarts for an update, Roblox gives all `game:BindT
 Platform compliance failures can get an experience moderated or broken in restricted regions:
 
 - **Paid random items (`PolicyService:GetPolicyInfoForPlayerAsync`).** Before displaying or prompting any paid loot box, crate, or random spin costing Robux (directly or via purchased currency), check `policy.ArePaidRandomItemsRestricted`. If `true`, hide or disable the paid random purchase for that player and disclose odds where required ([monetization-policy.md](monetization-policy.md)).
-- **Player-to-player trading and external links.** Check `policy.IsPaidItemTradingAllowed` before allowing trades of paid items, and verify `policy.AllowedExternalLinkReferences` before displaying social/community references in UI.
+- **Player-to-player trading.** Check `policy.IsPaidItemTradingAllowed` before allowing trades of paid items, and gate cross-region trades and gifts on `MarketplaceService:GetUsersPriceLevelsAsync` ([monetization-policy.md](monetization-policy.md#choosing-the-product-type)).
+- **No off-platform links in the experience.** No URL, handle, or invite in any UI, sign, or localized string, for any player. `policy.AllowedExternalLinkReferences` returns an empty list, so it allows nothing ([monetization-policy.md](monetization-policy.md#external-links-and-off-platform-references)).
+- **Ads.** Check `policy.AreAdsAllowed` before any ad unit or rewarded offer, and grant rewarded-video products through the single `ProcessReceipt` ([monetization-policy.md](monetization-policy.md#ads-in-experiences)).
 - **Custom text and direct chat gating.** Every custom player-entered string (pet names, signs, guild tags, custom chat) must be filtered on the server via `TextService:FilterStringAsync` and formatted per recipient (`GetNonChatStringForBroadcastAsync` / `GetNonChatStringForUserAsync`). Never call the deprecated `TextFilterResult:GetChatForUserAsync`, which returns an empty string ([security.md](security.md#user-generated-text-filtering)). Custom chat flows must gate general chat with `TextChatService:CanUserChatAsync` and 1:1 messaging with `TextChatService:CanUsersDirectChatAsync`.
 - **Right-to-be-Forgotten (RTBF) readiness.** Key player DataStores using a predictable `{UserId}` pattern (e.g., `Player_{UserId}`) so Data Stores Manager deletion templates can purge erased accounts automatically, and pass `{ player.UserId }` in the `UserIds` parameter of `DataStore:SetAsync` / `UpdateAsync` ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)).
 
@@ -51,6 +53,8 @@ Platform compliance failures can get an experience moderated or broken in restri
 ---
 
 ## 5. Live-Ops Telemetry & Device Baselines
+
+Instrument the onboarding funnel and economy events before the first public player arrives, since a funnel added later has no first-week data ([growth-apis.md](growth-apis.md#analyticsservice)).
 
 Before and immediately after publishing, verify these Creator Hub telemetry thresholds ([performance.md](performance.md), [device-performance.md](device-performance.md)):
 
