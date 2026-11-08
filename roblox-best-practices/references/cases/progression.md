@@ -10,7 +10,7 @@ Blueprints for systems that compare players or gate rewards on time. Both are or
 **Dominant risk:** request budget exhaustion, and confusing the two very different kinds of leaderboard.
 **Server/client:** the server writes and reads rankings; clients receive a rendered snapshot.
 **Assembly:**
-1. Decide the kind first. **In-server** (current match, scoreboard) is plain in-memory state and needs no store. **Global persistent** uses an OrderedDataStore. **Live cross-server** (short-lived, frequently updated) belongs in MemoryStore sorted maps — and above roughly a thousand keys, a hash map partitions itself where a sorted map would not ([patterns/network.md](../patterns/network.md#cross-server-communication)).
+1. Decide the kind first. **In-server** (current match, scoreboard) is plain in-memory state and needs no store. **Global persistent** uses an OrderedDataStore. **Live cross-server** (short-lived, frequently updated) belongs in MemoryStore sorted maps, and above roughly a thousand keys, a hash map partitions itself where a sorted map would not ([patterns/network.md](../patterns/network.md#cross-server-communication)).
 2. For global boards, write on a **throttled cadence** (session end, milestone, or a periodic flush), never on every score change.
 3. Read the top N on an interval and cache the result server-side; broadcast that snapshot to clients rather than letting each client trigger a query.
 4. Wrap every store call in `pcall` with backoff, and keep serving the last good snapshot when a refresh fails.
@@ -36,4 +36,4 @@ Blueprints for systems that compare players or gate rewards on time. Both are or
 **Failure modes:** granting the reward, failing to save, and letting the player rejoin to claim again. Persist the timestamp first, or grant and persist atomically in one save.
 **Budget:** these run on join for every player, so keep them inside the same load/save round-trip as player data rather than adding separate store calls.
 **Verify:** claim, force a shutdown before autosave, rejoin, and confirm the reward cannot be claimed twice.
-**Deeper:** [luau-language.md](../luau-language.md#time-apis--one-job-each) · [genres.md](../genres.md#simulator--tycoon--idle)
+**Deeper:** [luau-language.md](../luau-language.md#time-apis-one-job-each) · [genres.md](../genres.md#simulator--tycoon--idle)

@@ -48,7 +48,9 @@ Work through them in order: read Acquisition by source, compare the signals on t
 
 How it works ([Ads Manager](https://create.roblox.com/docs/production/promotion/ads-manager), [advertise](https://create.roblox.com/docs/production/promotion/advertise)):
 
-- Campaigns serve as sponsored tiles on Home and in Search. Roblox sets the bid; there is no manual bidding and no keyword targeting. A campaign needs at least 10 ad credits. Converting Robux to ad credit cannot be undone.
+- Sponsored campaigns serve as tiles on Home and in Search with automated bidding: you set a daily or lifetime budget and a duration, and Roblox sets the bid.
+- **Search ads** are a Visits campaign with up to 10 keywords per ad set. The game shows at the top of results for an exact keyword match, ranked by bid and by relevance to the query, so bid on keywords that describe the game. They reach every region and every player 13 and over, with no audience targeting, and reports cannot filter by keyword: put one keyword in an ad set to measure it ([search ads](https://create.roblox.com/docs/production/promotion/search-ads)).
+- Converting Robux to ad credit is permanent; credits left when a campaign ends return to the account.
 - Audiences: all players, new players, recent players (needs 10,000 recent players), lapsed players (needs 20,000), with location, age, gender, genre, and device targeting.
 - Reports show spend, impressions, clicks, plays, cost per play, playtime, earnings, and return on ad spend. Data can lag 48 hours, plays and earnings are attributed for 30 days, and the first 24 hours are a learning phase.
 - An experience that closely copies another can end up with no spend and no conversions.

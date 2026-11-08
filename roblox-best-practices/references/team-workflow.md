@@ -1,6 +1,6 @@
-# Team Workflow — Git, Branch Places, and Shipping
+# Team Workflow: Git, Branch Places, and Shipping
 
-Working with other people on one Roblox project, with the code in git and the world in a place file. [external-editors.md](external-editors.md) covers the sync tools themselves; this file covers the process around them. A solo developer who wants the same discipline reads it the same way — every rule here holds at a team of one, and the ones about coordination simply cost nothing.
+Working with other people on one Roblox project, with the code in git and the world in a place file. [external-editors.md](external-editors.md) covers the sync tools themselves; this file covers the process around them. A solo developer who wants the same discipline reads it the same way: every rule here holds at a team of one, and the ones about coordination simply cost nothing.
 
 ## Contents
 
@@ -19,13 +19,13 @@ Working with other people on one Roblox project, with the code in git and the wo
 
 ## What the official guidance does and does not say
 
-Three facts set the boundary of everything below, and stating them prevents the most common wrong assumption — that some supported integration exists and the team merely has not found it.
+Three facts set the boundary of everything below, and stating them prevents the most common wrong assumption: that some supported integration exists and the team merely has not found it.
 
 **Roblox endorses the file-first route.** Its own third-party tools page names Rojo for teams managing a project as local files, Script Sync for a lighter setup, Rokit for pinning tool versions across a team, Wally for dependencies, and git through GitHub, GitLab, or Bitbucket for review and history. It also says plainly that none of those tools are maintained by Roblox and can stop working at any time, and that there is no lock-in.
 
 **Team Create and git do not know about each other.** The collaboration documentation describes no external version control integration. Nothing in Team Create reads a branch, and nothing in git sees a Team Create session. Two systems of record run side by side, and keeping them coherent is the team's job, not a feature.
 
-**The recommended team shape is documented; its procedure is not.** Rojo names two workflows — *partially managed*, where Rojo owns the scripts and Team Create owns everything else, and *fully managed*, where Rojo owns the whole game and hermetic builds and continuous deployment become possible. Both sections are still `TODO`. The one concrete sentence they carry is the important one:
+**The recommended team shape is documented; its procedure is not.** Rojo names two workflows: *partially managed*, where Rojo owns the scripts and Team Create owns everything else, and *fully managed*, where Rojo owns the whole game and hermetic builds and continuous deployment become possible. Both sections are still `TODO`. The one concrete sentence they carry is the important one:
 
 > it is generally recommended that each programmer on a project have their own place to work in
 
@@ -58,10 +58,10 @@ The shape below is community practice built on the branch-place recommendation. 
 
 **Before touching a script:**
 
-1. `git pull` on the branch you are about to work in. Do this before Studio is open, not after — a sync session running against a stale working tree writes stale code into your place.
+1. `git pull` on the branch you are about to work in. Do this before Studio is open, not after: a sync session running against a stale working tree writes stale code into your place.
 2. `rokit install`, then `wally install`, whenever the manifests changed in what you just pulled. A branch that bumped a dependency and a machine still on the old one produce a bug that belongs to neither.
 3. Refresh your branch place from the canonical place if the world changed. A branch place is created once, through **File**, then **Publish to Roblox As…**, choosing the experience and **Add as a new place**; refreshing it afterwards means opening the canonical place and saving it over yours.
-4. `git lfs locks` before opening any tracked binary — a place file, a model, an image. Someone else holding it means coordinate now, not discover at save time. Take your own with `git lfs lock <path>`, release it when you push.
+4. `git lfs locks` before opening any tracked binary: a place file, a model, an image. Someone else holding it means coordinate now, not discover at save time. Take your own with `git lfs lock <path>`, release it when you push.
 5. Start the sync server, connect the plugin, and confirm the direction of the first sync before accepting it. The first sync after a pull is the one that overwrites.
 
 **While working:** one person per script. Studio's own documentation warns that two people syncing *and* editing the same script will overwrite each other, and no tool in this space resolves that for you. Split by file, not by feature, when two people must work the same system at once.
@@ -83,7 +83,7 @@ Wire them as a pre-commit hook so it is not a habit anyone has to keep. Where [r
 
 The consequence is structural, not a matter of discipline:
 
-- **A place file has exactly one writer at a time.** Not one per branch — one, full stop.
+- **A place file has exactly one writer at a time.** Not one per branch: one, full stop.
 - **Branching is a property of the code, never of the world.** Two branches of scripts are ordinary. Two branches of a place is a fiction that ends in someone's work being thrown away.
 - **The canonical place is a serialized hand-off, not a shared document.** Whoever last saved it is the version everyone else pulls from.
 
@@ -97,9 +97,9 @@ git lfs track "*.rbxm"  --lockable
 
 A lockable pattern in `.gitattributes` makes matching files **read-only on every clone until someone locks them**, which turns "I forgot you had it open" into a file that will not save. One holder at a time, only the holder can release it, and the release belongs with the push. `git lfs locks` answers who holds what before anyone opens Studio, which is why the daily loop checks it.
 
-This is the same answer the rest of the game industry reached for binary assets, and Unreal teams apply it to `*.uasset` and `*.umap` identically. It does not merge anything — nothing merges these files — it only stops two people from producing two versions that cannot be reconciled.
+This is the same answer the rest of the game industry reached for binary assets, and Unreal teams apply it to `*.uasset` and `*.umap` identically. It does not merge anything (nothing merges these files) it only stops two people from producing two versions that cannot be reconciled.
 
-**Non-script changes have no automated path back.** This is the unsolved problem of partially managed Rojo, and it is worth stating rather than working around silently: a programmer who edits UI or adds an instance to support their code has no supported way to merge that back to the canonical place. One team's attempt at automating it with a place-combining step in CI was abandoned as impractical — the round trip of change a property, trigger the job, wait, reopen the place was slower than doing it by hand, and the job's usage limits made it worse. The question has been asked again since and still has no answer.
+**Non-script changes have no automated path back.** This is the unsolved problem of partially managed Rojo, and it is worth stating rather than working around silently: a programmer who edits UI or adds an instance to support their code has no supported way to merge that back to the canonical place. One team's attempt at automating it with a place-combining step in CI was abandoned as impractical: the round trip of change a property, trigger the job, wait, reopen the place was slower than doing it by hand, and the job's usage limits made it worse. The question has been asked again since and still has no answer.
 
 Live with it deliberately:
 
@@ -109,13 +109,13 @@ Live with it deliberately:
 
 ## Rewriting history
 
-A commit is immutable. Editing one — amend, rebase, squash, filter — does not change it; it builds a replacement with a different hash and leaves the original orphaned. Everything below follows from that one fact, and none of it is Roblox-specific, which is why it is easy to leave unstated on a game team and expensive the first time it bites.
+A commit is immutable. Editing one (amend, rebase, squash, filter) does not change it; it builds a replacement with a different hash and leaves the original orphaned. Everything below follows from that one fact, and none of it is Roblox-specific, which is why it is easy to leave unstated on a game team and expensive the first time it bites.
 
 Git's own documentation states the rule without hedging:
 
 > Do not rebase commits that exist outside your repository and that people may have based work on.
 
-Rebasing published commits abandons them for new ones, so a teammate who pulls gets your work twice — once as the commits they already had, once as their replacements — and the conflict that follows is between a branch and itself. The safe half of the same advice: clean up local commits by rebasing **before** the first push, never after.
+Rebasing published commits abandons them for new ones, so a teammate who pulls gets your work twice (once as the commits they already had, once as their replacements) and the conflict that follows is between a branch and itself. The safe half of the same advice: clean up local commits by rebasing **before** the first push, never after.
 
 Three rules that carry the whole of it:
 
@@ -137,17 +137,17 @@ Two independent hierarchies. Keep the mapping explicit; teams that leave it impl
 
 Community practice from a published pipeline: developers commit to a `dev` branch, a merge into `main` deploys to the staging place, and a version tag starting with `v` deploys to production. The branch names are a convention; the property that matters is that **the production place is written by exactly one automated path and by no human**.
 
-Roblox's own place model supports this directly. An experience holds multiple places, one of which is the start place, and a new place is added through **Publish to Roblox As…**. A staging place inside the same experience shares the experience's data stores, so decide deliberately whether that is what you want — a staging place writing to live player data is a data-loss incident waiting for a bad deploy ([patterns/data.md](patterns/data.md)).
+Roblox's own place model supports this directly. An experience holds multiple places, one of which is the start place, and a new place is added through **Publish to Roblox As…**. A staging place inside the same experience shares the experience's data stores, so decide deliberately whether that is what you want: a staging place writing to live player data is a data-loss incident waiting for a bad deploy ([patterns/data.md](patterns/data.md)).
 
 ## The review gate
 
-What must hold before a branch merges. Everything here runs without a human, which is the point — a gate a reviewer has to remember is a gate that lapses under deadline.
+What must hold before a branch merges. Everything here runs without a human, which is the point: a gate a reviewer has to remember is a gate that lapses under deadline.
 
 - **The linter and the formatter.** `selene` and `stylua --check`, both named on Roblox's own tools page, plus `npx roblox-optimum --check` over the changed files where roblox-optimum is installed. Exit 1 blocks the merge.
 - **The type check**, where the project runs the language server in CI.
 - **The lockfile is honoured.** `wally.lock` is committed, and CI runs `wally install` and then fails if the lockfile changed (`git diff --exit-code wally.lock`), so a build cannot silently resolve a different dependency version than a developer had. Stable Wally has no `--locked` flag ([external-editors.md](external-editors.md)).
 
-**Everything above reads the code without running it, which is the ceiling of a static gate.** Runtime tests in CI are reachable, and Roblox publishes the shape: [`Roblox/place-ci-cd-demo`](https://github.com/Roblox/place-ci-cd-demo) runs selene, then StyLua, then builds a place with Rojo, uploads it to a **dedicated test place**, and executes the suite there through the Open Cloud Luau Execution API before deploying. It assumes a fully managed project and a branch that maps to production — the same mapping the table above describes. Two facts about it are worth carrying even if the pipeline is not copied: **Luau Execution allows at most ten incomplete tasks per place, and task creation is rate-limited per API key owner**, so jobs need a concurrency group or they fail on contention rather than on the code, and the demo's own Python wrappers are written for the demonstration and are stated not to be general-purpose clients. A test place inside the production experience shares that experience's data stores; give the runtime suite its own experience unless the tests are meant to write live player data ([patterns/data.md](patterns/data.md)).
+**Everything above reads the code without running it, which is the ceiling of a static gate.** Runtime tests in CI are reachable, and Roblox publishes the shape: [`Roblox/place-ci-cd-demo`](https://github.com/Roblox/place-ci-cd-demo) runs selene, then StyLua, then builds a place with Rojo, uploads it to a **dedicated test place**, and executes the suite there through the Open Cloud Luau Execution API before deploying. It assumes a fully managed project and a branch that maps to production: the same mapping the table above describes. Two facts about it are worth carrying even if the pipeline is not copied: **Luau Execution allows at most ten incomplete tasks per place, and task creation is limited to five per minute per API key owner** (`openapi.json`), so jobs need a concurrency group or they fail on contention rather than on the code, and the demo's own Python wrappers are written for the demonstration and are stated not to be general-purpose clients. A test place inside the production experience shares that experience's data stores; give the runtime suite its own experience unless the tests are meant to write live player data ([patterns/data.md](patterns/data.md)).
 
 Then the part that needs a person: read the diff against the standards the project has adopted, not against taste. [review-checklist.md](review-checklist.md) drives that reading, and [evaluation-matrix.md](evaluation-matrix.md) the whole-project version of it when a branch is large enough to need one.
 
@@ -163,7 +163,7 @@ Three more facts about rolling back, all from Roblox's own documentation, all co
 
 - **Restoring a place version does not publish it.** The restore creates a new version; players keep seeing the old one until someone publishes.
 - **A revert can be overwritten by an active editor's autosave.** Turn collaboration off before reverting, or the revert loses a race it never announced.
-- **Autosave runs on two different clocks** — the place saves on one interval and scripts on another — so "nothing was saved yet" is rarely true and never worth assuming.
+- **Autosave runs on two different clocks**: the place saves on one interval and scripts on another, so "nothing was saved yet" is rarely true and never worth assuming.
 
 Version notes are required at publish and are the only durable record of what a release contained. Write them for the person doing the next rollback.
 
@@ -173,7 +173,7 @@ An Open Cloud API key, a `.ROBLOSECURITY` cookie, or a platform token committed 
 
 **Deleting it in a new commit does nothing.** The value stays in every clone, every fork, and every CI cache that ever fetched the repository, and it is one `git log -p` away for anyone who has read access now or had it once. A private repository is not a mitigation either; the set of people who can read it is larger than the set anyone can name.
 
-1. **Rotate first, before touching git at all.** Revoke the old value, issue a new one, update the CI secret store. Treat the credential as public from the moment it was pushed, because the cleanup takes minutes and an automated scanner takes seconds. For `.ROBLOSECURITY` specifically this is urgent past the point of ordinary key rotation — it is a full account takeover and **a password change does not revoke it** ([external-editors.md](external-editors.md#rojo)).
+1. **Rotate first, before touching git at all.** Revoke the old value, issue a new one, update the CI secret store. Treat the credential as public from the moment it was pushed, because the cleanup takes minutes and an automated scanner takes seconds. For `.ROBLOSECURITY` specifically this is urgent past the point of ordinary key rotation: it is a full account takeover and **a password change does not revoke it** ([external-editors.md](external-editors.md#rojo)).
 2. **Then rewrite the history**, with `git filter-repo` or the BFG Repo-Cleaner. This is the one case where the rule against rewriting published history is outranked, and it stays a coordinated operation: everyone re-clones afterwards, and any branch based on the old history is rebuilt rather than merged.
 3. **Close the path that let it in.** A `.gitignore` entry for the file's shape, and a secret scanner on the platform if one is available. The same file gets committed twice by default.
 
@@ -184,12 +184,11 @@ Nothing in this procedure recovers a leaked value. It only limits what the leake
 The whole setup, in the order that works:
 
 1. Clone the repository.
-2. `rokit install` — installs every tool at the version the project pins, from the manifest in the repository. Rokit supersedes Aftman and Foreman and reads their manifests unchanged, so an older project needs no migration to adopt it.
-3. `wally install` — resolves dependencies against the committed lockfile, so the new machine gets the versions everyone else has.
+2. `rokit install`: installs every tool at the version the project pins, from the manifest in the repository. Rokit supersedes Aftman and Foreman and reads their manifests unchanged, so an older project needs no migration to adopt it.
+3. `wally install`: resolves dependencies against the committed lockfile, so the new machine gets the versions everyone else has.
 4. Get Team Create access. Edit permission on a user-owned experience requires being a friend of the owner; a group-owned experience grants it by role instead, which is the reason serious teams are group-owned.
 5. Create their branch place from the canonical place.
 6. Connect the sync tool and confirm the direction before the first sync.
-
 7. `git lfs install`, then `git lfs pull`, on any project that tracks place files or models. Without it the tracked binaries arrive as pointer text, the lockable ones are never made read-only, and the lock discipline in [What git cannot merge](#what-git-cannot-merge) silently does not exist on that machine.
 
 **What belongs in git:** source, project files, `wally.toml`, `wally.lock`, the tool manifest, `.gitattributes`, CI configuration.
@@ -206,20 +205,20 @@ Each of these has a symptom that points somewhere other than its cause. When one
 | A feature works for its author and nobody else | It depends on a place change that never reached the canonical place |
 | A branch that passed CI breaks after merge | The lockfile was not honoured, or the branch place was stale relative to the world |
 | A deploy reports success but the change is invisible | It touched one of the five instance types Open Cloud does not update |
-| Attributes or tags on a script disappear | Script Sync ignores both ([external-editors.md](external-editors.md#studio-script-sync--the-official-one)) |
+| Attributes or tags on a script disappear | Script Sync ignores both ([external-editors.md](external-editors.md#studio-script-sync)) |
 | A drafts setting refuses to change | Toggling Drafts Mode requires every collaborator to leave first |
 | A pushed commit reappears after someone pulls | Published history was rebased; the old commits came back from a teammate's clone |
 | Someone's push vanished with no conflict | A bare `git push --force` overwrote it; `--force-with-lease` would have refused |
 | Two people saved the same place and one version is simply gone | No lock was held; place files do not merge, and nothing warned either of them |
-| A CI job fails on Luau execution but passes on retry | Two jobs hit the two-concurrent-request ceiling for that universe |
+| A CI job fails on Luau execution but passes on retry | Jobs hit the ten-incomplete-tasks-per-place ceiling or the task-creation rate limit |
 
 ## Where the evidence stops
 
 Held apart on purpose, because a process recommendation that quietly mixes the two is how a team adopts a stranger's habit as a rule.
 
-**Documented by Roblox or by the tool's own maintainers:** the ownership model of experiences and places, Team Create permissions and their friendship and role requirements, the autosave intervals, script version history and its revert caveat, the place restore behaviour, the Open Cloud endpoint and its five excluded instance types, the two-concurrent-request ceiling on Luau Execution and the pipeline shape in Roblox's own CI/CD demonstration, Script Sync's limits, Rojo's two workflow shapes and the one-place-per-programmer recommendation, Rokit's role and its compatibility with the managers it supersedes, Wally's lockfile guarantee, git's own rule against rebasing published commits, and Git LFS's locking behaviour for lockable patterns.
+**Documented by Roblox or by the tool's own maintainers:** the ownership model of experiences and places, Team Create permissions and their friendship and role requirements, the autosave intervals, script version history and its revert caveat, the place restore behaviour, the Open Cloud endpoint and its five excluded instance types, the Luau Execution task ceiling and rate limit and the pipeline shape in Roblox's own CI/CD demonstration, Script Sync's limits, Rojo's two workflow shapes and the one-place-per-programmer recommendation, Rokit's role and its compatibility with the managers it supersedes, Wally's lockfile guarantee, git's own rule against rebasing published commits, and Git LFS's locking behaviour for lockable patterns.
 
-**Measured rather than documented:** the branch count and branch lifetime figures, which come from the DevOps Research and Assessment program's delivery data and describe a correlation across many teams, not a threshold any tool enforces. The reason they bind harder on a Roblox team — a branch place ages against a world that keeps moving — is this file's reasoning, not theirs.
+**Measured rather than documented:** the branch count and branch lifetime figures, which come from the DevOps Research and Assessment program's delivery data and describe a correlation across many teams, not a threshold any tool enforces. The reason they bind harder on a Roblox team (a branch place ages against a world that keeps moving) is this file's reasoning, not theirs.
 
 **Community practice, working but unofficial:** the daily pull-then-refresh order, the three-tier branch and place mapping, the deploy-on-tag pipeline, and every convention here for handling remote objects.
 

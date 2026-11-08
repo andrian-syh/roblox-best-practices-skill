@@ -19,19 +19,19 @@ An objective 1–5 scoring rubric for developers, tech leads, and AI to audit ga
 
 ## How to use this matrix
 
-**Scope: run this only when the user asks for an audit.** It is a maturity rubric, not a review rubric, and the two grade differently. A finding in review has to clear the confidence gate and carry a concrete failure scenario; a score here is a comparison against a ceiling most shipped experiences never reach. Scoring 3 is a **pass** — the invariants hold. A 3 is not a defect list, and the gap between 3 and 5 is never reported as findings: demanding Parallel Luau, adaptive quality, or zero-allocation hot loops from a small finished project is exactly the enterprise ceremony [false-positives.md](false-positives.md#code-economy-and-device-scalability--authoring-goals-not-review-standards) forbids. Anything you would report as Blocker or Correctness stands on its own evidence, not on a low score.
+**Scope: run this only when the user asks for an audit.** It is a maturity rubric, not a review rubric, and the two grade differently. A finding in review has to clear the confidence gate and carry a concrete failure scenario; a score here is a comparison against a ceiling most shipped experiences never reach. Scoring 3 is a **pass**: the invariants hold. A 3 is not a defect list, and the gap between 3 and 5 is never reported as findings: demanding Parallel Luau, adaptive quality, or zero-allocation hot loops from a small finished project is exactly the enterprise ceremony [false-positives.md](false-positives.md#code-economy-and-device-scalability-authoring-goals-not-review-standards) forbids. Anything you would report as Blocker or Correctness stands on its own evidence, not on a low score.
 
 Evaluate systems against concrete, falsifiable technical indicators rather than subjective aesthetics. Each dimension is scored from 1 (Critical Hazard) to 5 (Studio Elite).
 
-- **1 — Critical Hazard (Blocker):** Active exploit vulnerability, catastrophic data loss risk, or unbounded memory leak.
-- **2 — Fragile (High Risk):** Missing recovery paths, heavy polling, deprecated core APIs, or noticeable frame spikes under load.
-- **3 — Functional Baseline (Passing):** Core invariants met; safe against honest players, event-driven cleanup, runs without runtime errors.
-- **4 — Production Ready (Robust):** Structured state machines, bounded exponential backoffs, tight payload budgets, and clean module contracts.
-- **5 — Studio Elite (Highly Optimized):** Full server-authoritative state reconciliation, parallel computation where beneficial, zero per-frame allocations, and multi-device scaling.
+- **1: Critical Hazard (Blocker):** Active exploit vulnerability, catastrophic data loss risk, or unbounded memory leak.
+- **2: Fragile (High Risk):** Missing recovery paths, heavy polling, deprecated core APIs, or noticeable frame spikes under load.
+- **3: Functional Baseline (Passing):** Core invariants met: remote arguments validated, event-driven cleanup, no runtime errors.
+- **4: Production Ready (Robust):** Structured state machines, bounded exponential backoffs, tight payload budgets, and clean module contracts.
+- **5: Studio Elite (Highly Optimized):** Full server-authoritative state reconciliation, parallel computation where beneficial, zero per-frame allocations, and multi-device scaling.
 
 ## Scoping the audit
 
-**Score a system, not a place.** "This game is a 3" is not actionable and is usually wrong in both directions at once: the combat code can be exploitable while the data layer is excellent. One scorecard covers one system with one owner — the data layer, the combat loop, the shop, the round lifecycle.
+**Score a system, not a place.** "This game is a 3" is not actionable and is usually wrong in both directions at once: the combat code can be exploitable while the data layer is excellent. One scorecard covers one system with one owner: the data layer, the combat loop, the shop, the round lifecycle.
 
 - **Ask what to audit, or state what you chose.** If the user named a system, score that. If they asked for "the project", pick the systems that carry the risk (anything touching money, saved data, or remotes first) and say which ones you covered and which you did not.
 - **Bound it before starting.** A place with two hundred scripts is not one audit. Three systems audited with evidence beat ten scored by impression.
@@ -45,7 +45,7 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 
 | Dimension | What to look for | Where |
 |---|---|---|
-| **1. Security** | `OnServerEvent`/`OnServerInvoke` handlers and what each does before acting; `typeof` checks; a shared rate limiter or none; whether damage, currency, and cooldowns are computed server-side; secrets or loot tables in `ReplicatedStorage` | Remote handler call sites, `ServerScriptService`, `ReplicatedStorage` |
+| **1. Security** | `OnServerEvent`/`OnServerInvoke` handlers and what each does before acting; `typeof` checks; a shared rate limiter or none; whether damage, currency, and cooldowns are computed server-side; secrets or hidden drop tables in `ReplicatedStorage` (disclosed paid odds belong there) | Remote handler call sites, `ServerScriptService`, `ReplicatedStorage` |
 | **2. Lifecycle** | `:Connect(` counts against teardown paths; `PlayerRemoving`/`CharacterRemoving`/`Destroying` handlers; per-player tables and whether each has a clear; a trove/maid or a bare bag | Every script that connects anything |
 | **5. Data safety** | `SetAsync` versus `UpdateAsync`; `pcall` and backoff around every store call; `BindToClose`; what happens when a load fails after its retries | The data module and every store call site |
 | **6. Structure** | Section layout; deprecated APIs (`wait`, `spawn`, `tick`, Body movers); one writer per piece of state; magic numbers; module contracts | Sampled representative scripts, not all of them |
@@ -55,7 +55,7 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 - **A playtest at realistic load**, not an empty place with one tester. Entity counts and player counts are what make the difference visible.
 - **Frame time against 16.67 ms**, from the MicroProfiler (`Ctrl+F6` in Studio), plus which tags dominate the frames that miss.
 - **Script Profiler for 10 seconds under load**, read from the top of the Self Time list.
-- **Scene Analysis** for Unparented Instances, Script Memory, and Animation Memory — the leak evidence dimension 2 needs when the static pass looks clean but memory climbs.
+- **Scene Analysis** for Unparented Instances, Script Memory, and Animation Memory: the leak evidence dimension 2 needs when the static pass looks clean but memory climbs.
 - **The 20x respawn audit** ([verification.md](verification.md#performance--memory-verification-proof-of-performance)) when lifecycle is the concern.
 - **Data Ping against Network Ping** and the MicroProfiler network view for dimension 4.
 - **Where a live game exists, the Performance Dashboard** outranks everything above: real crash rates and real memory from real devices.
@@ -97,7 +97,7 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 | **1** | Polling loops (`while task.wait() do`) used for state detection; table/closure allocations inside `RunService.Heartbeat` or `RenderStepped`; frame time regularly exceeds 16.67 ms. |
 | **2** | Heavy per-frame spatial queries without caching; string concatenation (`..`) inside loops; `FindFirstChild` or property indexing repeated across hot paths. |
 | **3** | Event-driven architecture replaces polling; references hoisted to VARIABLES; AI targeting and proximity scans throttled to 5–10 Hz with staggered execution. |
-| **4** | Zero per-frame GC allocations in hot loops; reuse of `RaycastParams`/`OverlapParams`; usage of `table.create` and `table.clear` for reusable buffers; native math optimization (`--!optimize 2`). |
+| **4** | Zero per-frame GC allocations in hot loops; reuse of `RaycastParams`/`OverlapParams`; usage of `table.create` and `table.clear` for reusable buffers; `--!native` and `--!optimize 2` only on compute-heavy modules a profile pointed at. |
 | **5** | Compute-heavy algorithms offloaded to Parallel Luau via `Actor` model with structured ReadParallel/Serial phases; SIMD-optimized `vector` library usage; gameplay frame time well within low-end device ceilings. Reference: [performance.md](performance.md) & [device-performance.md](device-performance.md). |
 
 ---
@@ -106,9 +106,9 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 
 | Score | Technical Criteria |
 |---|---|
-| **1** | RemoteEvents fired per-frame with uncompressed tables; private player balances or secrets exposed via replicated `Attributes`; network saturation causing high ping. |
+| **1** | RemoteEvents fired per-frame with uncompressed tables; secrets exposed through replicated instances or attributes; network saturation causing high ping. |
 | **2** | Full state tables replicated on every minor update instead of state deltas; reliable remotes used for ephemeral visual effects (tracers, particles). |
-| **3** | Remotes fired only on state transitions; distinct separation between private player data and public replicated attributes; throttled network traffic. |
+| **3** | Remotes fired only on state transitions; state the design keeps hidden goes through targeted remotes, not replicated attributes; throttled network traffic. |
 | **4** | `UnreliableRemoteEvent` used for high-frequency, loss-tolerant visuals; server-to-client traffic sends minimal state diffs; remote payloads stay within byte budgets. |
 | **5** | Bulk data serialized into binary `buffer` structures; client-side interpolation with server dead-reckoning; bandwidth consumption profile tuned across network tiers. Reference: [patterns/network.md](patterns/network.md) & [limits-budgets.md](limits-budgets.md#messaging). |
 
@@ -118,7 +118,7 @@ Evaluate systems against concrete, falsifiable technical indicators rather than 
 
 | Score | Technical Criteria |
 |---|---|
-| **1** | Raw `SetAsync` used for player progression; failed DataStore loads fall through to default data upon saving (catastrophic player data wipe risk). |
+| **1** | `SetAsync` on keys that more than one server writes; failed DataStore loads fall through to default data upon saving (catastrophic player data wipe risk). |
 | **2** | Unhandled DataStore error states; missing `BindToClose` data flush; saving on every score change instead of throttled session saves. |
 | **3** | `UpdateAsync` used with basic retry logic; data loaded into session RAM on join and served from memory; saves executed on `PlayerRemoving` and `BindToClose`. |
 | **4** | Fail-loud session policy (session marked unsaveable if load fails after retries, refusing to overwrite real data); bounded exponential backoff; clean JSON-serializable schema enforcement. |
@@ -160,9 +160,9 @@ When performing a system audit, format the evaluation summary using this structu
 | 3. CPU & Performance Budget | 4/5 | Robust | Script Profiler, 10 s at 40 NPCs | No function above 5% Self Time; AI staggered at 10 Hz. |
 | 4. Network & Replication | 2/5 | Fragile | MicroProfiler network view | Full inventory table replicated on every pickup. Send deltas. |
 | 5. Data Safety & Persistence | 5/5 | Elite | Read data module + forced shutdown | UpdateAsync with fail-loud session flag; schema versioned. |
-| 6. Structure & Maintainability | — | Not assessed | — | Sampled 3 of ~60 scripts; too little to score. |
+| 6. Structure & Maintainability | n/a | Not assessed | n/a | Sampled 3 of ~60 scripts; too little to score. |
 
-**Overall System Maturity:** **Fragile** — capped by Network & Replication (2/5), not the 4.0 mean.
+**Overall System Maturity:** **Fragile**, capped by Network & Replication (2/5), not the 4.0 mean.
 
 **Priority Action Items:**
 1. Replicate inventory changes as deltas; the full-table send is the frame-time and bandwidth cost behind the reported stutter.

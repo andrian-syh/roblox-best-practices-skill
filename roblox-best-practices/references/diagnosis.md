@@ -1,4 +1,4 @@
-# Diagnosis — From Symptom to Confirmed Cause
+# Diagnosis: From Symptom to Confirmed Cause
 
 The loop for a reported symptom whose cause is not yet known, and the Roblox-specific reasons a defect hides. This
 file is read when the symptom does not fall cleanly into one area, when the first hypothesis
@@ -122,14 +122,14 @@ that fails one time in a thousand, and the report should carry the number when i
 
 Persistence has its own failure modes, and they present as ordinary defects.
 
-- **Reset to default** — a read failed and the failure policy substituted a fresh profile
+- **Reset to default**: a read failed and the failure policy substituted a fresh profile
   instead of refusing to load. What happens after the last retry is a design decision, and
   reading zero as "new player" is the most damaging version of it.
-- **Rolled back** — a write was lost, or a stale server wrote last. Session ownership is what
+- **Rolled back**: a write was lost, or a stale server wrote last. Session ownership is what
   prevents this, not save frequency.
-- **Duplicated across servers** — the same identity is live in two places. The state is not
+- **Duplicated across servers**: the same identity is live in two places. The state is not
   wrong; the ownership is.
-- **Lost on shutdown** — the flush on close did not complete, or was never wired.
+- **Lost on shutdown**: the flush on close did not complete, or was never wired.
 
 The patterns behind each, including per-owner locking and the failure policy that must be
 stated rather than defaulted, are in [patterns/data.md](patterns/data.md). Platform ceilings
@@ -149,7 +149,7 @@ Ask in this order:
    exactly this symptom.
 2. **Did a client send it faster than intended?** Rate is a validation dimension. A call that is
    safe once is not safe a thousand times a second.
-3. **Did the client own the instance?** Ownership is per-instance, and a client that owns an
+3. **Did the client own the instance?** Ownership is granted per assembly, and a client that owns an
    assembly can move it in ways the server will accept as physics.
 4. **Only then, is the rule itself wrong?**
 
@@ -187,7 +187,7 @@ work also cannot be shown to have failed, and it will be trusted anyway.
 
 The diagnosis is done when all four hold:
 
-1. The failing path is named — file, function, and the line where the wrong value or wrong
+1. The failing path is named: file, function, and the line where the wrong value or wrong
    action originates.
 2. There is evidence, not inference. Something was observed failing, or the input that produces
    the failure is known.

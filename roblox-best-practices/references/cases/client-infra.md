@@ -10,7 +10,7 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Dominant risk:** building a remote for state that replicates for free, and re-laying out the UI every frame.
 **Server/client:** the server owns state; the client renders and never computes authoritative values.
 **Assembly:**
-1. **Prefer free replication.** State a client merely displays belongs on **attributes** (on the player or character) or tags, not on a custom remote. Remotes are for *actions*.
+1. **Prefer free replication.** Public state a client merely displays belongs on **attributes** (on the player or character) or tags, not on a custom remote; an attribute reaches every client, so state the design keeps private goes to its owner through a targeted remote ([performance.md](../performance.md#network)). Remotes are for *actions*.
 2. Drive UI from change signals (`GetAttributeChangedSignal`, `GetPropertyChangedSignal`), never a per-frame poll of a value.
 3. For values that genuinely change per frame (a depleting bar), tween or update the single element, and isolate it in its own container so it does not force layout recalculation of a large tree.
 4. Batch multi-field updates into one payload rather than firing several remotes.
@@ -34,10 +34,10 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 3. Clear all per-player buckets in `PlayerRemoving`.
 4. **Escalate, do not insta-kick.** Log, then soft-fail, then act. Mobile lag spikes produce honest bursts that look like spam.
 5. Log rejections with context (player, action, arguments, rate) so thresholds are tuned from data rather than guesses.
-6. Reserve `Players:BanAsync` for high-confidence signals; its alt-account and device options are strong medicine. Escalate along the documented ladder — silent logging, quiet mitigation, temporary restriction, visible enforcement — and require several independent signals before the last step ([security.md](../security.md#detection-and-the-consequence-ladder)).
+6. Reserve `Players:BanAsync` for high-confidence signals; its alt-account and device options are strong medicine. Escalate along the documented ladder (silent logging, quiet mitigation, temporary restriction, visible enforcement) and require several independent signals before the last step ([security.md](../security.md#detection-and-the-consequence-ladder)).
 **Never:** kick on a first violation · rely on client-side detection · build silent honeypots that auto-punish before a long observation period.
 **Failure modes:** a rate limit tuned on a desktop LAN test that kicks mobile players on a train. Pick tolerances from logged production distributions.
-**Not a trust boundary:** server-side `BindableEvent`s and internal module calls do not need client-style validation ([false-positives.md](../false-positives.md#security--validation--what-is-not-a-trust-boundary)).
+**Not a trust boundary:** server-side `BindableEvent`s and internal module calls do not need client-style validation ([false-positives.md](../false-positives.md#security--validation-what-is-not-a-trust-boundary)).
 **Verify:** replay a burst at several multiples of the intended rate and confirm the server rejects cleanly without erroring.
 **Deeper:** [security.md](../security.md#server-side-validation-layers)
 
@@ -48,12 +48,12 @@ Blueprints for the cross-cutting layers: how state reaches the screen, how abuse
 **Server/client:** emit from the server where the authoritative event happens; forward client errors through a rate-limited remote.
 **Assembly:**
 1. Instrument **at ship time**, not after a retention problem shows up. The data you lack is the data you needed.
-2. Use `AnalyticsService` custom events for funnels (onboarding steps, purchase flow, first session) and economy events (source and sink per currency).
+2. Use `AnalyticsService` from the **server**: `LogOnboardingFunnelStepEvent` for the first session, `LogFunnelStepEvent` for other funnels, `LogEconomyEvent` for every currency source and sink, and `LogCustomEvent` with low-cardinality fields. Limits and design rules: [growth-apis.md](../growth-apis.md#analyticsservice).
 3. Capture unhandled errors with `ScriptContext.Error` on both sides; forward client errors to the server through a **rate-limited** remote and log with script name and stack.
 4. Use structured `LogService` methods with context rather than `print` spam; keep debug-level output behind a Configuration flag, off by default.
 5. **Wrap every telemetry call in `pcall`.** Diagnostics must never crash gameplay.
 6. For memory attribution, tag systems with `debug.setmemorycategory` so "LuaHeap is growing" becomes "the pet system is growing", and read the live picture from the Performance Dashboard rather than from Studio ([performance.md](../performance.md#measurement-never-optimize-blind)).
-7. Cloud usage has its own dashboards: data store and memory store observability chart quota, throttling, and error status over 30 days, and memory stores raise alerts at 70% of quota. Instrument the game, but read those before concluding a cloud problem is a code problem.
+7. Cloud usage has its own dashboards: data store and memory store observability chart quota, throttling, and error status over 30 days, and memory stores send a warning above 70% of quota and a critical alert when the quota is exceeded. Instrument the game, but read those before concluding a cloud problem is a code problem.
 **Never:** log per frame · send player-identifying free text without filtering · let an analytics failure propagate into a gameplay path.
 **Failure modes:** a client error storm from one broken build saturating the error-forwarding remote. The rate limit on that remote is not optional.
 **Verify:** trigger an error deliberately and confirm it appears with context, while gameplay continues unaffected.

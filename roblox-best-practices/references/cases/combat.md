@@ -1,6 +1,6 @@
 # Cases: Combat & Entities
 
-Blueprints for systems where fairness and server CPU collide. Every recipe here depends on the place's authority mode, so **resolve that first** ([server-authority.md](../server-authority.md)) — the answers differ.
+Blueprints for systems where fairness and server CPU collide. Every recipe here depends on the place's authority mode, so **resolve that first** ([server-authority.md](../server-authority.md)): the answers differ.
 
 **Preflight:** identify the case → confirm the authority mode → check ceilings ([limits-budgets.md](../limits-budgets.md)) → fix the server/client split → decide how you will verify it ([verification.md](../verification.md)).
 

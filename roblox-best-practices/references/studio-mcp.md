@@ -33,7 +33,7 @@ How to drive a Studio MCP connection without destroying work, corrupting a place
 
 **5. Check what you actually have, every session, before the first call.** Tool sets change between Studio builds and between servers, and a session inherits nothing from the last one. Enumerate the connected tools, classify them ([below](#identify-the-variant-once-per-session)), and cache that for the session. Never assume the set from memory, from this file, or from a previous conversation.
 
-**6. The connection is a real permission grant.** Roblox states it plainly: an MCP client can read and modify content in the open place, so only trusted clients should be connected. That is the user's decision to make, not something to encourage; what it means for you is that every write lands in the user's actual working file ([Irreversible operations](#irreversible-operations)).
+**6. The connection is a real permission grant.** Roblox states it plainly: an MCP client can read and modify content in the open place, so only trusted clients should be connected. That is the user's decision to make, not something to encourage; what it means for you is that every write lands in the user's actual working file ([Irreversible operations](#irreversible-operations)). The MCP Permissions page in Assistant Settings narrows only `open_cloud_invoke`; it does not gate these local tools ([open-cloud.md](open-cloud.md#what-the-permissions-do-and-do-not-gate)).
 
 **7. A write is not done until a read shows it.** Several calls return success while nothing changed ([list](#calls-that-report-success-but-change-nothing)). After every write, read the result back in a separate call.
 
@@ -97,7 +97,7 @@ Read the available tools and classify. Cache the result for the session, the sam
 
 | Variant | Signature tools | Treatment |
 |---|---|---|
-| **Official built-in Studio MCP** (assume this by default) | Scripts: `script_read`, `multi_edit`, `script_search`, `script_grep` · Exploration: `search_game_tree`, `inspect_instance`, `subagent` · Execution: `execute_luau` · Playtest: `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture` · Input: `character_navigation`, `user_keyboard_input`, `user_mouse_input` · Generation: `generate_mesh`, `generate_material`, `generate_procedural_model`, `generate_texture`, `generate_scene`, `generate_avatar`, `auto_setup_avatar`, `segment_mesh`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image` · Reference: `http_get`, `skill`, `list_skills` · Skills: `create_skill`, `edit_skill` · Session: `list_roblox_studios`. The exact set varies by build, and the server can add tools during a session | Full guidance below applies |
+| **Official built-in Studio MCP** (assume this by default) | Scripts: `script_read`, `multi_edit`, `script_search`, `script_grep` · Exploration: `search_game_tree`, `inspect_instance`, `subagent` · Execution: `execute_luau` · Playtest: `get_studio_state`, `start_stop_play`, `get_console_output`, `screen_capture` · Input: `character_navigation`, `user_keyboard_input`, `user_mouse_input` · Generation: `generate_mesh`, `generate_material`, `generate_procedural_model`, `generate_texture`, `generate_scene`, `generate_avatar`, `auto_setup_avatar`, `segment_mesh`, `wait_job_finished`, `search_asset`, `insert_asset`, `upload_image`, `store_image` · Cloud: `open_cloud_invoke` · Reference: `http_get`, `skill`, `list_skills` · Skills: `create_skill`, `edit_skill` · Session: `list_roblox_studios`. The exact set varies by build, and the server can add tools during a session | Full guidance below applies |
 | **Standalone Rust server** (`Roblox/studio-rust-mcp-server`, archived; Roblox recommends the built-in server) | `run_code`, `insert_model`, `run_script_in_play_mode`, `get_studio_mode` | Narrower capability set; map through the capability table |
 | **Community, custom, or fork** | A mix, or names outside both sets | Rely entirely on each tool's own schema |
 
@@ -112,7 +112,7 @@ The official built-in server is the common case and the one Roblox recommends. A
 | Names match the **Rust standalone** lineage | The archived standalone server | Map through the capability table; do not expect the official tool set. Suggest the built-in Studio MCP server once, since the archived one gets no fixes |
 | Nothing matches anything known | A custom server | Treat side effects as **unknown until the schema proves otherwise** |
 
-**Extra caution:** for any unfamiliar tool whose name suggests `publish`, `save`, `delete`, `clear`, `reset`, or `overwrite`, confirm with the user before calling it, regardless of how harmless the description sounds. These are the calls that cannot be walked back.
+**Extra caution:** for any unfamiliar tool whose name suggests `publish`, `save`, `delete`, `clear`, `reset`, or `overwrite`, confirm with the user before calling it, regardless of how harmless the description sounds. These are the calls that cannot be walked back. A generic HTTP or API tool hides its effect in its arguments, so classify each call by method and path instead of by the tool name ([open-cloud.md](open-cloud.md#classify-every-call-before-sending-it)).
 
 ## Capability map
 
@@ -121,22 +121,23 @@ Attach the rules to the capability. Blank cells mean no dedicated tool is known 
 | Capability | Official | Rust standalone | Primary risk | Token discipline |
 |---|---|---|---|---|
 | Read a script | `script_read` (line ranges) | via `run_code` | A partial read can be refused; read the range through `execute_luau` instead | Locate with grep first, then read a range. Do not pull whole files |
-| Search scripts or patterns | `script_search` (max 10) · `script_grep` (max 50) | — | Results truncate **silently**; grep line numbers can be off | Narrow the query rather than repeating a broad one |
+| Search scripts or patterns | `script_search` (max 10) · `script_grep` (max 50) |: | Results truncate **silently**; grep line numbers can be off | Narrow the query rather than repeating a broad one |
 | Write or edit a script | `multi_edit` (Edit only) | via `run_code` | **Creates a new script when the path is mistyped**; `replace_all` reads a pattern ([below](#calls-that-report-success-but-change-nothing)) | Batch multiple edits into one call |
 | Execute Luau | `execute_luau` (Edit / Client / Server) | `run_code`, `run_script_in_play_mode` | **Freezes Studio until it yields; undo is not guaranteed; the Edit context is a separate VM** | Return a short answer; do not use for what an inspect call answers |
-| Explore the data model | `search_game_tree`, `inspect_instance` | via `run_code` | — | Always pass a start path and a depth; widen only if needed |
-| Autonomous sub-task | `subagent` (explore / playtest) | — | Expensive; a full sub-run. A playtest subagent can report a false pass | Only for genuinely multi-step exploration; confirm a pass with console output or a state read |
+| Explore the data model | `search_game_tree`, `inspect_instance` | via `run_code` |: | Always pass a start path and a depth; widen only if needed |
+| Autonomous sub-task | `subagent` (explore / playtest) |: | Expensive; a full sub-run. A playtest subagent can report a false pass | Only for genuinely multi-step exploration; confirm a pass with console output or a state read |
 | Control playtesting | `start_stop_play`, `get_studio_state` | `start_stop_play`, `get_studio_mode` | **Play-mode changes are discarded** | Check state once at the start and once after your own start or stop; never poll |
-| Read console output | `get_console_output` | `get_console_output` | — | Capture around the action, not the whole session |
-| Capture the viewport | `screen_capture` | — | Omits some UI during Play (BillboardGui, default ProximityPrompt, top bar, sometimes a ScreenGui) | Images are costly. Prove UI by reading properties from the Client DataModel |
-| Insert an asset | `insert_asset`, `search_asset` | `insert_model` | **Free models can carry backdoor scripts** | — |
-| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `generate_scene`, `generate_avatar`, `wait_job_finished` | — | — | Each generation is a billed or capped job. Iterate the prompt, do not spam generate; a generate tool that takes `async: true` returns a job id at once, and `wait_job_finished` collects the result |
-| Re-texture or split a mesh | `generate_texture`, `segment_mesh` | — | **`generate_texture` replaces the source mesh in place**; name it as irreversible before calling | `segment_mesh` leaves the source and inserts a new Model of up to 5 named parts beside it |
-| Convert local images to asset URIs | `store_image`, `upload_image` | — | Uploads leave the local machine | Only when a tool demands an `IMAGEID_<id>` argument |
-| Simulate input | `character_navigation`, `user_keyboard_input`, `user_mouse_input` (Client only) | — | Drives the real session | — |
-| Fetch documentation | `http_get`, `skill`, `list_skills` | — | — | Fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member for **semantics**. **Absence from a docs page never settles nonexistence**: the site trails the engine, so existence is settled by the API dump or an in-Studio probe ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)). Roblox skills are covered [below](#roblox-skills-over-mcp) |
-| Create or change a Roblox skill | `create_skill`, `edit_skill` | — | Publishes to the user's account at once and applies in every place they open | Only when the user asks |
-| Manage sessions | `list_roblox_studios`, plus a **`studio_id` argument carried by the individual tools** | — | **Wrong instance means the wrong place** | One listing per session; pass the id rather than re-listing |
+| Read console output | `get_console_output` | `get_console_output` |: | Capture around the action, not the whole session |
+| Capture the viewport | `screen_capture` |: | Omits some UI during Play (BillboardGui, default ProximityPrompt, top bar, sometimes a ScreenGui) | Images are costly. Prove UI by reading properties from the Client DataModel |
+| Insert an asset | `insert_asset`, `search_asset` | `insert_model` | **Free models can carry backdoor scripts** |: |
+| Generate assets | `generate_mesh`, `generate_material`, `generate_procedural_model`, `generate_scene`, `generate_avatar`, `wait_job_finished` |: |: | Each generation is a billed or capped job. Iterate the prompt, do not spam generate; a generate tool that takes `async: true` returns a job id at once, and `wait_job_finished` collects the result |
+| Re-texture or split a mesh | `generate_texture`, `segment_mesh` |: | **`generate_texture` replaces the source mesh in place**; name it as irreversible before calling | `segment_mesh` leaves the source and inserts a new Model of up to 5 named parts beside it |
+| Convert local images to asset URIs | `store_image`, `upload_image` |: | Uploads leave the local machine | Only when a tool demands an `IMAGEID_<id>` argument |
+| Simulate input | `character_navigation`, `user_keyboard_input`, `user_mouse_input` (Client only) |: | Drives the real session |: |
+| Call a Roblox web API | `open_cloud_invoke` |: | **Reaches live servers, prices, bans, and publishing; Studio shows no dialog before a granted write. Asset uploads are permanent** | Classify every call R, W, or X first ([open-cloud.md](open-cloud.md)). Use page sizes and specific paths; never list from a large root. Data stores and memory stores are not reached here: use `DataStoreService` and `MemoryStoreService` from `execute_luau`, which change live data under the same W and X rules |
+| Fetch documentation | `http_get`, `skill`, `list_skills` |: |: | Fetch `https://create.roblox.com/docs/en-us/reference/engine/classes/<Class>.md` and grep the member for **semantics**. **Absence from a docs page never settles nonexistence**: the site trails the engine, so existence is settled by the API dump or an in-Studio probe ([api-currency.md](api-currency.md#how-to-verify-the-toolbox)). Roblox skills are covered [below](#roblox-skills-over-mcp) |
+| Create or change a Roblox skill | `create_skill`, `edit_skill` |: | Publishes to the user's account at once and applies in every place they open | Only when the user asks |
+| Manage sessions | `list_roblox_studios`, plus a **`studio_id` argument carried by the individual tools** |: | **Wrong instance means the wrong place** | One listing per session; pass the id rather than re-listing |
 
 ## MCP preflight
 
@@ -146,6 +147,8 @@ Run these four before the **first write or execute** of a session. Each is one c
 2. **Which mode?** Query the Studio state. **Edit mode persists; play mode does not.** Never begin authoring work without knowing which one you are in.
 3. **Does the target exist?** Before an edit, confirm the script path by reading or searching for it. Do not let an edit call be the thing that discovers a typo.
 4. **Is this destructive?** If the operation deletes, overwrites broadly, publishes, or saves, confirm with the user first.
+
+A call through `open_cloud_invoke` reaches the experience in the cloud, not the open place, so it has a preflight of its own ([open-cloud.md](open-cloud.md#preflight-for-a-cloud-call)).
 
 When a sync tool owns the files, an MCP edit in Studio is not the end of the change. Under a filesystem-first tool (Rojo, Argon with two-way sync off) the next sync overwrites it, so edit the file instead. Under Azul, a git checkout while connected rewrites the place ([external-editors.md](external-editors.md)).
 
@@ -201,6 +204,8 @@ These return without an error while the place is unchanged or wrong. Each has a 
 | `Target is not reachable` during Play | A platform fault with Play-mode tools; it has come and gone between builds | Stop the playtest work and report it. Edit-mode calls may still work |
 | `Edit` rejected | Play is running | Stop play, or target `Server` or `Client` |
 | `execute_luau` cannot `require`, or `_G` is nil | The execution thread is capability-restricted in this build | Read `.Source` and compile with `loadstring` instead, or use a probe Script in play |
+| A scope "has not been granted", or 403 "Scope not authorized." from `open_cloud_invoke` | The user's MCP Permissions for this game withhold that scope | Stop. Ask the user to grant the one scope named. Never retry or route around it ([open-cloud.md](open-cloud.md#errors-and-when-to-stop)) |
+| 401 from `open_cloud_invoke`, or 403 with the scope enabled | A 401 may be a stale token; a repeat, or a 403 with the scope on, means the endpoint does not accept the MCP token | Retry a 401 once. Otherwise stop and suggest the Creator Dashboard or the user's own API key |
 | The same error twice in a row | The call or the environment is wrong, not unlucky | Stop and report. Never send the same failing call a third time |
 
 ## Running Luau through the tool
@@ -227,7 +232,7 @@ Full workflow and the injection pattern: [verification.md](verification.md#studi
 
 Roblox Assistant skills are Markdown instructions stored on the user's Roblox account. The official server exposes them.
 
-- `list_skills` shows what exists. Skills named `rbx-` are written by Roblox. Read one with `skill` when its topic matches the task.
+- `list_skills` shows what exists. Skills named `rbx-` are written by Roblox. Read one with `skill` when its topic matches the task. For Open Cloud they are `rbx-open-cloud-usage`, `rbx-permissions`, and `rbx-import-asset` ([open-cloud.md](open-cloud.md#what-the-tool-is)). A duplicated or copied skill stops receiving Roblox's updates.
 - A Roblox skill is a second opinion. The user's project conventions and this package win where they disagree.
 - `create_skill` and `edit_skill` publish to the user's account immediately and apply in every place the user opens. Call them only when the user asks.
 

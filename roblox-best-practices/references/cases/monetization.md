@@ -18,10 +18,10 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 6. Wrap the whole handler body in `pcall` so a thrown error cannot silently drop the receipt.
 **Never:** return `PurchaseGranted` before the grant is saved · grant from the client · assume the player is online during a retry.
 **Failure modes:** a server crash between granting and saving. Ordering the grant, the save, and the acknowledgement in that exact sequence is what makes the retry safe.
-**Where the history lives:** inside the player's own profile, as a capped list of handled `PurchaseId`s saved in the same write as the grant. One object, one write, one consistent state — a separate "purchases" store can succeed while the grant fails. **Session locking is what removes the cross-server race**: it guarantees no other server read or wrote the profile between this server's load and save ([patterns/data.md](../patterns/data.md#data-persistence)).
+**Where the history lives:** inside the player's own profile, as a capped list of handled `PurchaseId`s saved in the same write as the grant. One object, one write, one consistent state: a separate "purchases" store can succeed while the grant fails. **Session locking is what removes the cross-server race**: it guarantees no other server read or wrote the profile between this server's load and save ([patterns/data.md](../patterns/data.md#data-persistence)).
 **Reading back after a failure:** if a save fails and the handler needs to know whether the grant actually landed before returning `NotProcessedYet`, take that read with `DataStoreGetOptions.UseCache = false`. The default four-second cache will otherwise answer from exactly the state you are trying to check.
 **Verify:** grant a product, then force a shutdown before the autosave; rejoin and confirm exactly one grant exists.
-**Deeper:** [monetization-policy.md](../monetization-policy.md#processreceipt-developer-products--correctness-rules)
+**Deeper:** [monetization-policy.md](../monetization-policy.md#processreceipt-developer-products-correctness-rules)
 
 ## Pass and subscription gating
 
@@ -46,11 +46,11 @@ Blueprints for anything involving Robux. Money bugs are the most expensive kind:
 **Server/client:** the roll happens on the server. The client plays an animation of a result it has already been told.
 **Assembly:**
 1. **Gate on policy first.** Call `PolicyService:GetPolicyInfoForPlayerAsync` once per session, cache it, and hide or disable paid random items when `ArePaidRandomItemsRestricted` is true. On API failure, **fail closed** and treat the player as most restricted.
-2. Keep loot tables **server-side only**; a table in ReplicatedStorage is readable by every exploiter.
+2. Keep **one odds table per generator** that both the server roll and the disclosure UI read. For a paid generator the outcomes and odds are public by policy, so replicating that table is correct; keep server-only what is not disclosed (the random source, per-player pity state, unreleased items) ([monetization-policy.md](../monetization-policy.md#paid-random-items)).
 3. Roll server-side, grant, and persist before telling the client what it won.
-4. Disclose odds wherever the offer is presented.
+4. Disclose every outcome with odds summing to 100% before any Robux or purchased currency is spent, and show boosted odds while a modifier is active.
 5. Rate-limit rolls per player like any other remote action.
-**Never:** roll on the client · replicate the loot table · retrofit the policy branch after monetization ships · let the animation determine the outcome.
+**Never:** roll on the client · keep a second copy of the odds for the label · retrofit the policy branch after monetization ships · let the animation determine the outcome.
 **Failure modes:** the client learning the result early and disconnecting to reroll. Persist the outcome before the reveal, so a disconnect cannot undo it.
 **Verify:** disconnect mid-animation and confirm the reward is already committed on rejoin.
 **Deeper:** [monetization-policy.md](../monetization-policy.md#policy-compliance-policyservice) · [genres.md](../genres.md#simulator--tycoon--idle)

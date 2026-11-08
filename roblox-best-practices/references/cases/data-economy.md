@@ -1,6 +1,6 @@
 # Cases: Data & Economy
 
-Blueprints for persistence and the systems built directly on top of it. Each recipe gives recognition cues, assembly order, and the failure modes specific to that case. It does **not** restate the general rules — follow the cross-references for those.
+Blueprints for persistence and the systems built directly on top of it. Each recipe gives recognition cues, assembly order, and the failure modes specific to that case. It does **not** restate the general rules: follow the cross-references for those.
 
 **Preflight for every case here:** identify the case → check ceilings in [limits-budgets.md](../limits-budgets.md) → fix the server/client split → decide whether a community library owns the concern ([community-libraries.md](../community-libraries.md)) → decide how you will verify it ([verification.md](../verification.md)).
 
@@ -14,11 +14,11 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 2. All gameplay reads and writes hit the **cache**, never the DataStore.
 3. Save on `PlayerRemoving`, on a periodic autosave, in `BindToClose`, and on `game.ServerRestartScheduled`.
 4. Keep the value JSON-serializable **at write time**, not by sanitizing at save time.
-5. Version the store name and migrate on load.
+5. Keep a schema version inside each saved object and migrate on load; renaming the store abandons existing saves.
 **Never:** read a DataStore during gameplay · accept a client-reported balance or progress value · return success before the write is durable.
-**Failure modes:** a failed load silently falling through to defaults, which then overwrites real data on save. Guard it: if the load failed, mark the session unsaveable and tell the player, rather than saving defaults over their history — the fail-loud class in [patterns/data.md](../patterns/data.md#failure-policy-what-happens-after-the-last-retry).
+**Failure modes:** a failed load silently falling through to defaults, which then overwrites real data on save. Guard it: if the load failed, mark the session unsaveable and tell the player, rather than saving defaults over their history. This is the fail-loud class in [patterns/data.md](../patterns/data.md#failure-policy-what-happens-after-the-last-retry).
 **Budget:** 4 MB per key, 50-character keys, shared in-game/Open Cloud request budget ([limits-budgets.md](../limits-budgets.md#data-stores)).
-**Verify:** rejoin after a change, then force a shutdown mid-session; assert values survive both. When checking whether a failed write landed, read with `DataStoreGetOptions.UseCache = false` — the default four-second cache will happily confirm the value you just failed to save.
+**Verify:** rejoin after a change, then force a shutdown mid-session; assert values survive both. When checking whether a failed write landed, read with `DataStoreGetOptions.UseCache = false`: the default four-second cache will happily confirm the value you just failed to save.
 **Also design for deletion:** key player data by `UserId` so a right-to-be-forgotten template can match it ([patterns/data.md](../patterns/data.md#deleting-data-on-request-rtbf)).
 **Deeper:** [patterns/data.md](../patterns/data.md#data-persistence) · ProfileStore/ProfileService overlay: [community-libraries.md](../community-libraries.md#data-profilestore--profileservice)
 
@@ -28,8 +28,8 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 **Dominant risk:** duplication and negative balances.
 **Server/client:** every balance change is computed server-side from server state; the client sends intent only.
 **Assembly:**
-1. Represent a transaction as one server-side function that validates, applies, and records — never as separate "deduct" and "grant" calls that can interleave.
-2. Check affordability and apply the debit in the same non-yielding step; if a yield is unavoidable, re-validate the balance after it ([SKILL.md](../../SKILL.md#non-negotiable-runtime-rules) rule 7).
+1. Represent a transaction as one server-side function that validates, applies, and records: never as separate "deduct" and "grant" calls that can interleave.
+2. Check affordability and apply the debit in the same non-yielding step; if a yield is unavoidable, re-validate the balance after it ([runtime-rules.md](../runtime-rules.md), card item 7).
 3. Clamp and type-check every amount; reject non-integers and negatives outright.
 4. Mirror to `leaderstats` or attributes for display **after** the authoritative change, never as the source of truth.
 **Never:** let the client compute a price, a discount, or a total · store balance only in `leaderstats` · grant before the debit is confirmed.
@@ -67,4 +67,4 @@ Blueprints for persistence and the systems built directly on top of it. Each rec
 **Never:** trust client-reported item ids or quantities · allow a trade to proceed while either player is leaving, teleporting, or has unloaded data · run a trade across servers.
 **Failure modes:** a player disconnecting mid-swap so one side persists and the other does not. Guard with a per-player trade lock ([patterns/data.md](../patterns/data.md#serialized-operations-per-owner-locks)), cancel on `PlayerRemoving`, and make the swap-and-save sequence the last step.
 **Verify:** run a trade where one client leaves immediately after confirming; assert no item is created or destroyed.
-**Deeper:** [security.md](../security.md) · [false-positives.md](../false-positives.md#security--validation--what-is-not-a-trust-boundary)
+**Deeper:** [security.md](../security.md) · [false-positives.md](../false-positives.md#security--validation-what-is-not-a-trust-boundary)

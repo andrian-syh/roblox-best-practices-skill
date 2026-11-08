@@ -18,7 +18,7 @@ A pre-publish and live-operations gate for shipping a Roblox experience safely. 
 
 When a server shuts down or restarts for an update, Roblox gives all `game:BindToClose` callbacks a shared **30-second hard deadline** before terminating the process:
 
-- **Save all active sessions in parallel, never serially.** Waiting for each player's `UpdateAsync` one by one will exceed the 30-second window on a full server. Spawn one thread per active player and block `BindToClose` only until the counter hits zero or the deadline approaches ([patterns/data.md](patterns/data.md)).
+- **Save all active sessions in parallel, never serially.** Waiting for each player's `UpdateAsync` one by one will exceed the 30-second window on a full server. Spawn one thread per active player and block `BindToClose` until every save finishes ([templates.md](templates.md#modulescript) shows `SaveAll`).
 - **Guard Studio playtests.** In Studio, `BindToClose` runs when stopping a playtest and freezes the UI if it yields on soft-shutdown teleports. Check `RunService:IsStudio()` before running migration teleports, and keep Studio shutdown saves bounded.
 - **Listen to `game.ServerRestartScheduled` ([GA]).** When an experience update triggers a rolling or delayed restart, use `game.ServerRestartScheduled` to warn players in-UI, lock high-stakes trades or matchmaking queues, and flush state ahead of the final `BindToClose`.
 
@@ -60,8 +60,8 @@ Before and immediately after publishing, verify these Creator Hub telemetry thre
 
 | Metric | Production Gate | Action When Breached |
 |---|---|---|
-| **Client Crash Rate** | **< 2%** (investigate above 2–3%) | Check memory growth on 2–4 GB Android tier (`SceneAnalysisService`, untracked connections, uncompressed textures > 512×512). |
-| **Server Memory** | **< 50%** of `6.25 GiB + (100 MiB × maxPlayers)` | Server memory is not returned when players leave; audit `PlayerRemoving` cleanup for leaked player tables and instances. |
+| **Client Crash Rate** | Investigate a rise above 2 to 3%, above all one that starts with a release | Check memory growth on 2–4 GB Android tier (`SceneAnalysisService`, untracked connections, uncompressed textures > 512×512). |
+| **Server Memory** | **< 50%** of `6.25 GiB + (100 MiB × peak connected players)` | Server memory is not returned when players leave; audit `PlayerRemoving` cleanup for leaked player tables and instances. |
 | **Server Heartbeat** | **60 Steps/Sec** steady | Profile server scripts with `debug.profilebegin` / Script Profiler (`Self Time > 5%`) and offload heavy raycasts or pathfinding. |
 | **Client Frame Time** | **≤ 16.67 ms** (60 FPS) / GPU Wait **≤ 2.5 ms** | Keep baseline scenes under **1,000 draw calls** and **1,000,000 triangles**; enable `StreamingEnabled` and `Model.LevelOfDetail = SLIM` where appropriate. |
 | **Structured Error Logs** | Zero unhandled server stack traces in `LogService` | Monitor Creator Hub Error Report after every release; wrap external yields (`DataStore`, `HttpService`, `TeleportService`, `MarketplaceService`, `PolicyService`) in `pcall`. |

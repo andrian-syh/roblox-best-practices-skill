@@ -5,7 +5,7 @@ Taking money correctly and staying inside platform rules. The validation layers 
 ## Contents
 
 - [Purchases](#purchases)
-  - [ProcessReceipt (Developer Products) — correctness rules](#processreceipt-developer-products--correctness-rules)
+  - [ProcessReceipt (Developer Products): correctness rules](#processreceipt-developer-products-correctness-rules)
   - [Choosing the product type](#choosing-the-product-type)
 - [Policy compliance (PolicyService)](#policy-compliance-policyservice)
 - [Paid random items](#paid-random-items)
@@ -14,14 +14,14 @@ Taking money correctly and staying inside platform rules. The validation layers 
 
 ## Purchases
 
-### ProcessReceipt (Developer Products) — correctness rules
+### ProcessReceipt (Developer Products): correctness rules
 
 `MarketplaceService.ProcessReceipt` is the single most bug-prone monetization API. Rules:
 
 - **Exactly one** callback game-wide; set it in one server script.
-- **Idempotent:** Roblox retries receipts (server crash, prior `NotProcessedYet`, rejoin). Record processed `PurchaseId`s durably (in the player's data profile, as a capped history list) and return `PurchaseGranted` immediately for already-processed IDs — never grant twice.
+- **Idempotent:** Roblox retries receipts (server crash, prior `NotProcessedYet`, rejoin). Record processed `PurchaseId`s durably (in the player's data profile, as a capped history list) and return `PurchaseGranted` immediately for already-processed IDs: never grant twice.
 - **Grant, persist, then acknowledge:** apply the product effect, *save it* (or mark it inside the already-managed data profile), and only then return `Enum.ProductPurchaseDecision.PurchaseGranted`. Returning `PurchaseGranted` before the grant is durable = paid item lost on crash.
-- Return `NotProcessedYet` when: the player left, their data isn't loaded, or the grant failed. Roblox will retry — that's the mechanism, not an error.
+- Return `NotProcessedYet` when: the player left, their data isn't loaded, or the grant failed. Roblox will retry: that's the mechanism, not an error.
 - Wrap the whole handler logic in `pcall`; an error inside ProcessReceipt otherwise silently drops the receipt until retry.
 - Player may be offline on retry: either handle `player == nil` by returning `NotProcessedYet`, or design grants to work through the data store directly.
 
@@ -31,17 +31,17 @@ Taking money correctly and staying inside platform rules. The validation layers 
 |---|---|---|
 | Game Pass | Permanent one-time perks (VIP, x2 coins) | Check `UserOwnsGamePassAsync` (cache per session; also listen to `PromptGamePassPurchaseFinished`) |
 | Developer Product | Consumables, repeatable (currency, revives) | ProcessReceipt rules above |
-| Subscription | Recurring benefits | Check status on join + `UserSubscriptionStatusChanged`; always handle lapse |
-| Paid access / Managed Pricing | Whole-experience monetization | Managed Pricing (regional + optimization) is platform-side; don't hardcode price displays — read from `GetProductInfoAsync` |
+| Subscription | Recurring benefits | Check `MarketplaceService:GetUserSubscriptionStatusAsync` on join and listen to `Players.UserSubscriptionStatusChanged`; always handle lapse |
+| Paid access / Managed Pricing | Whole-experience monetization | Managed Pricing (regional + optimization) is platform-side; don't hardcode price displays: read from `GetProductInfoAsync` |
 
 - **Prices vary by region.** Passes, avatar items and opted-in developer products can sell below their default price in some regions (up to 70% lower, never higher), so never compare against or display a hardcoded Robux amount: read `PriceInRobux` from `MarketplaceService:GetProductInfoAsync` (or `GetDeveloperProductsAsync`) at display time ([DevForum](https://devforum.roblox.com/t/-/3971235), [api-currency.md](api-currency.md#engine)).
 - **Trades and gifts cross price regions.** An item bought cheaply in one region and traded or gifted to a player in another is price arbitrage. `MarketplaceService:GetUsersPriceLevelsAsync(userIds)` returns each user's price level from 1 to 1000, where 1000 is the full global price; gate a transfer on the difference between the two levels ([regional pricing](https://create.roblox.com/docs/production/monetization/regional-pricing#protect-your-trades-and-gifts)).
-- Never trust a client claim of ownership — verify server-side, cache the result, invalidate on purchase-finished events.
+- Never trust a client claim of ownership: verify server-side, cache the result, invalidate on purchase-finished events.
 - Prompt purchases from the client (`PromptProductPurchase` etc. work there), but *effects* only ever originate from server-side verification.
 
 ## Policy compliance (PolicyService)
 
-Some features are legal for one player and prohibited for another (region, age). On join, `pcall` `PolicyService:GetPolicyInfoForPlayerAsync(player)` once, cache it per session, and gate features with it. On API failure, **fail closed** — treat the player as most-restricted.
+Some features are legal for one player and prohibited for another (region, age). On join, `pcall` `PolicyService:GetPolicyInfoForPlayerAsync(player)` once, cache it per session, and gate features with it. On API failure, **fail closed**: treat the player as most-restricted.
 
 | Field | Gates |
 |---|---|
@@ -53,7 +53,7 @@ Some features are legal for one player and prohibited for another (region, age).
 
 The list of restricted regions and ages is kept by Roblox behind this API and changes without a release. Never hardcode a country list; gate on the field.
 
-Genre note: gacha/lootbox-heavy designs (simulators, pet games, RPGs) must build the `ArePaidRandomItemsRestricted` branch from day one — retrofitting it after monetization ships is far more expensive.
+Genre note: gacha/lootbox-heavy designs (simulators, pet games, RPGs) must build the `ArePaidRandomItemsRestricted` branch from day one, because retrofitting it after monetization ships is far more expensive.
 
 ## Paid random items
 
@@ -85,6 +85,7 @@ Random rewards earned through play, with no Robux or purchased currency spent, a
 
 - **Gate on `AreAdsAllowed`.** A player for whom it is `false` sees no ad unit and no ad offer.
 - **Rewarded video.** The reward is a developer product, never Robux and never a random item. `AdService:GetAdAvailabilityNowAsync` says whether an ad can show, `CreateAdRewardFromDevProductId` builds the reward, and `ShowRewardedVideoAdAsync` plays it; the grant arrives through `ProcessReceipt`, so the receipt rules above apply in full. Read the `AdService` reference for which side calls each one before writing the flow.
+- Roblox publishes placement guidance and genre playbooks (obby, simulator, tycoon, RPG, shooter, survival, sports) for where a rewarded offer fits ([rewarded video optimization](https://create.roblox.com/docs/production/promotion/rewarded-video-optimization)).
 - Check availability when the offer is about to show, not on join. The offer names its reward, the player opts in with one clear action, and the grant follows at once. An ad never gates progress or covers the screen, and the reward is small enough not to inflate the economy.
 - **Players under 13 get no rewarded format,** and no mechanic may reward an under-13 player for engaging with an ad. Never show the offer where availability says no.
 - **Immersive ads.** Portals use the `BasePortal` package unmodified apart from scale, position, and rotation. Ineligible players see a fallback image, which the platform provides.

@@ -1,4 +1,4 @@
-# Edge Cases — The Robustness Pass
+# Edge Cases: The Robustness Pass
 
 A catalog of the states Roblox code actually meets in production, grouped by what triggers them. Run it against a function before considering it finished.
 
@@ -106,7 +106,7 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | A yield splits check from use | Everything validated before the yield may now be false | Non-Negotiable #7 |
 | Pending `task.delay` after teardown | Fires against a destroyed owner | Keep the handle and `task.cancel` it |
 | Teardown by `Destroy()` while handlers are queued | The queued handlers still run, against state the teardown has already dismantled; only `Disconnect()` drops them | `Disconnect()` first where it matters ([luau-language.md](luau-language.md#deferred-engine-events)) |
-| `BindableFunction:Invoke` with no `OnInvoke` set | The invoking thread never resumes — no error, no timeout | Set the callback before anything can invoke, or use a `BindableEvent` and stop needing the reply |
+| `BindableFunction:Invoke` with no `OnInvoke` set | The invoking thread never resumes: no error, no timeout | Set the callback before anything can invoke, or use a `BindableEvent` and stop needing the reply |
 | `BindableEvent:Fire` and its listeners | Each listener runs on a thread of its own: `Fire` returns before they finish even if one yields, and a listener that errors reaches neither the firer nor the other listeners | Never treat the line after `Fire` as "the listeners have run" |
 | Shutdown mid-flow | Partial work persists, or nothing does | Make the persist step the last step |
 
@@ -115,7 +115,7 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | State | What breaks | Guard |
 |---|---|---|
 | Remote fires before the receiver is ready | The event is lost with no error | Create remotes in one place at startup; have clients `WaitForChild` |
-| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([monetization-policy.md](monetization-policy.md#processreceipt-developer-products--correctness-rules)) |
+| Duplicate delivery | Double grants, double spends | Idempotency by request id; `ProcessReceipt` already requires this ([monetization-policy.md](monetization-policy.md#processreceipt-developer-products-correctness-rules)) |
 | Arguments of any type, at any rate | Type errors, or the handler acting on garbage | Validate type, range, ownership, rate ([patterns/network.md](patterns/network.md#remote-communication)) |
 | Flooding | The handler starves the server | One shared rate limiter ([cases/client-infra.md](cases/client-infra.md#rate-limiting-and-the-anti-cheat-layer)) |
 | A table sent through a remote arrives changed | Functions become `nil`, metatables are stripped so an OOP object arrives as plain data, non-string keys become strings, a `nil` inside truncates it, and instances the receiver cannot see arrive `nil` | Send ids and plain data; rebuild behavior from a shared catalog on the far side ([patterns/network.md](patterns/network.md#what-survives-a-remote-call)) |
@@ -129,14 +129,14 @@ Reuse trades allocation cost for state that outlives one use. Every entry here i
 | State | What breaks | Guard |
 |---|---|---|
 | First-time player | Every field is nil; the code assumed a shape | Fill defaults on load, or reconcile against a schema |
-| Old schema version | Missing or renamed fields read as nil mid-gameplay | Version the store name and migrate on load |
+| Old schema version | Missing or renamed fields read as nil mid-gameplay | Keep a schema version inside the saved object and migrate on load ([patterns/data.md](patterns/data.md#data-persistence)) |
 | Partial write | Half-applied state that is internally inconsistent | Persist in one call; do not split a transaction across saves |
 | Value exceeded a ceiling | The save fails and the player silently loses progress | Design the payload against the limits ([limits-budgets.md](limits-budgets.md#data-stores)) |
 | Concurrent servers on one key | Lost updates from a read-modify-write race | `UpdateAsync`, plus session locking where duplication matters |
 
 ## Cloud calls
 
-Every row here is a failure the call itself reports as success, which is what makes them expensive.
+Most rows here are failures the call itself reports as success, which is what makes them expensive.
 
 | State | What breaks | Guard |
 |---|---|---|
@@ -146,7 +146,7 @@ Every row here is a failure the call itself reports as success, which is what ma
 | One hot key under load | Per-key throughput (25 MB/min read, 4 MB/min write) and per-partition MemoryStore limits throttle while the experience-wide quota still looks healthy | Shard the key space; check `GetRequestBudgetForRequestType()` before assuming headroom |
 | A MemoryStore queue item processed slowly | The invisibility timeout expires mid-processing and another server reads the same item | Fit read-process-remove inside the timeout, and make the processing idempotent ([patterns/network.md](patterns/network.md#cross-server-communication)) |
 | Data keyed by something other than `UserId` | A right-to-be-forgotten template cannot match it, and the 30-day obligation cannot be met | Key player data by `UserId` from the start ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)) |
-| A secret needed during a local playtest | Secrets resolve only in live servers and Team Test, so the code path silently takes its failure branch in Studio | Test that path in Team Test; never fall back to a hardcoded key |
+| A secret needed during a local playtest | Secrets resolve only in live servers and Team Test, so without a **Local Secrets** entry the code path silently takes its failure branch in Studio | Test that path in Team Test or with a Local Secrets value; never fall back to a hardcoded key |
 | An Open Cloud job running against the live experience | Both draw from the same request budget, so a batch job starves gameplay | Self-throttle the job, or schedule it off-peak |
 
 ## UI

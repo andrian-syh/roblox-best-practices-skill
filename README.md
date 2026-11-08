@@ -36,7 +36,8 @@ The skill covers how each script is written, how game systems are assembled, and
 | | roblox-best-practices-skill | roblox-optimum |
 |---|---|---|
 | Coding standard (layout, runtime rules, blueprints, references) | Yes | Yes, released first |
-| Review, diagnosis, and Studio-tooling guidance | Inside the one skill | Separate `code-review`, `diagnose`, and `studio-ops` skills |
+| Review, diagnosis, Studio-tooling, and publishing guidance | Inside the one skill | Separate `code-review`, `diagnose`, `studio-ops`, and `publishing` skills |
+| Open Cloud call gate for Studio MCP | The rules, in `open-cloud.md` | The rules, plus a hook and an MCP tool that enforce them |
 | Static checker for the standard's rules | No | Yes, as a CLI and an MCP tool |
 | Editor hooks that feed findings back to the agent | No | Yes |
 | Install shape | A skill folder copied into each agent's skills directory | A plugin per host |
@@ -98,15 +99,16 @@ The skill opens with an invariant card that the agent carries verbatim into any 
 
 ## Reference map
 
-[`SKILL.md`](roblox-best-practices/SKILL.md) is the only file loaded on activation. It routes each task to the one reference it needs among 39 files under [`references/`](roblox-best-practices/references/).
+[`SKILL.md`](roblox-best-practices/SKILL.md) is the only file loaded on activation. It routes each task to the one reference it needs among 43 files under [`references/`](roblox-best-practices/references/).
 
 | Group | Files |
 |---|---|
 | Authoring | `templates`, `section-layout`, `style-rules`, `minimal-code`, `edge-cases`, `adaptive-mode`, `community-libraries`, `luau-language` |
 | Blueprints | `cases/data-economy`, `cases/monetization`, `cases/progression`, `cases/combat`, `cases/session-flow`, `cases/world-interaction`, `cases/client-infra` |
-| Patterns | `patterns`, `patterns/data`, `patterns/network`, `patterns/lifecycle`, `patterns/world` |
-| Depth | `performance`, `device-performance`, `security`, `monetization-policy`, `server-authority`, `limits-budgets`, `ui-crossplatform`, `genres` |
-| Process | `workflow`, `runtime-rules`, `review-checklist`, `false-positives`, `evaluation-matrix`, `diagnosis`, `verification`, `studio-mcp`, `external-editors`, `team-workflow`, `api-currency` |
+| Patterns | `patterns/data`, `patterns/network`, `patterns/lifecycle`, `patterns/world` |
+| Depth | `performance`, `device-performance`, `security`, `monetization-policy`, `growth-apis`, `server-authority`, `limits-budgets`, `ui-crossplatform`, `genres` |
+| Process | `workflow`, `runtime-rules`, `review-checklist`, `false-positives`, `evaluation-matrix`, `diagnosis`, `verification`, `studio-mcp`, `open-cloud`, `external-editors`, `team-workflow`, `release-readiness`, `api-currency` |
+| Launch and live ops | `publishing`, `live-ops` |
 
 The engine and Luau baseline, with the date it was checked, is kept in [`api-currency.md`](roblox-best-practices/references/api-currency.md).
 

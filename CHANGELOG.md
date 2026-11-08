@@ -8,6 +8,32 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-11-08
+
+Ported from roblox-optimum 1.18.1, which takes in 1.16.0 and 1.17.0. The skill now covers Open Cloud through the Studio MCP server, and every reference was audited against current Roblox documentation, the engine 746 API dump, and `openapi.json`.
+
+### Added
+
+- Added `open-cloud.md` for the Studio MCP tool `open_cloud_invoke`: MCP Permissions and its access levels, which calls are reads, reversible writes, irreversible, or never sent, data stores through `execute_luau`, recipes, rollback points, and errors.
+- Added journey events to the analytics reference, search ads to the live-ops reference, regional content availability to the publishing reference, Roblox's rewarded video playbooks, and a WCAG text contrast check with `Color3:GetContrastRatio`.
+- Added engine 746 and Luau 0.746 to the currency file, including `PlayerCharacterDestroyBehavior` becoming the default and Rojo 7.7.1 or later for `*Content` properties.
+
+### Changed
+
+- Changed the invariant card to the twelve-item card roblox-optimum uses: it now omits empty sections, lists the common deprecated APIs, and requires facts to be cited.
+- Rewrote `external-editors.md` from 40 KB to 20 KB, keeping what changes a decision and leaving install steps to each tool's docs.
+- Replaced every em dash in the skill with plain punctuation.
+
+### Removed
+
+- Removed `patterns.md`, which only repeated the index's list of the four pattern pages.
+
+### Fixed
+
+- Fixed the Luau Execution limit, `Workspace.AuthorityMode` readability, `StreamingAdaptiveRadius` access, the Input Action Manager and frustum streaming status, `UIShadow` text shadows, Local Secrets, the `BanAsync` device block, notification sending from Luau, and Ads Manager keyword targeting, each checked against Roblox's own pages.
+- Fixed references that contradicted each other: hiding loot tables against odds disclosure, serial saves in `BindToClose` against the 30-second window, renaming a store for a schema change, supervision precedence, and the severity given to attributes and `SetAsync`.
+- Fixed the data template's `SaveAll`, which saved players one after another; it now saves in parallel.
+
 ## [2.4.0] - 2026-11-02
 
 Ported from roblox-optimum 1.15.0. The skill now also answers questions about taking a Roblox game public, and the money and analytics references cover the platform rules that touch code.
@@ -620,7 +646,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.5.0...HEAD
+[2.5.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.2.0...v2.3.0

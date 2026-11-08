@@ -1,4 +1,4 @@
-# Minimal Code — Reuse First, Then Write Less
+# Minimal Code: Reuse First, Then Write Less
 
 The cheapest code is the code never written. This file governs **how much** code to produce; [performance.md](performance.md) governs how cheap it is to run, and [device-performance.md](device-performance.md) governs whether it fits the frame.
 
@@ -6,7 +6,7 @@ The cheapest code is the code never written. This file governs **how much** code
 
 - [Four precedence rules (read these before the ladder)](#four-precedence-rules-read-these-before-the-ladder)
 - [The ladder](#the-ladder)
-- [Already exists — do not hand-roll these](#already-exists--do-not-hand-roll-these)
+- [Already exists: do not hand-roll these](#already-exists-do-not-hand-roll-these)
 - [Searching the project first](#searching-the-project-first)
 - [Density rules](#density-rules)
 - [What the pass leaves behind](#what-the-pass-leaves-behind)
@@ -30,7 +30,7 @@ This is the failure mode the ladder invites, so it is the rule that comes first:
 | Collapsing nested branches into guard clauses | Stopping at a partial implementation and calling it minimal |
 | Reusing an existing helper instead of writing a second | Silently narrowing the scope the user described |
 
-Rung 1 of the ladder ("does this need to exist?") applies to **things you invented** — speculative abstractions, unrequested options, scaffolding for a caller nobody asked for. It never applies to what the user asked for. If something they requested genuinely should not be built, say so and let them decide; do not quietly omit it ([SKILL.md](../SKILL.md#user-authority)).
+Rung 1 of the ladder ("does this need to exist?") applies to **things you invented**: speculative abstractions, unrequested options, scaffolding for a caller nobody asked for. It never applies to what the user asked for. If something they requested genuinely should not be built, say so and let them decide; do not quietly omit it ([SKILL.md](../SKILL.md#user-authority)).
 
 The result must still be robust: edge cases handled ([edge-cases.md](edge-cases.md)), failures guarded, cleanup present. Terse and complete are not in tension. A function that is short *because it does less than asked* has failed, however elegant it reads.
 
@@ -66,13 +66,13 @@ The ladder asks "does this need to exist?", and the answer is always **yes** for
 - Error handling on the paths that lose player data
 - The accessibility settings the engine already exposes, where the feature touches them ([ui-crossplatform.md](ui-crossplatform.md#the-styling-system))
 
-These are Non-Negotiable Runtime Rules ([SKILL.md](../SKILL.md#non-negotiable-runtime-rules)). Deleting one is not a simplification; it is a defect that happens to be short. Trim mechanism, never guarantees.
+These are runtime rules ([runtime-rules.md](runtime-rules.md)). Deleting one is not a simplification; it is a defect that happens to be short. Trim mechanism, never guarantees.
 
 ### 4. Minimalism never precedes understanding
 
 The ladder shortens the solution, never the reading. Walk it **after** tracing what the change touches: the callers, the remote on the other side, the place the state actually lives. A small diff in the wrong place is not lazy, it is a second defect wearing the shape of efficiency.
 
-This binds hardest on a fix. A report names a **symptom**, and the first plausible file is rarely the cause. Before editing a shared function, find every caller — a single guard inside the function is a smaller diff than one guard per call site, and patching only the path the report names leaves every sibling caller broken. Where the cause is not yet known, that work belongs to [diagnosis.md](diagnosis.md) and finishes before this file applies.
+This binds hardest on a fix. A report names a **symptom**, and the first plausible file is rarely the cause. Before editing a shared function, find every caller: a single guard inside the function is a smaller diff than one guard per call site, and patching only the path the report names leaves every sibling caller broken. Where the cause is not yet known, that work belongs to [diagnosis.md](diagnosis.md) and finishes before this file applies.
 
 ## The ladder
 
@@ -86,7 +86,7 @@ Before writing a function, walk these in order and stop at the first that answer
 6. **Can it be one line?** Then it is one line, not a function.
 7. **Only then:** write the minimum that works.
 
-## Already exists — do not hand-roll these
+## Already exists: do not hand-roll these
 
 The concrete payload of this file. Each left-hand entry is something agents routinely reimplement in Roblox projects.
 
@@ -150,12 +150,12 @@ Two opposite anti-goals matter just as much. **A function that is short because 
 
 ## What the pass leaves behind
 
-The density rules govern what gets written. These govern what is still there when the work is handed over, which is a different failure and the one an agent is most prone to: the measured signature of machine-written code is not bad logic, it is **leftovers** — dead bindings, redundant branches, and scaffolding that outlived its purpose.
+The density rules govern what gets written. These govern what is still there when the work is handed over, which is a different failure and the one an agent is most prone to. The measured signature of machine-written code is not bad logic but **leftovers**: dead bindings, redundant branches, and scaffolding that outlived its purpose.
 
-- **No unused bindings.** A local, a parameter, a `require`, or a function nothing calls is dead the moment it ships. Delete it rather than leaving it for the linter (`LocalUnused`, `FunctionUnused`, `ImportUnused` — [luau-language.md](luau-language.md#the-linters-vocabulary)). Deleting an unused *parameter* changes a signature: check the callers first.
+- **No unused bindings.** A local, a parameter, a `require`, or a function nothing calls is dead the moment it ships. Delete it rather than leaving it for the linter (`LocalUnused`, `FunctionUnused`, `ImportUnused`: [luau-language.md](luau-language.md#the-linters-vocabulary)). Deleting an unused *parameter* changes a signature: check the callers first.
 - **No placeholders in delivered code.** `-- TODO`, `-- implement this`, an empty function body standing in for logic, a hard-coded id or sample table meant to be replaced. Either build it or say plainly that it is not built; a stub that looks finished is worse than a gap the user can see.
 - **No leftover debug output.** `print` calls added while working come out before the hand-off. Logging that the feature genuinely needs is a deliberate line with context, not a bare value ([performance.md](performance.md#measurement-never-optimize-blind)).
-- **No second version of the same thing.** The older function, the commented-out block, the variant kept "just in case" — a reader cannot tell which one is live. Version control holds the previous version already.
+- **No second version of the same thing.** The older function, the commented-out block, the variant kept "just in case": a reader cannot tell which one is live. Version control holds the previous version already.
 
 Applies to code this pass wrote. Leftovers already in the file belong to whoever wrote them: report them, never silently sweep them up ([SKILL.md](../SKILL.md#user-authority)).
 
@@ -163,7 +163,7 @@ Applies to code this pass wrote. Leftovers already in the file belong to whoever
 
 Some simplifications are correct now and will not stay correct. A single shared lock, a linear scan over a list that is small today, a heuristic standing in for a real calculation: each is the right call at the current scale and each has a scale where it stops being one. An unmarked ceiling is indistinguishable from an oversight, so the next reader either rewrites working code or trusts it past its limit.
 
-Name the ceiling and the way out **in the function's Documentation Comment**, at contract level, not as a note beside the statement — in-body prose comments stay banned ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)). One clause is enough: what the shortcut is, and what replaces it when the limit arrives.
+Name the ceiling and the way out **in the function's Documentation Comment**, at contract level, not as a note beside the statement: in-body prose comments stay banned ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)). One clause is enough: what the shortcut is, and what replaces it when the limit arrives.
 
 This applies only to a shortcut with a known ceiling. Ordinary short code needs no confession, and a ceiling that has already been reached is a defect to fix rather than a clause to write.
 
@@ -192,7 +192,7 @@ Two cases, both requiring you to say so rather than deciding silently:
 
 [Ponytail](https://github.com/DietrichGebert/ponytail) is an **AI-agent plugin, not a Roblox plugin and not a Luau library.** It enforces exactly this concern through a seven-rung ladder, which is what the ladder above is adapted from.
 
-Everything this file takes from it is already written out above, translated into Roblox terms: the ladder, the reuse-before-writing rule, root cause over symptom, the density rules, the ceiling marker, the runnable check, and the list of things minimalism never touches. Its web-platform catalog has no bearing here; the engine table under [Already exists](#already-exists--do-not-hand-roll-these) is the Roblox equivalent. **Nothing on this page depends on having it installed.**
+Everything this file takes from it is already written out above, translated into Roblox terms: the ladder, the reuse-before-writing rule, root cause over symptom, the density rules, the ceiling marker, the runnable check, and the list of things minimalism never touches. Its web-platform catalog has no bearing here; the engine table under [Already exists](#already-exists-do-not-hand-roll-these) is the Roblox equivalent. **Nothing on this page depends on having it installed.**
 
 - **Detect it** by its commands (`/ponytail`, `/ponytail-review`, `/ponytail-audit`) or its rule files in the repository.
 - **If present, it owns minimalism.** Follow its ladder, and respect whatever intensity the user has set (`lite`, `full`, `ultra`, `off`) rather than overriding it with this file. Its review and audit commands are the user's to invoke, not yours to run unprompted.

@@ -1,6 +1,6 @@
 # Script Templates
 
-Canonical, fully-annotated examples of the section layout. Copy the shape, not the content. Omit any subsection that would be empty — never leave placeholder headers.
+Canonical, fully-annotated examples of the section layout. Copy the shape, not the content. Omit any subsection that would be empty: never leave placeholder headers.
 
 ## Contents
 
@@ -113,7 +113,7 @@ local DataStoreService = game:GetService("DataStoreService")
 local DeepCopy = require(script.Parent.DeepCopy)
 
 -- | Configuration | --
-local STORE_NAME = "PlayerData_v1"
+local STORE_NAME = "PlayerData"
 local MAX_RETRIES = 3
 local RETRY_BASE_DELAY = 1
 
@@ -187,8 +187,25 @@ end
 	Persists the data of every active player, returning only once each save has finished.
 ]]
 function PlayerData.SaveAll()
+	local players = {}
 	for player in sessions do
-		PlayerData.Save(player)
+		table.insert(players, player)
+	end
+
+	local remaining = #players
+	local caller = coroutine.running()
+	for _, player in players do
+		task.spawn(function()
+			PlayerData.Save(player)
+			remaining -= 1
+			if remaining == 0 and coroutine.status(caller) == "suspended" then
+				task.spawn(caller)
+			end
+		end)
+	end
+
+	if remaining > 0 then
+		coroutine.yield()
 	end
 end
 
@@ -244,13 +261,13 @@ updateCoinDisplay()
 
 - The ModuleScript's table (`local PlayerData = {}`) lives at the end of State Management; static data assigned to it (like `Defaults`) may be set in INITIALIZATION.
 - `table.pack`/`table.unpack` in `withRetry` is acceptable here because retries are rare-path; never do this in a hot loop.
-- The LocalScript reads state via Attributes rather than a RemoteEvent — prefer attribute/tag replication for simple state; reserve remotes for actions.
-- Every declared Service/Module/Object/constant in these templates is used — copy that discipline: declare only what the script actually needs.
+- The LocalScript reads state via Attributes rather than a RemoteEvent: prefer attribute/tag replication for simple state; reserve remotes for actions. An attribute on the `Player` replicates to every client, which suits coins shown on a leaderboard anyway; state the design keeps private goes to its owner through a targeted remote ([performance.md](performance.md#network)).
+- Every declared Service/Module/Object/constant in these templates is used. Copy that discipline and declare only what the script needs.
 - Bare `WaitForChild` is fine for containers that always replicate (ReplicatedStorage, PlayerGui). For `workspace` descendants under StreamingEnabled, use a timeout or a CollectionService tag signal instead ([patterns/network.md](patterns/network.md#streaming-streamingenabled)).
 - The Documentation Comments here model this skill's default style ([section-layout.md](section-layout.md#documentation-comments-the-default-style-and-how-it-flexes)). It is a **default, not a mandate**: a project that documents with Moonwave `--[=[ ]=]` or `---` blocks keeps its own form, and you match it. Three properties survive any style and are the ones to copy:
-  - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to — that is why they would all still be true after a rewrite.
+  - **Contract-level.** Every description says what the function is *for*. None of them names an API the body calls, a step it performs, or a module it delegates to: that is why they would all still be true after a rewrite.
   - **No volatile content.** No thresholds, no Configuration constant names, no system names. `updateCoinDisplay` is documented as synchronizing a display, not as "reads the Coins attribute and writes CoinLabel.Text".
   - **Moonwave tag syntax.** `@param <name> <type> -- <description>` and `@return <type> -- <description>`, present only where they say something the signature does not. The blocks with no tags are correct: their signatures already speak for themselves.
-- **No in-body comments.** The templates carry zero prose comments inside any body — the "players already present" case lives in `onPlayerAdded`'s description and the loop's own shape (`GetPlayers` sweep through the same join path), not in a note beside it. That is the standard everywhere: when a statement seems to need a note, rename or restructure until it does not, and put contract-level reasoning in the block above ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
+- **No in-body comments.** The templates carry zero prose comments inside any body: the "players already present" case lives in `onPlayerAdded`'s description and the loop's own shape (`GetPlayers` sweep through the same join path), not in a note beside it. That is the standard everywhere: when a statement seems to need a note, rename or restructure until it does not, and put contract-level reasoning in the block above ([section-layout.md](section-layout.md#in-body-comments-banned-self-documenting-code-instead)).
 - The templates carry no strictness header on purpose. `--!strict` is opt-in per SKILL.md: match the project's strictness and never add it unbidden.
 - The ModuleScript's load fails loud ([patterns/data.md](patterns/data.md#failure-policy-what-happens-after-the-last-retry)): a session whose stored data could not be read is never saved, `Load` reports it, and the Server Script tells the player. A save releases the session before it yields, so `PlayerRemoving` and `BindToClose` racing for the same player write once, and `SaveAll` returns only after every save, which is what keeps `BindToClose` waiting.

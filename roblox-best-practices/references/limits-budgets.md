@@ -1,4 +1,4 @@
-# Limits & Budgets — Hard Numbers in One Place
+# Limits & Budgets: Hard Numbers in One Place
 
 Platform ceilings an implementation must fit inside. Read this **before designing a system**, not after it hits a wall: most of these cannot be raised, and a design that ignores them fails in production rather than in Studio.
 
@@ -35,7 +35,7 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 | Read | **25 MB per minute per key** |
 | Write | **4 MB per minute per key** |
 
-**Request budgets, per minute.** Two ceilings apply at once — the experience-wide one and the per-server one — and the per-server one is usually what throttles a busy server first:
+**Request budgets, per minute.** Two ceilings apply at once (the experience-wide one and the per-server one) and the per-server one is usually what throttles a busy server first:
 
 | Request type | Per experience | Per server (standard) |
 |---|---|---|
@@ -44,12 +44,12 @@ Platform ceilings an implementation must fit inside. Read this **before designin
 | List | 300 + CCU × 2 | 5 + players × 2 |
 | Remove | 300 + CCU × 40 | 60 + players × 40 |
 
-Ordered data stores carry the same experience-level numbers; their per-server write and remove budgets are tighter at **30 + players × 5**. The per-server numbers are **defaults**: `DataStoreService:SetRateLimitForRequestType()` changes them per request type, and a new server gets a one-time startup burst on top. Studio Run mode uses separate static limits that can be lower, so test rate limits in Team Create. Read the remaining allowance at runtime with `DataStoreService:GetRequestBudgetForRequestType()` rather than guessing, and remember the budget is **shared with Open Cloud** — a batch job run from outside can starve live gameplay.
+Ordered data stores carry the same experience-level numbers; their per-server write and remove budgets are tighter at **30 + players × 5**. The per-server numbers are **defaults**: `DataStoreService:SetRateLimitForRequestType()` changes them per request type, and a new server gets a one-time startup burst on top. Studio Run mode uses separate static limits that can be lower, so test rate limits in Team Create. Read the remaining allowance at runtime with `DataStoreService:GetRequestBudgetForRequestType()` rather than guessing, and remember the budget is **shared with Open Cloud**: a batch job run from outside can starve live gameplay.
 
 **Caching and versions**, both of which change what a read means:
 
-- `GetAsync` serves a **local cache for four seconds**. Cached reads cost no budget and no throughput, and they can return a value the backend no longer holds. Set `DataStoreGetOptions.UseCache = false` when the answer must be authoritative — above all when checking whether a failed write actually landed before retrying or refunding.
-- Overwritten versions are retained **30 days**; the latest version never expires. **Multiple writes to the same key within one UTC hour overwrite each other permanently**, so a tight autosave loop destroys its own version history.
+- `GetAsync` serves a **local cache for four seconds**. Cached reads cost no budget and no throughput, and they can return a value the backend no longer holds. Set `DataStoreGetOptions.UseCache = false` when the answer must be authoritative: above all when checking whether a failed write actually landed before retrying or refunding.
+- Overwritten versions are retained **30 days**; the latest version never expires. **Only the first write to a key in each UTC hour is kept as a version**; later writes that hour replace the current value without a backup, so a tight autosave loop destroys its own version history.
 - **Each request type queues at most 30 requests.** While a request waits its call keeps yielding; past 30 the request is dropped with a throttle error (`301`-`306`, one per request type), so a burst of saves fails rather than waits.
 - `ListKeysAsync` with **key prefixes** is the current way to organize a store. Legacy scopes still work; prefixes are what new work should use.
 
@@ -74,7 +74,7 @@ Consequences for design:
 
 MemoryStore is ephemeral coordination (queues, session locks, live leaderboards), never a database. Wrap calls in `pcall` with backoff exactly like DataStore.
 
-**Exceeding the memory quota fails writes** until items expire or are removed — it does not evict for you, so a structure with a long TTL and no cleanup path degrades into a wall of failures. **Per-partition throttling is separate from the quota**: a single hot key or one oversized structure throttles while the experience-wide quota still looks healthy. The memory stores page gives estimates rather than guarantees: roughly 30,000 request units per minute for one partition, about 5,000 write and 15,000 read units per minute for one hash map key, and 100,000 units per minute for one data structure. The fix is spreading load, not asking for more ([patterns/network.md](patterns/network.md#cross-server-communication)).
+**Exceeding the memory quota fails writes** until items expire or are removed: it does not evict for you, so a structure with a long TTL and no cleanup path degrades into a wall of failures. **Per-partition throttling is separate from the quota**: a single hot key or one oversized structure throttles while the experience-wide quota still looks healthy. The memory stores page gives estimates rather than guarantees: roughly 30,000 request units per minute for one partition, about 5,000 write and 15,000 read units per minute for one hash map key, and 100,000 units per minute for one data structure. The fix is spreading load, not asking for more ([patterns/network.md](patterns/network.md#cross-server-communication)).
 
 ## Messaging
 
@@ -160,4 +160,4 @@ Beyond those, the cost order is fixed: **numbers are cheap; strings and nested t
 
 ## Server compute
 
-Server Authority raises server CPU usage relative to client-authoritative movement, proportional to existing load. **Extended Services** raises the per-player CPU allowance where needed ([Raising a ceiling](#raising-a-ceiling)). Treat this as a real cost line when deciding whether Server Authority is worth it for a given experience ([server-authority.md](server-authority.md#deciding-whether-to-adopt-it)).
+Server Authority raises server CPU usage relative to client-authoritative movement, proportional to existing load. **Extended Services for Compute** more than doubles the per-player CPU, though Roblox notes most games see no benefit; check server heartbeat for sustained drops below 60 first ([Raising a ceiling](#raising-a-ceiling)). Treat this as a real cost line when deciding whether Server Authority is worth it for a given experience ([server-authority.md](server-authority.md#deciding-whether-to-adopt-it)).
