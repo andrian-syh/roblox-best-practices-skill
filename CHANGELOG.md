@@ -8,6 +8,24 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-11-21
+
+Ported from roblox-optimum 1.20.0, which takes in 1.19.0 and 1.19.1. The references now match engine 748 and Luau 0.748.
+
+### Added
+
+- Added the Studio MCP tools `save_place` (saves with a version note, never publishes), `submit_feedback`, and `generate_animation`, video recording in `screen_capture`, and playtests that follow a teleport, with when to use each.
+- Added `game.ServerRegion`, the Studio Performance Simulator, and Copy as JSON to the currency baseline and the low-end device guidance.
+
+### Changed
+
+- Changed the currency baseline to engine 748 and Luau 0.748: the removed `PlayerDataService` record API is marked do-not-write, new members from 747 and 748 are listed as undocumented, `buffer` vector reads await a Studio check, and the 64-bit integer code is confirmed removed.
+- Changed the currency baseline to fold twenty settled rows into its one-line Settled lists, keeping it under the 40 KB agents load whole.
+
+### Fixed
+
+- Fixed the currency baseline still calling the `PlayerCharacterDestroyBehavior` change scheduled; Roblox staff confirmed it is rolling out to every game.
+
 ## [2.5.0] - 2026-11-08
 
 Ported from roblox-optimum 1.18.1, which takes in 1.16.0 and 1.17.0. The skill now covers Open Cloud through the Studio MCP server, and every reference was audited against current Roblox documentation, the engine 746 API dump, and `openapi.json`.
@@ -646,7 +664,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.0...v2.3.1

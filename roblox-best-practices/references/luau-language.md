@@ -123,7 +123,7 @@ Luau is not Lua 5.1 minus nothing. These are gone or restricted at the language 
 
 Rejected outright, so never suggested as a workaround: **`goto`**, **the `&`/`|` bitwise operators** (`bit32` is the answer), **ephemeron weak tables**, and **`__gc` finalizers**. That last one matters: there is no finalizer to hang cleanup on, which is why every rule here demands an explicit teardown path ([patterns/lifecycle.md](patterns/lifecycle.md#lifecycle--cleanup)).
 
-A 64-bit integer type was accepted upstream and then withdrawn, so it is not coming: every number is a double and `bit32` stays the answer ([api-currency.md](api-currency.md#luau-language-and-libraries)).
+A 64-bit integer type was accepted upstream, then withdrawn and its code removed, so it is not coming: every number is a double and `bit32` stays the answer ([api-currency.md](api-currency.md#luau-language-and-libraries)).
 
 ## Standard library: recent additions
 

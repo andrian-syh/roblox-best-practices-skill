@@ -88,6 +88,8 @@ Assume a wide spread of hardware and design for the bottom of it. The demographi
 - Test with a full server at the maximum realistic entity and player count, not with two testers in an empty place.
 - **Studio's device emulator is not a memory test.** It runs the server and client in one process, which inflates the reading. Memory conclusions come from real hardware ([verification.md](verification.md)).
 
+Before a low-end device, use the Studio Device Simulator's Performance panel: it applies the device's typical graphics quality level and memory budget in Edit and Play, though not its CPU or GPU speed, so frame time still needs a real device.
+
 ## Engine levers before script levers
 
 Roblox ships settings that buy more headroom than most script optimization, and they cost no runtime code. Reach for these first.
