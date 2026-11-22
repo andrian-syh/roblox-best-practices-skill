@@ -74,10 +74,10 @@ Anything that yields between checking a condition and acting on it can run twice
 
 ```lua
 -- | State Management | --
-local busyPlayers: {[Player]: true} = {}
+local busyPlayers: { [Player]: true } = {}
+
 
 -- // FUNCTIONS // --
-
 --[[
 	Runs an operation for a player, refusing to start a second one concurrently.
 
@@ -88,14 +88,17 @@ local function runExclusive(player: Player, operation: () -> ()): boolean
 	if busyPlayers[player] then
 		return false
 	end
+
 	busyPlayers[player] = true
 
 	local ok, err = pcall(operation)
 
 	busyPlayers[player] = nil
+
 	if not ok then
 		warn(`exclusive operation failed for {player.UserId}: {err}`)
 	end
+
 	return ok
 end
 ```

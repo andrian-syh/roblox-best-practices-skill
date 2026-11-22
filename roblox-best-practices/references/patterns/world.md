@@ -23,6 +23,7 @@ end
 for _, part in CollectionService:GetTagged("Lava") do
 	bindLava(part)
 end
+
 CollectionService:GetInstanceAddedSignal("Lava"):Connect(bindLava)
 ```
 

@@ -4,7 +4,7 @@ argument-hint: "[ask|bal|go]"
 description: "Roblox and Luau game code standards. Writes, reviews, and fixes Script, LocalScript, and ModuleScript code and game systems such as shops, DataStore saves, RemoteEvents, combat, NPCs, and UI. Use when a request involves Luau code or a Roblox Studio project, even when Roblox is never named, when a game bug is reported with no file named, and when the user asks to keep these standards active. Also covers Rojo, Argon, Azul, Script Sync, Studio MCP and Open Cloud through it, community libraries such as ProfileStore, Knit, Trove, and Fusion, and taking a Roblox game public: store listing, discovery, age tiers, ads, and live ops. Applies to requests written in any language. Not for plain Lua outside Roblox (Neovim, LOVE, Defold, other engines) or for game design with no Luau to write or review."
 license: MIT
 metadata:
-  version: "2.6.0"
+  version: "2.7.0"
 ---
 
 # Roblox Game Development Best Practices
@@ -13,7 +13,7 @@ Framework-agnostic standards for clean, resource-frugal Luau. They govern *how e
 
 **Goals, in priority order:** correct, secure (server-authoritative), efficient (CPU, memory, network), readable, consistent.
 
-*Skill version 2.6.0. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
+*Skill version 2.7.0. If this contradicts a newer release, the installed copy is stale; see [CHANGELOG.md](https://github.com/andrian-syh/roblox-best-practices-skill/blob/main/CHANGELOG.md).*
 
 
 ## Session Invariants (must survive compaction)
@@ -116,6 +116,8 @@ Everything below expands these; nothing below overrides them.
 - [growth-apis.md](references/growth-apis.md): AnalyticsService funnels, journeys, and events, player segments, experiments, experience notifications, referrals
 - [server-authority.md](references/server-authority.md): movement, physics, input, camera, animation timing, `BindToSimulation`, network ownership
 - [ui-crossplatform.md](references/ui-crossplatform.md): UI construction, cross-platform and accessibility, input devices
+- [ui-design.md](references/ui-design.md): building or restyling a screen: the token system, what makes UI read as generated, readability numbers, and the build and verify loop
+- [instances.md](references/instances.md): non-script Instances (Part, MeshPart, Model, decals, constraints, lights, audio), asset IDs, and Studio build/read-back
 - [genres.md](references/genres.md): simulator, FPS, obby, RPG, racing, horror, social, tower defense, battlegrounds
 
 **Process**

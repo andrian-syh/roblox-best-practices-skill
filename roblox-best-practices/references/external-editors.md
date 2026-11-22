@@ -79,19 +79,19 @@ For a full IDE, Roblox's answer is Script Sync plus the **Luau LSP** VS Code ext
 
 ## Rojo
 
-Filesystem-first: the project on disk defines the place, and `rojo serve` pushes it into Studio through the Rojo plugin, whose major version must match the CLI. **Use Rojo 7.7.1 or later:** Studio now saves asset references as `*Content` properties (`MeshContent`, `TextureContent`, `ImageContent`), and older Rojo does not handle them ([api-currency.md](api-currency.md#engine)).
+Filesystem-first: the project on disk defines the place, and `rojo serve` pushes it into Studio through the Rojo plugin, whose major version must match the CLI. **Use Rojo 7.7.1 or later.** `Content` values (the `MeshContent`, `TextureContent`, `ImageContent` properties Studio now saves, [api-currency.md](api-currency.md#engine)) are supported from 7.5.0; 7.7.1 adds Windows path and plugin fixes on top. Install the plugin with `rojo plugin install`, which also upgrades it. `rojo serve` listens on `127.0.0.1:34872` and checks request origins; binding it to a network address exposes the session, so keep the default.
 
 **`rojo upload --cookie` takes a `.ROBLOSECURITY` cookie, an account credential.** Never put one in a proposed command, script, config file, repository, or chat. A leaked cookie is a full account takeover that a password change does not revoke. In CI it belongs only in the runner's secret store ([security.md](security.md#threat-model-assume-all-of-these-exist)).
 
 What to know when reading a Rojo project:
 
-- **`default.project.json`** requires `name` and `tree`. `servePlaceIds` guards against syncing into the wrong place. `emitLegacyScripts` defaults to `true`, which is why Rojo emits `Script` and `LocalScript` rather than `RunContext` scripts: configuration, not a mistake.
-- **File mapping:** directory to `Folder`, `.luau` to `ModuleScript`, `.server.luau` to `Script`, `.client.luau` to `LocalScript`, `.rbxm`/`.rbxmx` to a model, `.json`/`.toml` to a table module. An `init.luau` (or `init.server.luau`, `init.client.luau`) turns its parent directory into that script; one init file per directory. A sibling `.meta.json` sets properties.
+- **`default.project.json`** requires `name` and `tree`. `servePlaceIds` (and `blockedPlaceIds`) guard against syncing into the wrong place. Other top-level fields: `servePort`, `placeId`, `gameId`, `globIgnorePaths` (gitignore-style, `!` negates), `syncRules`, `syncbackRules`. Nodes take `$className`, `$path`, `$properties`, `$ignoreUnknownInstances`, and `$id` (links `Ref` properties). `emitLegacyScripts` defaults to `true`, which is why Rojo emits `Script` and `LocalScript` rather than `RunContext` scripts: configuration, not a mistake.
+- **File mapping:** directory to `Folder`, `.luau` to `ModuleScript`, `.server.luau` to `Script`, `.client.luau` to `LocalScript`, `.rbxm`/`.rbxmx` to a model, `.json`/`.toml` to a table module. An `init.luau` (or `init.server.luau`, `init.client.luau`) turns its parent directory into that script; one init file per directory. A sibling `.meta.json` sets properties (not on `.rbxm`, `.rbxmx`, or `.model.json`). Also: `.plugin.luau` to a plugin `Script`, `.csv` to a `LocalizationTable`, `.txt` to a `StringValue`, `.yaml` like `.json`, and `.jsonc` wherever `.json` works. JSON-family files accept comments. A nested `.project.json` is its own project.
 - **Properties:** prefer the implicit form (`"Anchored": true`), as Rojo's docs advise. `Ref`, `Region3`, `Region3int16`, and `SharedString` cannot be written in a project file at all.
-- **Cannot sync live**, because the plugin API cannot set them: terrain, `MeshPart.MeshId`, `HttpService.HttpEnabled`. Not a misconfiguration.
+- **Cannot sync live:** terrain and `HttpService.HttpEnabled`. A `MeshPart` or union whose mesh changed is synced by deleting and recreating it (from 7.6.0), which **breaks every `Ref` property pointing at it** (welds, `ObjectValue`s, `PrimaryPart`). Expect that, and re-link after the sync.
 - **Rojo 6 project files are stale under Rojo 7:** explicit properties changed from `{"Type": "Enum", "Value": 512}` to `{"Enum": 512}`, and `CFrame` became an object with `position` and `orientation`. One of the few project-file findings worth raising.
-- **`rojo syncback`** pulls instances from a place file into the project under the project's `syncbackRules`. It rewrites the working tree, so run it only on the user's request and on a clean commit. The plugin's live Two-Way Sync is experimental; do not recommend it.
-- `rojo sourcemap --watch default.project.json --output sourcemap.json` writes the file the language server needs.
+- **`rojo syncback`** (7.7.0) pulls instances from a place file (`--input`) into the project under the project's `syncbackRules`, and only for nodes the project already maps (so `Workspace` needs a node to get its children). It rewrites the working tree, so run it only on the user's request, on a clean commit, and with `--dry-run` first. The plugin's two-way sync sends only supported Studio edits back; do not rely on it for a full round trip.
+- `rojo sourcemap --watch default.project.json --output sourcemap.json` writes the file the language server needs (`--include-non-scripts` adds the rest of the tree). It is git-ignored by default; never commit it.
 
 Rojo documents two workflows: **partially managed** (Rojo owns scripts, Team Create owns the rest) and **fully managed** (Rojo owns the whole game). Most existing games start partial. The team process around either is in [team-workflow.md](team-workflow.md).
 
@@ -117,19 +117,20 @@ Studio-first: the DataModel is authoritative and Azul mirrors it into a local di
 
 - The first sync mirrors Studio to disk, and Studio wins a conflict.
 - **On session start, Studio always wins over local state.** A file edited on disk while no session ran is overwritten when the plugin connects, so push it first with `azul push` or `azul build`.
-- From **2.0**, a live session replicates file creates, renames, type changes, moves, and **deletes** into Studio. Deleting a file in `syncDir` deletes the instance, so treat a delete or bulk move on disk as a destructive Studio change. `liveFsSync.enabled = false` turns this off. Before 2.0, only script contents flowed back. Check `azul --version` and the setting before deciding.
+- From **2.0**, a live session replicates script file creates, renames, type changes, and **deletes** into Studio. Deleting a file in `syncDir` deletes the instance, so treat a delete or bulk rename on disk as a destructive Studio change. `liveFsSync.enabled = false` turns this off. Before 2.0, only script contents flowed back. Check `azul --version` and the setting before deciding.
+- **`deleteOrphansOnConnect`** deletes local files that no Studio instance maps to when a full snapshot arrives. Check it before connecting a folder that holds work not yet in Studio.
 
-**Files on disk:** `syncDir` (default `./sync`) mirrors the hierarchy. `*.server.luau` is a `Script`, `*.client.luau` a `LocalScript`, and a **`ModuleScript` has no suffix** unless `suffixModuleScripts` is on. There is **no `init.luau` convention**: a script with children gets a sibling folder of the same name. Do not carry Rojo filenames over.
+**Files on disk:** `syncDir` (default `./sync`) mirrors the hierarchy. `*.server.luau` is a `Script`, `*.client.luau` a `LocalScript`, and a **`ModuleScript` has no suffix** unless `suffixModuleScripts` is on (then `Name.module.luau`). There is **no `init.luau` convention**: a script with children gets a sibling folder of the same name. Do not carry Rojo filenames over.
 
-**Commands that change Studio:** `azul build` pushes the whole tree, `azul push` a subtree, each with an optional `--destructive`. **`--no-warn` skips the confirmation prompts, so never put it in a proposed command.**
+**Commands that change Studio:** `azul build` pushes the whole tree, `azul push -s <source> -d <destination>` a subtree. **`azul build --destructive` wipes the entire Studio state before rebuilding**, and `push --destructive` wipes the destination's children; name either as irreversible before using it. **`--no-warn` skips the confirmation prompts, so never put it in a proposed command.**
 
 **Per-place config lives inside the place** at `ServerStorage.Azul.Config` and is merged with the CLI config on connect. **Read it before any push, because a `pushMappings` entry can carry `destructive = true`.** A dead connection is usually a plugin WebSocket URL that does not match the daemon port.
 
-**Rojo mode (`--rojo`)** reads `default.project.json` with scripts, folders, and `*.model.json`, but not `.rbxm`/`.rbxmx` or `.meta.json`. Packages come in through `azul push --rojo`. Azul's docs advise against Wally; treat that as the author's preference and keep whatever the project uses.
+**Rojo mode (`--rojo`)** reads `default.project.json` (and `.jsonc`, nested projects included), `init.luau`, `*.model.json`, and `.json` modules, but not `.rbxm`/`.rbxmx`; `.meta.json`, `.txt`, `.csv`, and `.toml` are not supported yet. Packages come in through `azul push --rojo`, or as a folder carrying an `azul.package.json` (`packageRoot` required) written by `azul pack`. Azul's docs recommend Ember over Wally; treat that as the author's preference and keep whatever the project uses.
 
 **Version control:** a code-only project needs no sourcemap. When the project carries assets, attributes, or tags, distribute a `*.sourcemap.json` written by `azul pack -o`; collaborators import it with `--from-sourcemap`. The working `./sourcemap.json` is regenerated on every sync: never commit or edit it.
 
-**Where its author says not to use it:** a non-standard feature-based layout, or a project that needs a battle-tested tool (it is newer and solo-maintained). **roblox-ts cannot work with it**: two-way sync cannot reconcile TypeScript sources with generated Luau.
+**Documented limits:** unions and terrain are not supported, headless or CI builds are not supported, and merging world changes is a plain JSON merge. A roblox-ts project belongs on a filesystem-first tool, since Azul treats Studio as the source of truth.
 
 ## Other sync and build tools
 

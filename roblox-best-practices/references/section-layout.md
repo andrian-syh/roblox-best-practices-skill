@@ -7,6 +7,7 @@ Annotated end-to-end templates for Script, LocalScript, and ModuleScript: [templ
 ## Contents
 
 - [Section header hierarchy](#section-header-hierarchy)
+- [Spacing](#spacing)
 - [1. -- // VARIABLES // --](#1-----variables----)
 - [2. -- // FUNCTIONS // --](#2-----functions----)
 - [3. -- // INITIALIZATION // --](#3-----initialization----)
@@ -17,7 +18,9 @@ Every script is divided into exactly three top-level sections, in this order:
 ```lua
 -- // VARIABLES // --
 
+
 -- // FUNCTIONS // --
+
 
 -- // INITIALIZATION // --
 ```
@@ -32,6 +35,49 @@ Five nesting levels. Use deeper levels only when a section genuinely needs subdi
 -- [ Level 3 ] --      grouping within a subsection
 -- { Level 4 } --      rare, fine-grained grouping
 -- / Level 5 / --      rarest, last resort
+```
+
+## Spacing
+
+Whitespace shows the structure, so it follows fixed rules:
+
+- A header line is followed directly by its first content line or sub-header, never by a blank line.
+- Two blank lines before `-- // FUNCTIONS // --`, `-- // INITIALIZATION // --`, and `-- | Public | --`. One blank line before every other header and between subsections.
+- One blank line between functions. Inside a body, a blank line separates each step: around every `if`, loop, or multi-line call, and before the final `return`. A guard clause takes three lines (`if not x then`, `return`, `end`), never one.
+- In a Documentation Comment, one blank line separates the description from the `@param` and `@return` tags. Wrap the description near 100 columns.
+- Type annotations put spaces inside braces: `{ [Player]: number }`.
+
+```lua
+-- // VARIABLES // --
+-- | Services | --
+local Players = game:GetService("Players")
+
+-- | State Management | --
+local scores: { [Player]: number } = {}
+
+
+-- // FUNCTIONS // --
+--[[
+	Returns the score a player holds, treating one who has none yet as zero.
+
+	@param player Player -- The player to read
+	@return number -- Their score
+]]
+local function scoreOf(player: Player): number
+	local score = scores[player]
+
+	if not score then
+		return 0
+	end
+
+	return score
+end
+
+
+-- // INITIALIZATION // --
+Players.PlayerRemoving:Connect(function(player)
+	scores[player] = nil
+end)
 ```
 
 ## 1. `-- // VARIABLES // --`
@@ -137,7 +183,6 @@ Everything that *runs*: function calls, event connections, loops. No function de
 
 ```lua
 -- // INITIALIZATION // --
-
 -- | Player Events | --
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)

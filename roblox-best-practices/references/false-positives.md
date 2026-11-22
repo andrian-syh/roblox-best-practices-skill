@@ -263,6 +263,7 @@ end
 ```lua
 -- Per-frame reuse via table.clear: no new garbage each frame.
 local scratch = {}
+
 RunService.Heartbeat:Connect(function()
 	table.clear(scratch)
 	gatherVisibleEntities(scratch)
@@ -275,6 +276,7 @@ end)
 local function onBuffApplied(player: Player, buffId: string)
 	Buffs.Grant(player, buffId)
 end
+
 buffAppliedBindable.Event:Connect(onBuffApplied)
 ```
 
@@ -339,6 +341,7 @@ local ok, stored = pcall(store.GetAsync, store, key, options)
 store:UpdateAsync(key, function(old)
 	local profile = old or Defaults()
 	profile.coins += amount
+
 	return profile
 end)
 ```

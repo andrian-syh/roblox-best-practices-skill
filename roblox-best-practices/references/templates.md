@@ -13,7 +13,6 @@ Canonical, fully-annotated examples of the section layout. Copy the shape, not t
 
 ```lua
 -- // VARIABLES // --
-
 -- | Services | --
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,34 +32,44 @@ local PURCHASE_WINDOW = 60
 local LOAD_FAILED_MESSAGE = "Your data could not be loaded, so nothing was changed. Please rejoin."
 
 -- | State Management | --
-local purchaseWindows: {[Player]: {count: number, windowStart: number}} = {}
-local playerConnections: {[Player]: {RBXScriptConnection}} = {}
+local purchaseWindows: { [Player]: { count: number, windowStart: number } } = {}
+local playerConnections: { [Player]: { RBXScriptConnection } } = {}
+
 
 -- // FUNCTIONS // --
-
 --[[
 	Handles a purchase request coming from a client, rejecting anything invalid.
 
 	@param itemId unknown -- Untrusted client argument; validated before use
 ]]
 local function onPurchaseRequest(player: Player, itemId: unknown)
-	if typeof(itemId) ~= "string" then return end
+	if typeof(itemId) ~= "string" then
+		return
+	end
+
 	local now = os.clock()
 	local window = purchaseWindows[player]
+
 	if not window or now - window.windowStart > PURCHASE_WINDOW then
 		window = {count = 0, windowStart = now}
 		purchaseWindows[player] = window
 	end
-	if window.count >= MAX_PURCHASES_PER_WINDOW then return end
+
+	if window.count >= MAX_PURCHASES_PER_WINDOW then
+		return
+	end
+
 	window.count += 1
 	Purchases.Grant(player, itemId)
 end
 
 --[[
-	Prepares everything a newly joined player needs, including players already present when this script starts.
+	Prepares everything a newly joined player needs, including players already present when this
+	script starts.
 ]]
 local function onPlayerAdded(player: Player)
 	playerConnections[player] = {}
+
 	if not PlayerData.Load(player) and player.Parent then
 		player:Kick(LOAD_FAILED_MESSAGE)
 	end
@@ -71,9 +80,11 @@ end
 ]]
 local function onPlayerRemoving(player: Player)
 	PlayerData.Save(player)
+
 	for _, connection in playerConnections[player] or {} do
 		connection:Disconnect()
 	end
+
 	playerConnections[player] = nil
 	purchaseWindows[player] = nil
 end
@@ -85,11 +96,12 @@ local function onClose()
 	PlayerData.SaveAll()
 end
 
--- // INITIALIZATION // --
 
+-- // INITIALIZATION // --
 -- | Player Events | --
 Players.PlayerAdded:Connect(onPlayerAdded)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
+
 for _, player in Players:GetPlayers() do
 	task.spawn(onPlayerAdded, player)
 end
@@ -105,7 +117,6 @@ game:BindToClose(onClose)
 
 ```lua
 -- // VARIABLES // --
-
 -- | Services | --
 local DataStoreService = game:GetService("DataStoreService")
 
@@ -119,14 +130,13 @@ local RETRY_BASE_DELAY = 1
 
 -- | State Management | --
 local store = DataStoreService:GetDataStore(STORE_NAME)
-local sessions: {[Player]: {data: {[string]: any}, saveable: boolean}} = {}
+local sessions: { [Player]: { data: { [string]: any }, saveable: boolean } } = {}
 
 local PlayerData = {}
 
+
 -- // FUNCTIONS // --
-
 -- | Private | --
-
 --[[
 	Runs a fallible operation under this module's retry policy.
 
@@ -136,16 +146,19 @@ local PlayerData = {}
 local function withRetry<T...>(fn: () -> T...): (boolean, T...)
 	for attempt = 1, MAX_RETRIES do
 		local results = table.pack(pcall(fn))
+
 		if results[1] then
 			return table.unpack(results, 1, results.n) :: any
 		end
+
 		task.wait(RETRY_BASE_DELAY * 2 ^ (attempt - 1))
 	end
+
 	return false
 end
 
--- | Public | --
 
+-- | Public | --
 --[[
 	Makes the player's persistent data available for this session. A session whose stored
 	data could not be read is kept but never saved, so it cannot overwrite that data.
@@ -156,13 +169,16 @@ function PlayerData.Load(player: Player): boolean
 	local ok, stored = withRetry(function()
 		return store:GetAsync(`player_{player.UserId}`)
 	end)
+
 	if not player.Parent then
 		return false
 	end
+
 	sessions[player] = {
 		data = if ok and stored ~= nil then stored else DeepCopy(PlayerData.Defaults),
 		saveable = ok,
 	}
+
 	return ok
 end
 
@@ -173,9 +189,17 @@ end
 ]]
 function PlayerData.Save(player: Player): boolean
 	local session = sessions[player]
-	if not session then return false end
+
+	if not session then
+		return false
+	end
+
 	sessions[player] = nil
-	if not session.saveable then return false end
+
+	if not session.saveable then
+		return false
+	end
+
 	return withRetry(function()
 		store:UpdateAsync(`player_{player.UserId}`, function()
 			return session.data
@@ -188,16 +212,19 @@ end
 ]]
 function PlayerData.SaveAll()
 	local players = {}
+
 	for player in sessions do
 		table.insert(players, player)
 	end
 
 	local remaining = #players
 	local caller = coroutine.running()
+
 	for _, player in players do
 		task.spawn(function()
 			PlayerData.Save(player)
 			remaining -= 1
+
 			if remaining == 0 and coroutine.status(caller) == "suspended" then
 				task.spawn(caller)
 			end
@@ -209,8 +236,8 @@ function PlayerData.SaveAll()
 	end
 end
 
--- // INITIALIZATION // --
 
+-- // INITIALIZATION // --
 PlayerData.Defaults = {
 	coins = 0,
 	level = 1,
@@ -223,7 +250,6 @@ return PlayerData
 
 ```lua
 -- // VARIABLES // --
-
 -- | Services | --
 local Players = game:GetService("Players")
 
@@ -239,20 +265,24 @@ local COIN_ATTRIBUTE = "Coins"
 -- | State Management | --
 local displayedCoins = 0
 
--- // FUNCTIONS // --
 
+-- // FUNCTIONS // --
 --[[
 	Synchronizes the coin display with the player's current state.
 ]]
 local function updateCoinDisplay()
 	local coins = player:GetAttribute(COIN_ATTRIBUTE) or 0
-	if coins == displayedCoins then return end
+
+	if coins == displayedCoins then
+		return
+	end
+
 	displayedCoins = coins
 	coinLabel.Text = tostring(coins)
 end
 
--- // INITIALIZATION // --
 
+-- // INITIALIZATION // --
 player:GetAttributeChangedSignal(COIN_ATTRIBUTE):Connect(updateCoinDisplay)
 updateCoinDisplay()
 ```

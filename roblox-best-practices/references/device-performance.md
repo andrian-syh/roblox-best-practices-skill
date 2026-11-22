@@ -50,15 +50,18 @@ local FRAME_BUDGET = 0.004
 
 	@param queue {() -> ()} -- Consumed in place; empty when this returns
 ]]
-local function processQueue(queue: {() -> ()})
+local function processQueue(queue: { () -> () })
 	while #queue > 0 do
 		local deadline = os.clock() + FRAME_BUDGET
+
 		repeat
 			local job = table.remove(queue)
+
 			if job then
 				job()
 			end
 		until #queue == 0 or os.clock() > deadline
+
 		RunService.Heartbeat:Wait()
 	end
 end

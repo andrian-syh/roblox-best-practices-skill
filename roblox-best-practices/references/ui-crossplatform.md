@@ -1,6 +1,6 @@
 # UI/UX and Cross-Platform
 
-Building interfaces that survive every screen and every input device. Proving that they work is a separate concern: [verification.md](verification.md).
+Building interfaces that survive every screen and every input device. How UI should look, and the agent's build and verify loop: [ui-design.md](ui-design.md). Proving that they work is a separate concern: [verification.md](verification.md).
 
 ## Contents
 
@@ -24,6 +24,7 @@ Three containers, three different lifetimes. Picking the wrong one is the most c
 
 - **`ResetOnSpawn` defaults to `true`**, so the GUI is rebuilt on every respawn and any state held inside it is lost. Persistent HUD sets it to `false`.
 - **`DisplayOrder`** decides which `ScreenGui` renders above which; `ZIndex` only orders within one.
+- A `ScreenGui` made with `Instance.new` starts with `ZIndexBehavior` `Global`, `SafeAreaCompatibility` `FullscreenExtension`, `ScreenInsets` `CoreUISafeInsets`, and `ResetOnSpawn` `true`; set each on purpose. A `ScreenGui` inside a folder under `StarterGui` resets on spawn even with `ResetOnSpawn` off, so keep screens as direct children.
 - **`Enabled = false`** stops rendering, input processing, and updates for the whole tree, which makes it the cheap way to hide a screen.
 - **`ScreenInsets`** has four values, not two: `CoreUISafeInsets` (default; clears the top bar and screen cutouts), `DeviceSafeInsets` (notches only), `TopbarSafeInsets`, and `None`. Interactive elements belong inside the safe area; `None` is for full-bleed backgrounds only.
 
@@ -46,7 +47,7 @@ Three containers, three different lifetimes. Picking the wrong one is the most c
 2. **Size constraints override the layout** when both apply.
 3. `UIScale` multiplies the final result, which makes it the right knob for a whole-panel zoom.
 
-**Clipping has a real limit.** `ClipsDescendants` does not clip rotated descendants unless `StarterGui.ClipsDescendantsSupportsRotation` is enabled, and it never clips to rounded corners. For either, use a **`CanvasGroup`**, which renders its children to a buffer first (and gives you `GroupTransparency` for fading a whole panel in one property).
+**Clipping has a real limit.** `ClipsDescendants` clips rotated descendants (the old `StarterGui.ClipsDescendantsSupportsRotation` opt-in is gone from the engine), but it never clips to rounded corners. For that, use a **`CanvasGroup`**, which renders its children to a buffer first (and gives you `GroupTransparency` for fading a whole panel in one property).
 
 ## Layouts
 
@@ -67,7 +68,7 @@ Prefer these to image assets: they are lighter, they scale without a 9-slice, an
 | `UIStroke` | `Thickness`, `Color`, `ApplyStrokeMode`, `LineJoinMode`. **Do not tween `Thickness` on a text object**: it flickers and costs more than it looks |
 | `UIGradient` | `Color`, `Transparency`, `Offset`, `Rotation` |
 | `UIPadding` | Inner spacing; the correct answer to "add a margin", not a spacer frame |
-| `UIShadow` | `BlurRadius`, `Color`, `Offset`, `Spread`, `Transparency`, `Inset`, `ShowBehindParent`. `Mode` picks `Shape` (the default, the bounding box) or `Text` (the glyphs of a `TextLabel`, `TextButton`, or `TextBox`); `Spread`, `Inset`, and `ShowBehindParent` do nothing in text mode, and both modes can sit under one parent |
+| `UIShadow` ([Verify]: shipped, but the appearance-modifiers guide still marks it Beta) | `BlurRadius`, `Color`, `Offset`, `Spread`, `Transparency`, `Inset`, `ShowBehindParent`. `Mode` picks `Shape` (the default, the bounding box) or `Text` (the glyphs of a `TextLabel`, `TextButton`, or `TextBox`); `Spread`, `Inset`, and `ShowBehindParent` do nothing in text mode, and both modes can sit under one parent |
 
 **9-slice** covers what the modifiers cannot: a bordered panel from one image that stretches without distorting its corners. Set `ScaleType = Slice` and `SliceCenter` on an `ImageLabel`/`ImageButton`, and scale the border independently with `SliceScale`.
 
@@ -84,7 +85,7 @@ A full cascade exists in the engine, and hand-setting properties across dozens o
 
 ## Text, input, and filtering
 
-- **`TextScaled`** with a `UITextSizeConstraint` keeps text legible across screens; `TextWrapped` and `AutomaticSize` handle length. Read the player's own preference with `GuiService.PreferredTextSize` and `GuiService.ViewportDisplaySize` instead of inferring from raw pixels, and react through their change signals. The `GuiService` UI-scale multiplier members are **RobloxScriptSecurity** and unusable from shipped code, and the getter has since been removed ([api-currency.md](api-currency.md#engine)): the preference properties above are the supported route, not a fallback.
+- **`TextSize`** from a fixed type scale, with `TextWrapped` and `AutomaticSize` handling length, keeps text legible and respects the player's text-size setting. **`TextScaled`** ignores that setting, so keep it, with a `UITextSizeConstraint`, for decorative display text. Read the player's own preference with `GuiService.PreferredTextSize` and `GuiService.ViewportDisplaySize` instead of inferring from raw pixels, and react through their change signals. The `GuiService` UI-scale multiplier members are **RobloxScriptSecurity** and unusable from shipped code, and the getter has since been removed ([api-currency.md](api-currency.md#engine)): the preference properties above are the supported route, not a fallback.
 - **Rich text** is per-object (`RichText = true`) and supports `<b>`, `<i>`, `<u>`, `<s>`, `<uc>`, `<sc>`, `<mark>`, `<stroke>`, `<br/>`, and `<font>` with `color`, `size`, `face`/`family`, `weight`, and `transparency`. Escape literals as `&lt;`, `&gt;`, `&quot;`, `&apos;`, `&amp;`. **Localization strips the tags**, so translated strings need their formatting reapplied.
 - **`TextBox`** reports through `FocusLost` (which tells you whether Enter was pressed) and `GetPropertyChangedSignal("Text")` for live validation; `PlaceholderText` states what belongs there.
 - **Filtering is mandatory for any text a player did not author on their own screen**, and it is a platform requirement, not a style choice ([security.md](security.md#user-generated-text-filtering)). Two rules specific to UI:

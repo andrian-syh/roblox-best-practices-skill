@@ -56,15 +56,21 @@ Cheapest first:
 
    ```lua
    local function probe(obj, name)
-       local ok, res = pcall(function() return obj[name] end)
-       if ok then return "PRESENT", typeof(res) end
-       local msg = tostring(res)
-       if msg:find("lacking capability") then
-           return "GATED", msg:match("lacking capability (%w+)")
-       elseif msg:find("is not a valid member") then
-           return "UNREADABLE-HERE", "absent, or hidden from this security context"
-       end
-       return "ERROR", msg
+   	local ok, res = pcall(function() return obj[name] end)
+
+   	if ok then
+   		return "PRESENT", typeof(res)
+   	end
+
+   	local msg = tostring(res)
+
+   	if msg:find("lacking capability") then
+   		return "GATED", msg:match("lacking capability (%w+)")
+   	elseif msg:find("is not a valid member") then
+   		return "UNREADABLE-HERE", "absent, or hidden from this security context"
+   	end
+
+   	return "ERROR", msg
    end
    ```
 
@@ -103,7 +109,7 @@ Name the step behind every engine-fact claim, or say it is unverified and what w
 
 ## Engine
 
-**Settled [GA], no check needed:** `TextChatService` as the only chat (legacy removed 30 April 2025); Character Controller Library (`ControllerManager`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`; `Humanoid` is not deprecated, [patterns/lifecycle.md](patterns/lifecycle.md#humanoid-vs-the-character-controller-library)); Input Action System (`InputAction`, `InputContext`, `InputBinding`); Animation Graphs; `GroupService:GetRolesInGroupAsync`; structured `LogService`; DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`, `ListKeysAsync`), `BatchGetAsync`, `DataStoreGetOptions.UseCache`, `GetRequestBudgetForRequestType`; Extended Services; streaming (`ModelStreamingMode`, `RequestStreamAroundAsync`, `ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamOutBehavior`); `Players:BanAsync`/`UnbanAsync`; `game.ServerRestartScheduled` (also on delayed restarts); `SceneAnalysisService` ([performance.md](performance.md#measurement-never-optimize-blind)); `ImprovedPhysicsReplication`; regional pricing ([monetization-policy.md](monetization-policy.md#choosing-the-product-type)); `Player:GetCameraState()`; `InputAction.DisplayName`; `DataStoreService:SetRateLimitForRequestType()`; RTBF deletion templates ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)); `Workspace:ApplyRecommendedStreamingSettings()` (plugin); `Workspace.PhysicsSteppingMethod` (`Default` is `Adaptive`); `LayerCollector:GetGuiObjectsAtPosition`; `Logger`; Studio CLI ([verification.md](verification.md#newer-verification-levers)); DataStore limits ([limits-budgets.md](limits-budgets.md#data-stores)); `CollectionService:GetCollections`; Analytics Client CPU Time Breakdown; `Enum.GradientType.Elliptical` (`UIGradient.Type`, `Scale`, `TileMode` visible in Properties since v746); `debug.profilebegin`/`profileend`, `debug.setmemorycategory`, `debug.dumpcodesize`; `Path2D`, `CanvasGroup`, `VideoFrame` (format, five-minute, two-concurrent limits); `UIShadow`; UI styling (`StyleSheet`, `StyleRule`, `StyleLink`, `StyleDerive`, `StyleQuery` with conditions `MaxSize`, `MinSize`, `AspectRatioRange`, `PreferredInput`, `PreferredTextSize`, `ReducedMotionEnabled`, `ViewportDisplaySize`; tokens, themes, transitions, [ui-crossplatform.md](ui-crossplatform.md#the-styling-system)); `GuiService.PreferredTextSize`, `PreferredTransparency`, `ViewportDisplaySize`; CollectionService `TagAdded`/`TagRemoved` (they fire when a tag enters or leaves use across the place; per-instance binding is `GetInstanceAddedSignal`/`GetInstanceRemovedSignal`); Server Authority and prediction introspection (off by default, [server-authority.md](server-authority.md)); Studio Script Sync ([external-editors.md](external-editors.md#studio-script-sync)), `InstanceFileSyncService` (PluginSecurity), Rojo `syncback` ([external-editors.md](external-editors.md#rojo)); `HttpService:GetSecret()` (local playtests need Local Secrets); `EnableSLIMAvatars`, `FrustumStreaming` (`Default` behaves like `Disabled`), streaming low-end values ([device-performance.md](device-performance.md#engine-levers-before-script-levers)); `RunService:BindToAnimation()`/`BindToAnimationParallel()` ([performance.md](performance.md)); `WorldRoot` collision groups (the setter is `CollisionGroupSetCollidable`, not `SetCollisionGroupsCollidable`); `UIFlexItem` and `UIListLayout` flex properties (there is no `UIFlexLayout`); `UIDragDetector`/`DragDetector` (`RunLocally = true` replicates nothing); `StarterGui.ClipsDescendantsSupportsRotation`.
+**Settled [GA], no check needed:** `TextChatService` as the only chat (legacy removed 30 April 2025); Character Controller Library (`ControllerManager`, `AvatarAbilities`, `StarterPlayer.LuaCharacterController`; `Humanoid` is not deprecated, [patterns/lifecycle.md](patterns/lifecycle.md#humanoid-vs-the-character-controller-library)); Input Action System (`InputAction`, `InputContext`, `InputBinding`); Animation Graphs; `GroupService:GetRolesInGroupAsync`; structured `LogService`; DataStore versioning (`GetVersionAsync`, `ListVersionsAsync`, `ListKeysAsync`), `BatchGetAsync`, `DataStoreGetOptions.UseCache`, `GetRequestBudgetForRequestType`; Extended Services; streaming (`ModelStreamingMode`, `RequestStreamAroundAsync`, `ModelStreamingBehavior`, `StreamingIntegrityMode`, `StreamOutBehavior`); `Players:BanAsync`/`UnbanAsync`; `game.ServerRestartScheduled` (also on delayed restarts); `SceneAnalysisService` ([performance.md](performance.md#measurement-never-optimize-blind)); `ImprovedPhysicsReplication`; regional pricing ([monetization-policy.md](monetization-policy.md#choosing-the-product-type)); `Player:GetCameraState()`; `InputAction.DisplayName`; `DataStoreService:SetRateLimitForRequestType()`; RTBF deletion templates ([patterns/data.md](patterns/data.md#deleting-data-on-request-rtbf)); `Workspace:ApplyRecommendedStreamingSettings()` (plugin); `Workspace.PhysicsSteppingMethod` (`Default` is `Adaptive`); `LayerCollector:GetGuiObjectsAtPosition`; `Logger`; Studio CLI ([verification.md](verification.md#newer-verification-levers)); DataStore limits ([limits-budgets.md](limits-budgets.md#data-stores)); `CollectionService:GetCollections`; Analytics Client CPU Time Breakdown; `debug.profilebegin`/`profileend`, `debug.setmemorycategory`, `debug.dumpcodesize`; `Path2D`, `CanvasGroup`, `VideoFrame` (format, five-minute, two-concurrent limits); UI styling (`StyleSheet`, `StyleRule`, `StyleLink`, `StyleDerive`, `StyleQuery` with conditions `MaxSize`, `MinSize`, `AspectRatioRange`, `PreferredInput`, `PreferredTextSize`, `ReducedMotionEnabled`, `ViewportDisplaySize`; tokens, themes, transitions, [ui-crossplatform.md](ui-crossplatform.md#the-styling-system)); `GuiService.PreferredTextSize`, `PreferredTransparency`, `ViewportDisplaySize`; CollectionService `TagAdded`/`TagRemoved` (they fire when a tag enters or leaves use across the place; per-instance binding is `GetInstanceAddedSignal`/`GetInstanceRemovedSignal`); Server Authority and prediction introspection (off by default, [server-authority.md](server-authority.md)); Studio Script Sync ([external-editors.md](external-editors.md#studio-script-sync)), `InstanceFileSyncService` (PluginSecurity), Rojo `syncback` ([external-editors.md](external-editors.md#rojo)); `HttpService:GetSecret()` (local playtests need Local Secrets); `EnableSLIMAvatars`, `FrustumStreaming` (`Default` behaves like `Disabled`), streaming low-end values ([device-performance.md](device-performance.md#engine-levers-before-script-levers)); `RunService:BindToAnimation()`/`BindToAnimationParallel()` ([performance.md](performance.md)); `WorldRoot` collision groups (the setter is `CollisionGroupSetCollidable`, not `SetCollisionGroupsCollidable`); `UIFlexItem` and `UIListLayout` flex properties (there is no `UIFlexLayout`); `UIDragDetector`/`DragDetector` (`RunLocally = true` replicates nothing).
 
 | Area | Status | Notes |
 |---|---|---|
@@ -118,7 +124,7 @@ Name the step behind every engine-fact claim, or say it is unverified and what w
 | Device Trust (`IntegrityService.EvaluatePlayerDeviceTrust`, `Player.DeviceTrustLevel`) | **[GA]**, Android and web only | 27 October 2026 ([DevForum](https://devforum.roblox.com/t/-/4961129)). `Unknown`, `None`, `Standard`, `Full`; `Unknown` on unsupported platforms. Server-side only ([security.md](security.md#threat-model-assume-all-of-these-exist)) |
 | Orthographic camera (`Camera.ProjectionType`, `OrthographicMode`, `OrthographicSize`, `ViewStretch`) | **[Beta]**, Studio only | 30 October 2026. Published games cannot use it yet; API may change |
 | Studio-only settings | **[GA]** | Scripts cannot set `PhysicsSteppingMethod`, `EnableSLIMAvatars`, or `AuthorityMode` (readable from scripts since v746). `StreamingMinRadius`, `StreamingTargetRadius`, `StreamingIntegrityMode`, `StreamOutBehavior`, `PredictiveStreamingMode` are `PluginOrOpenCloud` since v746: plugins, MCP, Open Cloud only. `StreamingEnabled` and `LuauTypeCheckMode` show `WriteSecurity: None` but stay place settings in practice. `StarterPlayer.CreateDefaultPlayerModule` is `PluginOrOpenCloud`. Wrap reads in the probe |
-| Script-writable since v740 to v742 | **[GA]** | `Lighting.LightingStyle`, `PrioritizeLightingQuality`, `PartOperation.RenderFidelity`, `SmoothingAngle`, `TriangleMeshPart.CollisionFidelity`, `FluidFidelity`, `MeshPart.RenderFidelity`, `Model.LevelOfDetail`, `Workspace.FallHeightEnabled`, `FallenPartsDestroyHeight` |
+| Writable from plugins and Open Cloud since v740 to v742 (`Capabilities.Write` is `PluginOrOpenCloud` in the v748 dump; `Model.LevelOfDetail` reads the same way). Whether a running experience Script can set them is [Verify] | **[GA]** | `Lighting.LightingStyle`, `PrioritizeLightingQuality`, `PartOperation.RenderFidelity`, `SmoothingAngle`, `TriangleMeshPart.CollisionFidelity`, `FluidFidelity`, `MeshPart.RenderFidelity`, `Model.LevelOfDetail`, `Workspace.FallHeightEnabled`, `FallenPartsDestroyHeight` |
 | `Instance:QueryDescendants()` | **[GA]** | Spatial radius filter and inferred return types (21 September, 5 October 2026) |
 | `Player:GetFriendsInUniverseAsync()`, `GetFriendsInServerAsync()` | **[Undocumented]** | v735, v741. Both yield; wrap in `pcall` |
 | `Workspace.StreamingAdaptiveRadius` | **[Undocumented]** | v738. A boolean; from v746 it reads and writes only from a plugin or Open Cloud (`PluginOrOpenCloud`, like the other streaming properties). Behavior undocumented ([device-performance.md](device-performance.md#engine-levers-before-script-levers)) |
@@ -149,6 +155,9 @@ Name the step behind every engine-fact claim, or say it is unverified and what w
 | `ScriptDebuggerService` | **[Beta]** | Programmatic breakpoints |
 | Input Action Manager | **[GA]** 29 October 2026 | Studio mapping editor, Window > Input > Actions |
 | Acoustic Occlusion and Reverb subcategories | **[Verify]** | Release notes 734 to 735, rolling out |
+| `UIShadow`; `UIGradient.Type` (`Enum.GradientType.Elliptical`), `Scale`, `TileMode` | **[Verify]** | Creatable and readable in v748 (probe, 23 November 2026), but the appearance-modifiers guide still marks both upgrades Beta |
+| `UIStroke.BorderStrokePosition`, `StrokeSizingMode`, `BorderOffset` | **[Undocumented]** | Present in v748 (probe); defaults `Outer`, `FixedSize`, 0 |
+| `StarterGui.ClipsDescendantsSupportsRotation` | **Removed** | Gone in v748 (probe): rotated descendants always clip |
 
 **In the dump but not yours to call.** These are dead ends for experience code; never present them as new capabilities:
 

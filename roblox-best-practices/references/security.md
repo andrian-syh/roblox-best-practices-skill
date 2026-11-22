@@ -47,7 +47,7 @@ Every remote handler, in order (cheapest check first):
 
 ```lua
 -- | State Management | --
-local buckets: {[Player]: {[string]: {count: number, windowStart: number}}} = {}
+local buckets: { [Player]: { [string]: { count: number, windowStart: number } } } = {}
 
 --[[
 	Decides whether a player may perform an action under its rate policy.
@@ -59,16 +59,22 @@ local function allowRate(player: Player, action: string, maxPerWindow: number, w
 	local now = os.clock()
 	local windowSize = window or 1
 	local playerBuckets = buckets[player]
+
 	if not playerBuckets then
 		playerBuckets = {}
 		buckets[player] = playerBuckets
 	end
+
 	local bucket = playerBuckets[action]
+
 	if not bucket or now - bucket.windowStart > windowSize then
 		playerBuckets[action] = {count = 1, windowStart = now}
+
 		return true
 	end
+
 	bucket.count += 1
+
 	return bucket.count <= maxPerWindow
 end
 ```

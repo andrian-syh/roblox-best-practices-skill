@@ -21,9 +21,18 @@ Server-side handler skeleton: every remote handler follows this shape:
 	@param itemId unknown -- Untrusted client argument; validated before use
 ]]
 local function onEquipRequest(player: Player, itemId: unknown)
-	if typeof(itemId) ~= "string" then return end
-	if not RateLimiter.Allow(player, "Equip", 5) then return end
-	if not Inventory.Owns(player, itemId) then return end
+	if typeof(itemId) ~= "string" then
+		return
+	end
+
+	if not RateLimiter.Allow(player, "Equip", 5) then
+		return
+	end
+
+	if not Inventory.Owns(player, itemId) then
+		return
+	end
+
 	Inventory.Equip(player, itemId)
 end
 ```
@@ -99,7 +108,7 @@ Consequences worth designing around: send **ids and plain data**, never live obj
 The single home for streaming rules; other references point here. With StreamingEnabled, workspace descendants replicate to a client only near the player and can arrive late or leave mid-session. Nothing outside the persistent set is guaranteed to exist client-side.
 
 - **Never assume a workspace descendant exists on the client.** Reach it through `WaitForChild(name, timeout)` (with a timeout, so a never-streamed instance fails gracefully) or, better, a `CollectionService` tag signal (`GetInstanceAddedSignal`/`GetInstanceRemovedSignal`) so behavior binds as instances stream in and unbinds as they leave. Bare, timeout-less `WaitForChild` stays correct for always-replicated containers (`ReplicatedStorage`, `PlayerGui`): see [false-positives.md](../false-positives.md#streaming-bare-waitforchild-is-often-correct).
-- **Pair every per-instance setup with a removal path.** Streamed-out instances fire `GetInstanceRemovedSignal`/`Destroying`; clear their per-instance state there, exactly as with player and character lifetimes.
+- **Pair every per-instance setup with a removal path.** A streamed-out instance is parented to `nil`, not destroyed, so `Destroying` does not fire; clear its per-instance state on `GetInstanceRemovedSignal`, `AncestryChanged`, or `DescendantRemoving`, exactly as with player and character lifetimes.
 - **Control what streams via `Model.ModelStreamingMode`**: `Atomic` (the model streams in/out as one unit), `Nonatomic`, `Default`, and `Persistent`/`PersistentPerPlayer` (never streamed out). Keep gameplay-critical anchors persistent; let cosmetic or distant content stream.
 - **`Player:RequestStreamAroundAsync(position)`** hints the engine to stream a region in before a teleport or camera cut, reducing pop-in. It is a hint, not a guarantee: still design for missing instances.
 - Server scripts see the whole DataModel regardless of streaming; these rules govern **client** code and replication timing. Verify with a multi-client session, not single-Play ([verification.md](../verification.md)).

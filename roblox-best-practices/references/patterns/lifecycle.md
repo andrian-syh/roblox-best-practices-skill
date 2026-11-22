@@ -15,17 +15,19 @@ Minimal connection-bag pattern (use a maid/janitor/trove module if the project h
 
 ```lua
 -- | State Management | --
-local cleanupByPlayer: {[Player]: {() -> ()}} = {}
+local cleanupByPlayer: { [Player]: { () -> () } } = {}
 
 --[[
 	Registers a cleanup task owned by the player.
 ]]
 local function addCleanup(player: Player, cleanupTask: () -> ())
 	local bag = cleanupByPlayer[player]
+
 	if not bag then
 		bag = {}
 		cleanupByPlayer[player] = bag
 	end
+
 	table.insert(bag, cleanupTask)
 end
 
@@ -36,6 +38,7 @@ local function onPlayerRemoving(player: Player)
 	for _, cleanupTask in cleanupByPlayer[player] or {} do
 		cleanupTask()
 	end
+
 	cleanupByPlayer[player] = nil
 end
 ```
@@ -75,10 +78,10 @@ local MAX_POOLED_PROJECTILES = 64
 local RESTING_CFRAME = CFrame.new(0, -500, 0)
 
 -- | State Management | --
-local projectilePool: {BasePart} = {}
+local projectilePool: { BasePart } = {}
+
 
 -- // FUNCTIONS // --
-
 --[[
 	Provides a projectile ready for use, growing the pool only when it runs dry.
 
@@ -86,10 +89,13 @@ local projectilePool: {BasePart} = {}
 ]]
 local function takeProjectile(): BasePart
 	local part = table.remove(projectilePool)
+
 	if not part then
 		part = projectileTemplate:Clone()
 	end
+
 	part.Parent = workspace.Projectiles
+
 	return part
 end
 
@@ -108,8 +114,10 @@ local function returnProjectile(part: BasePart)
 
 	if #projectilePool >= MAX_POOLED_PROJECTILES then
 		part:Destroy()
+
 		return
 	end
+
 	table.insert(projectilePool, part)
 end
 ```

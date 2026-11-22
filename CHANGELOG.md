@@ -8,6 +8,29 @@ From 2.0.0, skill content is ported from [roblox-optimum](https://github.com/and
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-11-23
+
+Ported from roblox-optimum 1.21.0. Agents get a design system and a proof loop for UI, and a reference for the parts, meshes, and lights a game is built from.
+
+### Added
+
+- Added `ui-design.md`, read when building or restyling a screen: a token system held in a `StyleSheet`, the patterns that make UI look generated and what to do instead, contrast, touch-size, and text-size numbers from WCAG and the Xbox Accessibility Guidelines, and a build and verify loop with a read-back snippet run in Studio 748.
+- Added `instances.md` for non-script Instances: collision and query flags, meshes and `Content` assets, welds and pivots, lights, effects, audio, mesh segmentation names, and a build and read-back recipe proven in Studio 748.
+- Added guidance for Roblox's built-in Studio skills: call `list_roblox_skills` once per session, load a matching `rbx-` skill before work in its area, and probe its claims.
+- Added a Spacing section to the Luau layout rules and restyled every snippet to match.
+
+### Changed
+
+- Changed the Rojo guidance to 7.7.1: a `MeshPart` or union whose mesh changes is resynced by deleting and recreating it, which breaks every `Ref` pointing at it, and `syncback` should run with `--dry-run` first.
+- Changed the Azul guidance to 2.5.0: `azul build --destructive` wipes the whole Studio state, `deleteOrphansOnConnect` can delete local files, and Rojo mode now reads `init.luau` and nested projects.
+- Changed `UIShadow` and the `UIGradient` upgrades from settled to [Verify], and the text guidance to prefer `TextSize` from a type scale, since `TextScaled` ignores the player's text-size setting.
+
+### Fixed
+
+- Fixed the Studio MCP guidance describing video as part of `screen_capture`; video is the separate `video_capture` tool.
+- Fixed the streaming guidance saying `Destroying` fires when an instance streams out; streamed-out instances are parented to `nil`.
+- Fixed the currency baseline calling ten fidelity and lighting properties script-writable, and listing the removed `StarterGui.ClipsDescendantsSupportsRotation` as current.
+
 ## [2.6.0] - 2026-11-21
 
 Ported from roblox-optimum 1.20.0, which takes in 1.19.0 and 1.19.1. The references now match engine 748 and Luau 0.748.
@@ -664,7 +687,8 @@ _First release._
 - Add references for templates, patterns, performance, security and monetisation, UI and testing, genres, adaptive mode, and community libraries.
 - Add an npx installer (`bin/cli.js`) and PowerShell and shell installers, with an always-included Universal path and a searchable list of additional agents.
 
-[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/andrian-syh/roblox-best-practices-skill/compare/v2.3.1...v2.4.0
